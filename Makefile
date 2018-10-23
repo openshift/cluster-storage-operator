@@ -12,5 +12,10 @@ generate: $(GOBINDATA_BIN)
 $(GOBINDATA_BIN):
 	go get -u github.com/jteeuwen/go-bindata/...
 
+verify: build
+	hack/verify-gofmt.sh
+	hack/verify-gometalinter.sh
+	hack/verify-govet.sh
+
 clean:
 	rm -rf _output

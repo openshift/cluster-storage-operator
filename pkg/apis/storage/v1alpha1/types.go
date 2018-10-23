@@ -6,6 +6,7 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// ClusterStorageList is a list of ClusterStorages
 type ClusterStorageList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
@@ -14,6 +15,7 @@ type ClusterStorageList struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// ClusterStorage is a cluster's storage
 type ClusterStorage struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -21,9 +23,12 @@ type ClusterStorage struct {
 	Status            ClusterStorageStatus `json:"status,omitempty"`
 }
 
+// ClusterStorageSpec is a ClusterStorage's spec
 type ClusterStorageSpec struct {
 	// Fill me
 }
+
+// ClusterStorageStatus is a ClusterStorage's status
 type ClusterStorageStatus struct {
 	// Fill me
 }

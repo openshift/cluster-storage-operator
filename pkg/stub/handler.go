@@ -17,17 +17,20 @@ import (
 	utilyaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
+// NewHandler constructs a ClusterStorage handler
 func NewHandler() sdk.Handler {
 	return &Handler{}
 }
 
+// Handler handles ClusterStorages and owned objects
 type Handler struct {
 }
 
+// Handle handles ClusterStorages' and owned objects' events
 func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
 	switch o := event.Object.(type) {
-	// TODO watch the cluster config object...currently it is some configmap with no unique labels.
-	//	case *v1alpha1.ClusterStorage:
+	// TODO do something
+	// case *v1alpha1.ClusterStorage:
 	//		return h.sync(o)
 	case *corev1.ConfigMap:
 		return h.sync(o)
@@ -60,11 +63,8 @@ func (h *Handler) syncAWS(types.AWSPlatform) error {
 	err := sdk.Create(sc)
 	if err != nil && apierrors.IsAlreadyExists(err) {
 		return nil
-	} else {
-		return err
 	}
-
-	return nil
+	return err
 }
 
 func (h *Handler) syncOpenStack(types.OpenStackPlatform) error {
@@ -72,11 +72,8 @@ func (h *Handler) syncOpenStack(types.OpenStackPlatform) error {
 	err := sdk.Create(sc)
 	if err != nil && apierrors.IsAlreadyExists(err) {
 		return nil
-	} else {
-		return err
 	}
-
-	return nil
+	return err
 }
 
 func getPlatform(cm *corev1.ConfigMap) (*types.Platform, error) {
