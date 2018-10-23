@@ -10,12 +10,10 @@ import (
 	"github.com/openshift/installer/pkg/types"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	// "github.com/sirupsen/logrus"
+	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	corev1 "k8s.io/api/core/v1"
-	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilyaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
@@ -40,18 +38,19 @@ func (h *Handler) sync(_ *v1alpha1.ClusterStorage) error {
 	if err != nil {
 		return err
 	}
+
+	// Like kubernetes addon-manager EnsureExists
 	if platform.AWS != nil {
 		h.syncAWS(*platform.AWS)
-	} else if platform.Libvirt != nil {
 	} else if platform.OpenStack != nil {
+		h.syncOpenStack(*platform.OpenStack)
 	}
 
 	return nil
 }
 
 func (h *Handler) syncAWS(types.AWSPlatform) error {
-	sc := ReadStorageClassV1OrDie(generated.MustAsset("manifests/aws.yaml"))
-
+	sc := resourceread.ReadStorageClassV1OrDie(generated.MustAsset("manifests/aws.yaml"))
 	err := sdk.Create(sc)
 	if err != nil && apierrors.IsAlreadyExists(err) {
 		return nil
@@ -59,28 +58,19 @@ func (h *Handler) syncAWS(types.AWSPlatform) error {
 		return err
 	}
 
-	// TODO efs operator installation (create subscription (installplan??)
 	return nil
 }
 
-// TODO add to library-go
-var (
-	storageScheme = runtime.NewScheme()
-	storageCodecs = serializer.NewCodecFactory(storageScheme)
-)
-
-func init() {
-	if err := storagev1.AddToScheme(storageScheme); err != nil {
-		panic(err)
+func (h *Handler) syncOpenStack(types.OpenStackPlatform) error {
+	sc := resourceread.ReadStorageClassV1OrDie(generated.MustAsset("manifests/openstack.yaml"))
+	err := sdk.Create(sc)
+	if err != nil && apierrors.IsAlreadyExists(err) {
+		return nil
+	} else {
+		return err
 	}
-}
 
-func ReadStorageClassV1OrDie(objBytes []byte) *storagev1.StorageClass {
-	requiredObj, err := runtime.Decode(storageCodecs.UniversalDecoder(storagev1.SchemeGroupVersion), objBytes)
-	if err != nil {
-		panic(err)
-	}
-	return requiredObj.(*storagev1.StorageClass)
+	return nil
 }
 
 func getPlatform() (*types.Platform, error) {
