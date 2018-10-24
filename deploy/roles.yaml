@@ -14,7 +14,7 @@ metadata:
 ---
 
 kind: Role
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: cluster-storage-operator
   namespace: openshift-cluster-storage-operator
@@ -50,7 +50,7 @@ rules:
 ---
 
 kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: cluster-storage-operator
   namespace: openshift-cluster-storage-operator
@@ -65,7 +65,7 @@ roleRef:
 ---
 
 kind: Role
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: cluster-storage-operator
   namespace: kube-system
@@ -82,7 +82,7 @@ rules:
 ---
 
 kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: cluster-storage-operator
   namespace: kube-system
@@ -92,5 +92,40 @@ subjects:
   namespace: openshift-cluster-storage-operator
 roleRef:
   kind: Role
+  name: cluster-storage-operator
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cluster-storage-operator
+rules:
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  verbs:
+  - get
+  - watch
+  - list
+  - create
+  - delete
+  - patch
+  - update
+
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cluster-storage-operator
+subjects:
+- kind: ServiceAccount
+  name: cluster-storage-operator
+  namespace: openshift-cluster-storage-operator
+roleRef:
+  kind: ClusterRole
   name: cluster-storage-operator
   apiGroup: rbac.authorization.k8s.io
