@@ -21,4 +21,4 @@ verify:
 	hack/verify-govet.sh
 
 clean:
-	rm -rf _output
+	rm -rf build/_output

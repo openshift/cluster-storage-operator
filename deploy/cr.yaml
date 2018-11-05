@@ -1,4 +1,0 @@
-apiVersion: "storage.openshift.io/v1alpha1"
-kind: "ClusterStorage"
-metadata:
-  name: "example"
