@@ -19,7 +19,6 @@ import (
 	utilyaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	//"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -28,10 +27,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
+const (
+	OwnerLabelNamespace = "cluster.storage.openshift.io/owner-namespace"
+	OwnerLabelName      = "cluster.storage.openshift.io/owner-name"
+)
 
 // Add creates a new ClusterStorage Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -63,17 +62,20 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	/*
-		// TODO(user): Modify this to be the types you create that are owned by the primary resource
-		// Watch for changes to secondary resource StorageClasses and requeue the owner ConfigMap
-		err = c.Watch(&source.Kind{Type: &storagev1.StorageClass{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &corev1.ConfigMap{},
-		})
-		if err != nil {
-			return err
-		}
-	*/
+	// Watch for changes to secondary resource StorageClasses and requeue the owner ConfigMap
+	err = c.Watch(&source.Kind{Type: &storagev1.StorageClass{}}, &handler.EnqueueRequestsFromMapFunc{
+		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
+			return []reconcile.Request{
+				{NamespacedName: types.NamespacedName{
+					Namespace: a.Meta.GetLabels()[OwnerLabelNamespace],
+					Name:      a.Meta.GetLabels()[OwnerLabelName],
+				}},
+			}
+		}),
+	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -125,12 +127,8 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	/*
-		// Set ConfigMap instance as the owner and controller
-		if err := controllerutil.SetControllerReference(instance, sc, r.scheme); err != nil {
-			return reconcile.Result{}, err
-		}
-	*/
+	// Set ConfigMap instance as the owner and controller
+	sc.SetLabels(labelsForClusterStorage(instance))
 
 	// Check if this StorageClass already exists
 	found := &storagev1.StorageClass{}
@@ -181,4 +179,13 @@ func getPlatform(cm *corev1.ConfigMap) (*installer.Platform, error) {
 	}
 
 	return &config.Platform, nil
+}
+
+// labelsForClusterStorage returns the labels for selecting the resources
+// belonging to the given cluster storage config
+func labelsForClusterStorage(cm *corev1.ConfigMap) map[string]string {
+	return map[string]string{
+		OwnerLabelNamespace: cm.Namespace,
+		OwnerLabelName:      cm.Name,
+	}
 }
