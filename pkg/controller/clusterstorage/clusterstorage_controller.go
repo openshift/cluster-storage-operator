@@ -28,8 +28,10 @@ import (
 )
 
 const (
+	// OwnerLabelNamespace is the label key for the owner namespace
 	OwnerLabelNamespace = "cluster.storage.openshift.io/owner-namespace"
-	OwnerLabelName      = "cluster.storage.openshift.io/owner-name"
+	// OwnerLabelName is the label key for the owner name
+	OwnerLabelName = "cluster.storage.openshift.io/owner-name"
 )
 
 // Add creates a new ClusterStorage Controller and adds it to the Manager. The Manager will set fields on the Controller

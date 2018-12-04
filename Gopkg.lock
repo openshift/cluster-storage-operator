@@ -216,6 +216,13 @@
   version = "v1.1.5"
 
 [[projects]]
+  digest = "1:4a26d01840733b60e9af432d24df6104660a537bb756d4e05c24e097ab68d726"
+  name = "github.com/jteeuwen/go-bindata"
+  packages = ["."]
+  pruneopts = "NT"
+  revision = "6025e8de665b31fa74ab1a66f2cddd8c0abf887e"
+
+[[projects]]
   branch = "master"
   digest = "1:84a5a2b67486d5d67060ac393aa255d05d24ed5ee41daecd5635ec22657b6492"
   name = "github.com/mailru/easyjson"
@@ -750,6 +757,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/jteeuwen/go-bindata",
     "github.com/openshift/installer/pkg/types",
     "github.com/openshift/library-go/pkg/operator/resource/resourceread",
     "github.com/operator-framework/operator-sdk/version",
