@@ -1,10 +1,15 @@
-FROM alpine:3.6
+FROM registry.svc.ci.openshift.org/openshift/release:golang-1.10 AS builder
+WORKDIR /go/src/github.com/openshift/cluster-storage-operator
+COPY . .
+RUN make build
 
-RUN adduser -D cluster-storage-operator
+FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base
+COPY --from=builder /go/src/github.com/openshift/cluster-storage-operator/cluster-storage-operator /usr/bin/
+COPY manifests /manifests
+RUN useradd cluster-storage-operator
 USER cluster-storage-operator
-
-COPY deploy/deployment.yaml /manifests/deployment.yaml
-COPY deploy/roles.yaml /manifests/roles.yaml
-COPY deploy/image-references /manifests/image-references
-
-ADD build/_output/bin/cluster-storage-operator /usr/local/bin/cluster-storage-operator
+ENTRYPOINT ["/usr/bin/cluster-storage-operator"]
+LABEL io.openshift.release.operator true
+LABEL io.k8s.display-name="OpenShift cluster-storage-operator" \
+      io.k8s.description="This is a component of OpenShift Container Platform and manages the lifecycle of cluster storage components." \
+      maintainer="Matthew Wong <mawong@redhat.com>"

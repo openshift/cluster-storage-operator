@@ -5,4 +5,4 @@ spec:
   - name: cluster-storage-operator
     from:
       kind: DockerImage
-      name: quay.io/openshift/cluster-storage-operator
+      name: openshift/origin-cluster-storage-operator:latest
