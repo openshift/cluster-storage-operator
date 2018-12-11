@@ -160,9 +160,9 @@ func newStorageClassForCluster(cm *corev1.ConfigMap) (*storagev1.StorageClass, e
 	}
 
 	if platform.AWS != nil {
-		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("manifests/aws.yaml")), nil
+		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/aws.yaml")), nil
 	} else if platform.OpenStack != nil {
-		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("manifests/openstack.yaml")), nil
+		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/openstack.yaml")), nil
 	}
 
 	return nil, errors.New("unsupported platform")
