@@ -13,6 +13,11 @@ spec:
       labels:
         name: cluster-storage-operator
     spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+        - operator: Exists 
+      priorityClassName: system-cluster-critical
       serviceAccountName: cluster-storage-operator
       containers:
         - name: cluster-storage-operator
