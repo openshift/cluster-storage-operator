@@ -10,7 +10,8 @@ GOOS=linux
 GO_BUILD_RECIPE=GOOS=$(GOOS) go build -o $(BIN) $(MAIN_PACKAGE)
 
 BINDATA=pkg/generated/bindata.go
-GOBINDATA_BIN=$(GOPATH)/bin/go-bindata
+FIRST_GOPATH := $(firstword $(subst :, ,$(shell $(GO) env GOPATH)))
+GOBINDATA_BIN=$(FIRST_GOPATH)/bin/go-bindata
 
 all: build
 
