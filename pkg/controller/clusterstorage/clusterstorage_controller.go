@@ -4,9 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 
-	//clusterv1alpha1 "github.com/openshift/cluster-storage-operator/pkg/apis/cluster/v1alpha1"
+	clusterv1alpha1 "github.com/openshift/cluster-storage-operator/pkg/apis/cluster/v1alpha1"
 	"github.com/openshift/cluster-storage-operator/pkg/generated"
 	installer "github.com/openshift/installer/pkg/types"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
@@ -24,8 +23,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
+
+var log = logf.Log.WithName("controller_clusterstorage")
 
 const (
 	// OwnerLabelNamespace is the label key for the owner namespace
@@ -53,7 +55,16 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to primary resource ConfigMap
+	/*
+		// Watch for changes to primary resource ClusterStorage
+		err = c.Watch(&source.Kind{Type: &clusterv1alpha1.ClusterStorage{}}, &handler.EnqueueRequestForObject{})
+		if err != nil {
+			return err
+		}
+	*/
+
+	// Watch for changes to (other) primary resource ConfigMap
+	// cluster-config-v1 says what the cluster cloud provider is
 	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForObject{}, predicate.Funcs{
 		CreateFunc:  func(e event.CreateEvent) bool { return isClusterConfig(e.Meta) },
 		DeleteFunc:  func(e event.DeleteEvent) bool { return isClusterConfig(e.Meta) },
@@ -101,13 +112,12 @@ type ReconcileClusterStorage struct {
 
 // Reconcile reads that state of the cluster for a ClusterStorage object and makes changes based on the state read
 // and what is in the ClusterStorage.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	log.Printf("Reconciling ConfigMap %s/%s\n", request.Namespace, request.Name)
+	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+	reqLogger.Info("Reconciling ConfigMap")
 
 	// Fetch the ConfigMap instance
 	instance := &corev1.ConfigMap{}
@@ -136,7 +146,7 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 	found := &storagev1.StorageClass{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: sc.Name, Namespace: corev1.NamespaceAll}, found)
 	if err != nil && apierrors.IsNotFound(err) {
-		log.Printf("Creating a new StorageClass %s\n", sc.Name)
+		reqLogger.Info("Creating a new Pod", "StorageClass.Name", sc.Name)
 		err = r.client.Create(context.TODO(), sc)
 		if err != nil {
 			return reconcile.Result{}, err
@@ -149,7 +159,7 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 	}
 
 	// StorageClass already exists - don't requeue
-	log.Printf("Skip reconcile: StorageClass %s already exists", found.Name)
+	reqLogger.Info("Skip reconcile: StorageClass already exists", "StorageClass.Name", found.Name)
 	return reconcile.Result{}, nil
 }
 
