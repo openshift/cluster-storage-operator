@@ -4,7 +4,7 @@ COPY . .
 RUN make build
 
 FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base
-COPY --from=builder /go/src/github.com/openshift/cluster-storage-operator/cluster-storage-operator /usr/bin/
+COPY --from=builder /go/src/github.com/openshift/cluster-storage-operator/manager /usr/bin/cluster-storage-operator
 COPY manifests /manifests
 RUN useradd cluster-storage-operator
 USER cluster-storage-operator

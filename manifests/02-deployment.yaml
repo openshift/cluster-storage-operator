@@ -16,7 +16,7 @@ spec:
       nodeSelector:
         node-role.kubernetes.io/master: ""
       tolerations:
-        - operator: Exists 
+        - operator: Exists
       priorityClassName: system-cluster-critical
       serviceAccountName: cluster-storage-operator
       containers:

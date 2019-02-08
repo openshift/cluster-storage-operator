@@ -1,7 +1,0 @@
-apiVersion: cluster.storage.openshift.io/v1alpha1
-kind: ClusterStorage
-metadata:
-  name: example-clusterstorage
-spec:
-  # Add fields here
-  size: 3
