@@ -30,6 +30,7 @@ import (
 )
 
 var log = logf.Log.WithName("controller_clusterstorage")
+var unsupportedPlatformError = errors.New("unsupported platform")
 
 const (
 	// OwnerLabelNamespace is the label key for the owner namespace
@@ -192,7 +193,8 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 	}
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notProgressing)
 
-	if err != nil {
+	// if error is anything other than unsupported platform, we are failing
+	if err != nil && err != unsupportedPlatformError {
 		failing := configv1.ClusterOperatorStatusCondition{
 			Type:    configv1.OperatorFailing,
 			Status:  configv1.ConditionTrue,
@@ -247,7 +249,7 @@ func newStorageClassForCluster(cm *corev1.ConfigMap) (*storagev1.StorageClass, e
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/openstack.yaml")), nil
 	}
 
-	return nil, errors.New("unsupported platform")
+	return nil, unsupportedPlatformError
 }
 
 func getPlatform(cm *corev1.ConfigMap) (*installer.Platform, error) {
