@@ -192,34 +192,41 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 		Status: configv1.ConditionFalse,
 	}
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notProgressing)
+	var message string
 
 	// if error is anything other than unsupported platform, we are failing
-	if err != nil && err != unsupportedPlatformError {
-		failing := configv1.ClusterOperatorStatusCondition{
-			Type:    configv1.OperatorFailing,
-			Status:  configv1.ConditionTrue,
-			Reason:  "Error",
-			Message: err.Error(),
-		}
-		v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, failing)
+	if err != nil {
+		if err != unsupportedPlatformError {
+			failing := configv1.ClusterOperatorStatusCondition{
+				Type:    configv1.OperatorFailing,
+				Status:  configv1.ConditionTrue,
+				Reason:  "Error",
+				Message: err.Error(),
+			}
+			v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, failing)
 
-		unavailable := configv1.ClusterOperatorStatusCondition{
-			Type:   configv1.OperatorAvailable,
-			Status: configv1.ConditionFalse,
-		}
-		v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, unavailable)
+			unavailable := configv1.ClusterOperatorStatusCondition{
+				Type:   configv1.OperatorAvailable,
+				Status: configv1.ConditionFalse,
+			}
+			v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, unavailable)
 
-		updateErr := r.client.Status().Update(context.TODO(), clusterOperator)
-		if updateErr != nil {
-			log.Error(updateErr, "Failed to update ClusterOperator status")
-			return updateErr
+			updateErr := r.client.Status().Update(context.TODO(), clusterOperator)
+			if updateErr != nil {
+				log.Error(updateErr, "Failed to update ClusterOperator status")
+				return updateErr
+			}
+			return nil
 		}
-		return nil
+		message = "Unsupported platform for storageclass creation"
 	}
 
 	available := configv1.ClusterOperatorStatusCondition{
 		Type:   configv1.OperatorAvailable,
 		Status: configv1.ConditionTrue,
+	}
+	if message != "" {
+		available.Message = message
 	}
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, available)
 
