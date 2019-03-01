@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
 
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/generated"
-	"github.com/openshift/cluster-storage-operator/version"
 	installer "github.com/openshift/installer/pkg/types"
 	v1helpers "github.com/openshift/library-go/pkg/config/clusteroperator/v1helpers"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
@@ -185,7 +185,15 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 // syncStatus will set either Available=true;Failing=false;Progressing=false;
 // or Available=false;Failing=true;Progressing=false depending on the error
 func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOperator, err error) error {
-	clusterOperator.Status.Versions = []configv1.OperandVersion{{Name: "operator", Version: version.Version}}
+	// we set versions if we are "available" to indicate we have rolled out the latest
+	// version of the cluster storage object
+	if releaseVersion := os.Getenv("RELEASE_VERSION"); len(releaseVersion) > 0 {
+		if err == nil {
+			clusterOperator.Status.Versions = []configv1.OperandVersion{{Name: "operator", Version: releaseVersion}}
+		}
+	} else {
+		clusterOperator.Status.Versions = nil
+	}
 
 	notProgressing := configv1.ClusterOperatorStatusCondition{
 		Type:   configv1.OperatorProgressing,
