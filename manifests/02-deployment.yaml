@@ -29,6 +29,8 @@ spec:
           - cluster-storage-operator
           imagePullPolicy: IfNotPresent
           env:
+            - name: RELEASE_VERSION
+              value: "0.0.1-snapshot"
             - name: WATCH_NAMESPACE
               valueFrom:
                 fieldRef:
