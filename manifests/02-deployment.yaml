@@ -40,4 +40,4 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
-              value: "cluster-storage-operator"
+              value: "storage"
