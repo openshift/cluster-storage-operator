@@ -128,11 +128,11 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 
 	clusterOperatorInstance := &configv1.ClusterOperator{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "cluster-storage-operator",
+			Name:      "storage",
 			Namespace: corev1.NamespaceAll,
 		},
 	}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: "cluster-storage-operator", Namespace: corev1.NamespaceAll}, clusterOperatorInstance)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: "storage", Namespace: corev1.NamespaceAll}, clusterOperatorInstance)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// Must create and update it because CVO waits for it
