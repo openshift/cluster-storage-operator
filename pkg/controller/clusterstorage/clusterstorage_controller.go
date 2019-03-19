@@ -188,7 +188,7 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 	// we set versions if we are "available" to indicate we have rolled out the latest
 	// version of the cluster storage object
 	if releaseVersion := os.Getenv("RELEASE_VERSION"); len(releaseVersion) > 0 {
-		if err == nil {
+		if err == nil || err == unsupportedPlatformError {
 			clusterOperator.Status.Versions = []configv1.OperandVersion{{Name: "operator", Version: releaseVersion}}
 		}
 	} else {
