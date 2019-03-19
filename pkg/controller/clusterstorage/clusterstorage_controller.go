@@ -151,7 +151,11 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 	sc, err := newStorageClassForCluster(instance)
 	if err != nil {
 		_ = r.syncStatus(clusterOperatorInstance, err)
-		return reconcile.Result{}, err
+		// requeue only if platform is supported
+		if err != unsupportedPlatformError {
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{}, nil
 	}
 
 	// Set ConfigMap instance as the owner and controller
