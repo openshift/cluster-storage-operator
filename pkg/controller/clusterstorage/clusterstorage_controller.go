@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -147,6 +148,11 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 		}
 	}
 
+	err = r.setStatusProgressing(clusterOperatorInstance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	// Define a new StorageClass object
 	sc, err := newStorageClassForCluster(instance)
 	if err != nil {
@@ -186,7 +192,58 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 	return reconcile.Result{}, nil
 }
 
-// syncStatus will set either Available=true;Failing=false;Progressing=false;
+var (
+	unavailable = configv1.ClusterOperatorStatusCondition{
+		Type:   configv1.OperatorAvailable,
+		Status: configv1.ConditionFalse,
+	}
+	notFailing = configv1.ClusterOperatorStatusCondition{
+		Type:   configv1.OperatorFailing,
+		Status: configv1.ConditionFalse,
+	}
+	notProgressing = configv1.ClusterOperatorStatusCondition{
+		Type:   configv1.OperatorProgressing,
+		Status: configv1.ConditionFalse,
+	}
+)
+
+// setStatusProgressing sets Available=false;Failing=false;Progressing=true
+// we set "progressing" if the cluster operator's version is not the latest
+// and we are about to try to roll it out
+func (r *ReconcileClusterStorage) setStatusProgressing(clusterOperator *configv1.ClusterOperator) error {
+	releaseVersion := os.Getenv("RELEASE_VERSION")
+	if len(releaseVersion) > 0 {
+		for _, version := range clusterOperator.Status.Versions {
+			if version.Name == "operator" && version.Version == releaseVersion {
+				// release version matches, do nothing
+				return nil
+			}
+		}
+	}
+	// release version is nil or doesn't match, we will try to roll out the
+	// latest so set progressing=true
+
+	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, unavailable)
+	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notFailing)
+
+	progressing := configv1.ClusterOperatorStatusCondition{
+		Type:   configv1.OperatorProgressing,
+		Status: configv1.ConditionTrue,
+	}
+	if len(releaseVersion) > 0 {
+		progressing.Message = fmt.Sprintf("Working towards %v", releaseVersion)
+	}
+	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, progressing)
+
+	updateErr := r.client.Status().Update(context.TODO(), clusterOperator)
+	if updateErr != nil {
+		log.Error(updateErr, "Failed to update ClusterOperator status")
+		return updateErr
+	}
+	return nil
+}
+
+// syncStatus will set either Available=true;Failing=false;Progressing=false
 // or Available=false;Failing=true;Progressing=false depending on the error
 func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOperator, err error) error {
 	// we set versions if we are "available" to indicate we have rolled out the latest
@@ -199,11 +256,8 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 		clusterOperator.Status.Versions = nil
 	}
 
-	notProgressing := configv1.ClusterOperatorStatusCondition{
-		Type:   configv1.OperatorProgressing,
-		Status: configv1.ConditionFalse,
-	}
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notProgressing)
+
 	var message string
 
 	// if error is anything other than unsupported platform, we are failing
@@ -216,11 +270,6 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 				Message: err.Error(),
 			}
 			v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, failing)
-
-			unavailable := configv1.ClusterOperatorStatusCondition{
-				Type:   configv1.OperatorAvailable,
-				Status: configv1.ConditionFalse,
-			}
 			v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, unavailable)
 
 			updateErr := r.client.Status().Update(context.TODO(), clusterOperator)
@@ -241,11 +290,6 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 		available.Message = message
 	}
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, available)
-
-	notFailing := configv1.ClusterOperatorStatusCondition{
-		Type:   configv1.OperatorFailing,
-		Status: configv1.ConditionFalse,
-	}
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notFailing)
 
 	updateErr := r.client.Status().Update(context.TODO(), clusterOperator)

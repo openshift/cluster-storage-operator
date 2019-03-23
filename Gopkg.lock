@@ -276,12 +276,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e66b208bcb556a4eb7e40a0a1aded03d89f1109b882d7485415c1d9626b3c981"
+  digest = "1:37fa7771394be69fd94feac6dd07aeaa4fba7da0420119c514a7c85915f5c2c2"
   name = "github.com/openshift/api"
-  packages = [
-    "config/v1",
-    "operator/v1",
-  ]
+  packages = ["config/v1"]
   pruneopts = "NUT"
   revision = "21e40de482627b2047cbf430594540413539a442"
 
@@ -681,7 +678,7 @@
   version = "kubernetes-1.12.5"
 
 [[projects]]
-  digest = "1:d1561af8d8a03d75a709fe8cdc7b515d2f5770dcff8f61fcb396e527b98d1904"
+  digest = "1:be9eb86d6101f3f01edd6ca8a039edc997223f146af74920909f4541bb649d2c"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -728,6 +725,7 @@
     "rest",
     "rest/watch",
     "restmapper",
+    "testing",
     "third_party/forked/golang/template",
     "tools/auth",
     "tools/cache",
@@ -830,7 +828,7 @@
   revision = "a829e3aed6e2c340adb7b339d221a684e02412f9"
 
 [[projects]]
-  digest = "1:cbc1c30688b0eaabbf6c03d74652e5c8e28fbfe2eb1fd00a0aad8df8cd872f82"
+  digest = "1:8b23a397f3b9fa8abd3588e83cd2db4e8b0aaf3832b8554bcdbffb33d57b3955"
   name = "sigs.k8s.io/controller-runtime"
   packages = [
     "pkg/cache",
@@ -838,6 +836,7 @@
     "pkg/client",
     "pkg/client/apiutil",
     "pkg/client/config",
+    "pkg/client/fake",
     "pkg/controller",
     "pkg/event",
     "pkg/handler",
@@ -871,11 +870,9 @@
   input-imports = [
     "github.com/jteeuwen/go-bindata",
     "github.com/openshift/api/config/v1",
-    "github.com/openshift/api/operator/v1",
     "github.com/openshift/installer/pkg/types",
     "github.com/openshift/library-go/pkg/config/clusteroperator/v1helpers",
     "github.com/openshift/library-go/pkg/operator/resource/resourceread",
-    "github.com/operator-framework/operator-sdk/pkg/k8sutil",
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/version",
     "k8s.io/api/core/v1",
@@ -897,6 +894,7 @@
     "k8s.io/gengo/args",
     "sigs.k8s.io/controller-runtime/pkg/client",
     "sigs.k8s.io/controller-runtime/pkg/client/config",
+    "sigs.k8s.io/controller-runtime/pkg/client/fake",
     "sigs.k8s.io/controller-runtime/pkg/controller",
     "sigs.k8s.io/controller-runtime/pkg/event",
     "sigs.k8s.io/controller-runtime/pkg/handler",
