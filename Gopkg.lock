@@ -284,25 +284,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f84ef422d433d344931ac461d2dd3d1e7324f6b0f130519b56311adcb0ac87f4"
-  name = "github.com/openshift/installer"
-  packages = [
-    "pkg/ipnet",
-    "pkg/types",
-    "pkg/types/aws",
-    "pkg/types/libvirt",
-    "pkg/types/none",
-    "pkg/types/openstack",
-  ]
-  pruneopts = "NUT"
-  revision = "ad65a3a936691635b1d550e949d72b93da412075"
-
-[[projects]]
-  branch = "master"
-  digest = "1:8885522a4fa2277d1cb0c127c49d7557d4b4c10c03f294c4b5f47df3ec6010f5"
+  digest = "1:1b21c752330ab1dbc5db38b03af79cbb5c9fc61456c2872e1820d366d9463fa5"
   name = "github.com/openshift/library-go"
   packages = [
     "pkg/config/clusteroperator/v1helpers",
+    "pkg/controller",
     "pkg/operator/resource/resourceread",
   ]
   pruneopts = "NUT"
@@ -343,14 +329,6 @@
   pruneopts = "NUT"
   revision = "5f041e8faa004a95c88a202771f4cc3e991971e6"
   version = "v2.0.1"
-
-[[projects]]
-  digest = "1:14715f705ff5dfe0ffd6571d7d201dd8e921030f8070321a79380d8ca4ec1a24"
-  name = "github.com/pkg/errors"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
-  version = "v0.8.1"
 
 [[projects]]
   digest = "1:7c7cfeecd2b7147bcfec48a4bf622b4879e26aec145a9e373ce51d0c23b16f6b"
@@ -870,8 +848,8 @@
   input-imports = [
     "github.com/jteeuwen/go-bindata",
     "github.com/openshift/api/config/v1",
-    "github.com/openshift/installer/pkg/types",
     "github.com/openshift/library-go/pkg/config/clusteroperator/v1helpers",
+    "github.com/openshift/library-go/pkg/controller",
     "github.com/openshift/library-go/pkg/operator/resource/resourceread",
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/version",
@@ -882,7 +860,6 @@
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/types",
-    "k8s.io/apimachinery/pkg/util/yaml",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
     "k8s.io/code-generator/cmd/client-gen",
     "k8s.io/code-generator/cmd/conversion-gen",
