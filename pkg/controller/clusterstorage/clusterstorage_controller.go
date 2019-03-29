@@ -2,15 +2,14 @@ package clusterstorage
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/generated"
-	installer "github.com/openshift/installer/pkg/types"
 	v1helpers "github.com/openshift/library-go/pkg/config/clusteroperator/v1helpers"
+	ocontroller "github.com/openshift/library-go/pkg/controller"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -18,7 +17,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	utilyaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -34,10 +32,8 @@ var log = logf.Log.WithName("controller_clusterstorage")
 var unsupportedPlatformError = errors.New("unsupported platform")
 
 const (
-	// OwnerLabelNamespace is the label key for the owner namespace
-	OwnerLabelNamespace = "cluster.storage.openshift.io/owner-namespace"
-	// OwnerLabelName is the label key for the owner name
-	OwnerLabelName = "cluster.storage.openshift.io/owner-name"
+	infrastructureName  = "cluster"
+	clusterOperatorName = "storage"
 )
 
 // Add creates a new ClusterStorage Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -59,26 +55,24 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to primary resource ConfigMap
-	// We treat cluster-config-v1 as the primary resource because it says what the
-	// cluster cloud provider is
-	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForObject{}, predicate.Funcs{
-		CreateFunc:  func(e event.CreateEvent) bool { return isClusterConfig(e.Meta) },
-		DeleteFunc:  func(e event.DeleteEvent) bool { return isClusterConfig(e.Meta) },
-		UpdateFunc:  func(e event.UpdateEvent) bool { return isClusterConfig(e.MetaNew) },
-		GenericFunc: func(e event.GenericEvent) bool { return isClusterConfig(e.Meta) },
+	// Watch for changes to primary resource Infrastructure
+	err = c.Watch(&source.Kind{Type: &configv1.Infrastructure{}}, &handler.EnqueueRequestForObject{}, predicate.Funcs{
+		CreateFunc:  func(e event.CreateEvent) bool { return e.Meta.GetName() == infrastructureName },
+		DeleteFunc:  func(e event.DeleteEvent) bool { return e.Meta.GetName() == infrastructureName },
+		UpdateFunc:  func(e event.UpdateEvent) bool { return e.MetaNew.GetName() == infrastructureName },
+		GenericFunc: func(e event.GenericEvent) bool { return e.Meta.GetName() == infrastructureName },
 	})
 	if err != nil {
 		return err
 	}
 
-	// Watch for changes to secondary resource StorageClasses and requeue the owner ConfigMap
+	// Watch for changes to secondary resource StorageClasses and requeue the Infrastructure
 	err = c.Watch(&source.Kind{Type: &storagev1.StorageClass{}}, &handler.EnqueueRequestsFromMapFunc{
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			return []reconcile.Request{
 				{NamespacedName: types.NamespacedName{
-					Namespace: a.Meta.GetLabels()[OwnerLabelNamespace],
-					Name:      a.Meta.GetLabels()[OwnerLabelName],
+					Namespace: corev1.NamespaceAll,
+					Name:      infrastructureName,
 				}},
 			}
 		}),
@@ -88,10 +82,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	return nil
-}
-
-func isClusterConfig(meta metav1.Object) bool {
-	return meta.GetNamespace() == "kube-system" && meta.GetName() == "cluster-config-v1"
 }
 
 var _ reconcile.Reconciler = &ReconcileClusterStorage{}
@@ -111,10 +101,10 @@ type ReconcileClusterStorage struct {
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.Info("Reconciling ConfigMap")
+	reqLogger.Info("Reconciling Infrastructure")
 
-	// Fetch the ConfigMap instance
-	instance := &corev1.ConfigMap{}
+	// Fetch the Infrastructure instance
+	instance := &configv1.Infrastructure{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -129,11 +119,11 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 
 	clusterOperatorInstance := &configv1.ClusterOperator{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "storage",
+			Name:      clusterOperatorName,
 			Namespace: corev1.NamespaceAll,
 		},
 	}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: "storage", Namespace: corev1.NamespaceAll}, clusterOperatorInstance)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: clusterOperatorName, Namespace: corev1.NamespaceAll}, clusterOperatorInstance)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// Must create and update it because CVO waits for it
@@ -164,8 +154,13 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, nil
 	}
 
-	// Set ConfigMap instance as the owner and controller
-	sc.SetLabels(labelsForClusterStorage(instance))
+	// Set the clusteroperator to be the owner of the SC
+	ocontroller.EnsureOwnerRef(sc, metav1.OwnerReference{
+		APIVersion: "v1",
+		Kind:       "clusteroperator",
+		Name:       clusterOperatorName,
+		UID:        instance.GetUID(),
+	})
 
 	// Check if this StorageClass already exists
 	found := &storagev1.StorageClass{}
@@ -300,41 +295,14 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 	return nil
 }
 
-func newStorageClassForCluster(cm *corev1.ConfigMap) (*storagev1.StorageClass, error) {
-	platform, err := getPlatform(cm)
-	if err != nil {
-		return nil, err
-	}
+func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storagev1.StorageClass, error) {
+	platform := infrastructure.Status.Platform
 
-	if platform.AWS != nil {
+	if platform == configv1.AWSPlatform {
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/aws.yaml")), nil
-	} else if platform.OpenStack != nil {
+	} else if platform == configv1.OpenStackPlatform {
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/openstack.yaml")), nil
 	}
 
 	return nil, unsupportedPlatformError
-}
-
-func getPlatform(cm *corev1.ConfigMap) (*installer.Platform, error) {
-	data, err := utilyaml.ToJSON([]byte(cm.Data["install-config"]))
-	if err != nil {
-		return nil, err
-	}
-
-	config := &installer.InstallConfig{}
-	err = json.Unmarshal(data, &config)
-	if err != nil {
-		return nil, err
-	}
-
-	return &config.Platform, nil
-}
-
-// labelsForClusterStorage returns the labels for selecting the resources
-// belonging to the given cluster storage config
-func labelsForClusterStorage(cm *corev1.ConfigMap) map[string]string {
-	return map[string]string{
-		OwnerLabelNamespace: cm.Namespace,
-		OwnerLabelName:      cm.Name,
-	}
 }

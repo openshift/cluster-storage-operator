@@ -58,9 +58,5 @@ required = [
     unused-packages = false
 
 [[constraint]]
-  name = "github.com/openshift/installer"
-  branch = "master"
-
-[[constraint]]
   name = "github.com/openshift/library-go"
   branch = "master"

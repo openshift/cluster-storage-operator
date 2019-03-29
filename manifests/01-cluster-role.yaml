@@ -30,3 +30,11 @@ rules:
   - clusteroperators/status
   verbs:
   - update
+- apiGroups:
+  - config.openshift.io
+  resources:
+  - infrastructures
+  verbs:
+  - get
+  - list
+  - watch
