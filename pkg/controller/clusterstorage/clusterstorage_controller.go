@@ -302,6 +302,8 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/aws.yaml")), nil
 	} else if platform == configv1.OpenStackPlatform {
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/openstack.yaml")), nil
+	} else if platform == configv1.VSpherePlatform {
+		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/vsphere.yaml")), nil
 	}
 
 	return nil, unsupportedPlatformError
