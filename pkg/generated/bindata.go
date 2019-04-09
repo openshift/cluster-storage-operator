@@ -2,6 +2,7 @@
 // sources:
 // assets/aws.yaml
 // assets/openstack.yaml
+// assets/vsphere.yaml
 // DO NOT EDIT!
 
 package generated
@@ -109,6 +110,26 @@ func assetsOpenstackYaml() (*asset, error) {
 	return a, nil
 }
 
+var _assetsVsphereYaml = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x54\x8e\x31\x4e\xc6\x30\x0c\x46\xf7\x9c\xc2\xea\xde\x22\x36\x94\x95\x23\x20\xb1\x1b\xe2\x52\x2b\x8d\x1d\xd9\x4e\xce\x8f\x5a\xf8\x87\x7f\xf5\xa7\xf7\xfc\xb0\xf3\x27\x99\xb3\x4a\x06\x0f\x35\xfc\xa1\xad\xbe\xf9\xc6\xfa\x32\x5f\x53\x65\x29\x19\x3e\xfe\xee\xef\x27\xba\xa7\x46\x81\x05\x03\x73\x02\x10\x6c\x94\x21\x0e\x96\x04\x80\x22\x1a\x18\xac\xe2\xd7\x06\x0f\xdd\xf7\x85\x6d\x75\x7c\x91\x09\x05\xdd\x6a\xf6\xb5\xd0\x8e\xe3\x8c\xf5\x9e\x33\x2c\x61\x83\x96\xd4\x4d\x27\x5f\x35\x64\x19\x9e\x99\xe9\xfd\x20\xa3\x75\xea\x39\x1a\xa5\x8e\x86\x8d\x82\xec\xfe\x56\xd8\xeb\xae\xd6\x30\xfe\x7b\x7e\x03\x00\x00\xff\xff\x22\x6d\x66\xbf\xd8\x00\x00\x00")
+
+func assetsVsphereYamlBytes() ([]byte, error) {
+	return bindataRead(
+		_assetsVsphereYaml,
+		"assets/vsphere.yaml",
+	)
+}
+
+func assetsVsphereYaml() (*asset, error) {
+	bytes, err := assetsVsphereYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "assets/vsphere.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -163,6 +184,7 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	"assets/aws.yaml": assetsAwsYaml,
 	"assets/openstack.yaml": assetsOpenstackYaml,
+	"assets/vsphere.yaml": assetsVsphereYaml,
 }
 
 // AssetDir returns the file names below a certain
@@ -208,6 +230,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"assets": &bintree{nil, map[string]*bintree{
 		"aws.yaml": &bintree{assetsAwsYaml, map[string]*bintree{}},
 		"openstack.yaml": &bintree{assetsOpenstackYaml, map[string]*bintree{}},
+		"vsphere.yaml": &bintree{assetsVsphereYaml, map[string]*bintree{}},
 	}},
 }}
 
