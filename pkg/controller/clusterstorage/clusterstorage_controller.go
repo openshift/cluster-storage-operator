@@ -296,15 +296,16 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 }
 
 func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storagev1.StorageClass, error) {
-	platform := infrastructure.Status.Platform
-
-	if platform == configv1.AWSPlatform {
+	switch infrastructure.Status.Platform {
+	case configv1.AWSPlatform:
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/aws.yaml")), nil
-	} else if platform == configv1.OpenStackPlatform {
+	case configv1.AzurePlatform:
+		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/azure.yaml")), nil
+	case configv1.OpenStackPlatform:
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/openstack.yaml")), nil
-	} else if platform == configv1.VSpherePlatform {
+	case configv1.VSpherePlatform:
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/vsphere.yaml")), nil
+	default:
+		return nil, unsupportedPlatformError
 	}
-
-	return nil, unsupportedPlatformError
 }
