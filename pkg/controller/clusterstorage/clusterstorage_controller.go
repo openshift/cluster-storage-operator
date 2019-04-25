@@ -192,8 +192,8 @@ var (
 		Type:   configv1.OperatorAvailable,
 		Status: configv1.ConditionFalse,
 	}
-	notFailing = configv1.ClusterOperatorStatusCondition{
-		Type:   configv1.OperatorFailing,
+	notDegraded = configv1.ClusterOperatorStatusCondition{
+		Type:   configv1.OperatorDegraded,
 		Status: configv1.ConditionFalse,
 	}
 	notProgressing = configv1.ClusterOperatorStatusCondition{
@@ -202,7 +202,7 @@ var (
 	}
 )
 
-// setStatusProgressing sets Available=false;Failing=false;Progressing=true
+// setStatusProgressing sets Available=false;Degraded=false;Progressing=true
 // we set "progressing" if the cluster operator's version is not the latest
 // and we are about to try to roll it out
 func (r *ReconcileClusterStorage) setStatusProgressing(clusterOperator *configv1.ClusterOperator) error {
@@ -219,7 +219,7 @@ func (r *ReconcileClusterStorage) setStatusProgressing(clusterOperator *configv1
 	// latest so set progressing=true
 
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, unavailable)
-	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notFailing)
+	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notDegraded)
 
 	progressing := configv1.ClusterOperatorStatusCondition{
 		Type:   configv1.OperatorProgressing,
@@ -238,8 +238,8 @@ func (r *ReconcileClusterStorage) setStatusProgressing(clusterOperator *configv1
 	return nil
 }
 
-// syncStatus will set either Available=true;Failing=false;Progressing=false
-// or Available=false;Failing=true;Progressing=false depending on the error
+// syncStatus will set either Available=true;Degraded=false;Progressing=false
+// or Available=false;Degraded=true;Progressing=false depending on the error
 func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOperator, err error) error {
 	// we set versions if we are "available" to indicate we have rolled out the latest
 	// version of the cluster storage object
@@ -255,16 +255,16 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 
 	var message string
 
-	// if error is anything other than unsupported platform, we are failing
+	// if error is anything other than unsupported platform, we are degraded
 	if err != nil {
 		if err != unsupportedPlatformError {
-			failing := configv1.ClusterOperatorStatusCondition{
-				Type:    configv1.OperatorFailing,
+			degraded := configv1.ClusterOperatorStatusCondition{
+				Type:    configv1.OperatorDegraded,
 				Status:  configv1.ConditionTrue,
 				Reason:  "Error",
 				Message: err.Error(),
 			}
-			v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, failing)
+			v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, degraded)
 			v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, unavailable)
 
 			updateErr := r.client.Status().Update(context.TODO(), clusterOperator)
@@ -285,7 +285,7 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 		available.Message = message
 	}
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, available)
-	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notFailing)
+	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notDegraded)
 
 	updateErr := r.client.Status().Update(context.TODO(), clusterOperator)
 	if updateErr != nil {
@@ -297,13 +297,13 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 
 func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storagev1.StorageClass, error) {
 	switch infrastructure.Status.Platform {
-	case configv1.AWSPlatform:
+	case configv1.AWSPlatformType:
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/aws.yaml")), nil
-	case configv1.AzurePlatform:
+	case configv1.AzurePlatformType:
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/azure.yaml")), nil
-	case configv1.OpenStackPlatform:
+	case configv1.OpenStackPlatformType:
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/openstack.yaml")), nil
-	case configv1.VSpherePlatform:
+	case configv1.VSpherePlatformType:
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/vsphere.yaml")), nil
 	default:
 		return nil, unsupportedPlatformError
