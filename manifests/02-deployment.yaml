@@ -32,6 +32,7 @@ spec:
       containers:
         - name: cluster-storage-operator
           image: openshift/origin-cluster-storage-operator:latest
+          terminationMessagePolicy: FallbackToLogsOnError
           ports:
           - containerPort: 60000
             name: metrics
