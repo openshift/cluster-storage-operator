@@ -9,3 +9,4 @@ parameters:
   type: gp2
   encrypted: "true"
 volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
