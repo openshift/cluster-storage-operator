@@ -52,3 +52,7 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "storage"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi
