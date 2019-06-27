@@ -137,7 +137,6 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 			return reconcile.Result{}, err
 		}
 	}
-	clusterOperatorInstance.Status.RelatedObjects = getRelatedObjects(nil)
 
 	err = r.setStatusProgressing(clusterOperatorInstance)
 	if err != nil {
@@ -154,7 +153,6 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 		}
 		return reconcile.Result{}, nil
 	}
-	clusterOperatorInstance.Status.RelatedObjects = getRelatedObjects(sc)
 
 	// Set the clusteroperator to be the owner of the SC
 	ocontroller.EnsureOwnerRef(sc, metav1.OwnerReference{
@@ -310,19 +308,4 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 	default:
 		return nil, unsupportedPlatformError
 	}
-}
-
-func getRelatedObjects(sc *storagev1.StorageClass) []configv1.ObjectReference {
-	relatedObjects := []configv1.ObjectReference{
-		{Resource: "namespaces", Name: "openshift-cluster-storage-operator"},
-		{Group: "config.openshift.io", Resource: "infrastructures", Name: infrastructureName},
-	}
-	if sc != nil {
-		obj := configv1.ObjectReference{
-			Group:    "storage.k8s.io",
-			Resource: "storageclasses",
-			Name:     sc.Name}
-		relatedObjects = append(relatedObjects, obj)
-	}
-	return relatedObjects
 }
