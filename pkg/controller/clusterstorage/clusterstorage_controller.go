@@ -202,9 +202,13 @@ var (
 		Type:   configv1.OperatorProgressing,
 		Status: configv1.ConditionFalse,
 	}
+	notUpgradeable = configv1.ClusterOperatorStatusCondition{
+		Type:   configv1.OperatorUpgradeable,
+		Status: configv1.ConditionFalse,
+	}
 )
 
-// setStatusProgressing sets Available=false;Degraded=false;Progressing=true
+// setStatusProgressing sets Available=false;Degraded=false;Progressing=true;Upgradeable=false
 // we set "progressing" if the cluster operator's version is not the latest
 // and we are about to try to roll it out
 func (r *ReconcileClusterStorage) setStatusProgressing(clusterOperator *configv1.ClusterOperator) error {
@@ -222,6 +226,7 @@ func (r *ReconcileClusterStorage) setStatusProgressing(clusterOperator *configv1
 
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, unavailable)
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notDegraded)
+	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notUpgradeable)
 
 	progressing := configv1.ClusterOperatorStatusCondition{
 		Type:   configv1.OperatorProgressing,
@@ -232,6 +237,8 @@ func (r *ReconcileClusterStorage) setStatusProgressing(clusterOperator *configv1
 	}
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, progressing)
 
+	clusterOperator.Status.RelatedObjects = getRelatedObjects(nil)
+
 	updateErr := r.client.Status().Update(context.TODO(), clusterOperator)
 	if updateErr != nil {
 		log.Error(updateErr, "Failed to update ClusterOperator status")
@@ -240,8 +247,8 @@ func (r *ReconcileClusterStorage) setStatusProgressing(clusterOperator *configv1
 	return nil
 }
 
-// syncStatus will set either Available=true;Degraded=false;Progressing=false
-// or Available=false;Degraded=true;Progressing=false depending on the error
+// syncStatus will set either Available=true;Degraded=false;Progressing=false;Upgradeable=true
+// or Available=false;Degraded=true;Progressing=false;Upgradeable=false depending on the error
 func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOperator, err error) error {
 	// we set versions if we are "available" to indicate we have rolled out the latest
 	// version of the cluster storage object
@@ -268,6 +275,7 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 			}
 			v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, degraded)
 			v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, unavailable)
+			v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notUpgradeable)
 
 			updateErr := r.client.Status().Update(context.TODO(), clusterOperator)
 			if updateErr != nil {
@@ -286,8 +294,15 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 	if message != "" {
 		available.Message = message
 	}
+
+	upgradeable := configv1.ClusterOperatorStatusCondition{
+		Type:   configv1.OperatorUpgradeable,
+		Status: configv1.ConditionTrue,
+	}
+
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, available)
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notDegraded)
+	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, upgradeable)
 
 	updateErr := r.client.Status().Update(context.TODO(), clusterOperator)
 	if updateErr != nil {
