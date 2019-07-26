@@ -5,3 +5,4 @@ metadata:
   annotations:
     storageclass.beta.kubernetes.io/is-default-class: "true"
 provisioner: kubernetes.io/cinder
+volumeBindingMode: WaitForFirstConsumer
