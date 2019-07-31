@@ -318,6 +318,8 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/aws.yaml")), nil
 	case configv1.AzurePlatformType:
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/azure.yaml")), nil
+	case configv1.GCPPlatformType:
+		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/gcp.yaml")), nil
 	case configv1.OpenStackPlatformType:
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/openstack.yaml")), nil
 	case configv1.VSpherePlatformType:
