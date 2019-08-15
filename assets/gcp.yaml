@@ -9,3 +9,4 @@ parameters:
   type: pd-standard
   replication-type: none
 volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
