@@ -6,3 +6,4 @@ metadata:
     storageclass.kubernetes.io/is-default-class: "true"
 provisioner: kubernetes.io/cinder
 volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
