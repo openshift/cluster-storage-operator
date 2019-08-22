@@ -192,18 +192,22 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 var (
 	unavailable = configv1.ClusterOperatorStatusCondition{
 		Type:   configv1.OperatorAvailable,
+		Reason: "AsExpected",
 		Status: configv1.ConditionFalse,
 	}
 	notDegraded = configv1.ClusterOperatorStatusCondition{
 		Type:   configv1.OperatorDegraded,
+		Reason: "AsExpected",
 		Status: configv1.ConditionFalse,
 	}
 	notProgressing = configv1.ClusterOperatorStatusCondition{
 		Type:   configv1.OperatorProgressing,
+		Reason: "AsExpected",
 		Status: configv1.ConditionFalse,
 	}
 	notUpgradeable = configv1.ClusterOperatorStatusCondition{
 		Type:   configv1.OperatorUpgradeable,
+		Reason: "AsExpected",
 		Status: configv1.ConditionFalse,
 	}
 )
@@ -230,6 +234,7 @@ func (r *ReconcileClusterStorage) setStatusProgressing(clusterOperator *configv1
 
 	progressing := configv1.ClusterOperatorStatusCondition{
 		Type:   configv1.OperatorProgressing,
+		Reason: "AsExpected",
 		Status: configv1.ConditionTrue,
 	}
 	if len(releaseVersion) > 0 {
@@ -289,6 +294,7 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 
 	available := configv1.ClusterOperatorStatusCondition{
 		Type:   configv1.OperatorAvailable,
+		Reason: "AsExpected",
 		Status: configv1.ConditionTrue,
 	}
 	if message != "" {
@@ -297,6 +303,7 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 
 	upgradeable := configv1.ClusterOperatorStatusCondition{
 		Type:   configv1.OperatorUpgradeable,
+		Reason: "AsExpected",
 		Status: configv1.ConditionTrue,
 	}
 
