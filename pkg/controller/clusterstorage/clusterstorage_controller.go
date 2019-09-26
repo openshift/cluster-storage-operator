@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/generated"
@@ -145,7 +146,7 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 	}
 
 	// Define a new StorageClass object
-	sc, err := newStorageClassForCluster(instance)
+	newSCFromFile, err := newStorageClassForCluster(instance)
 	if err != nil {
 		_ = r.syncStatus(clusterOperatorInstance, err)
 		// requeue only if platform is supported
@@ -154,10 +155,10 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 		}
 		return reconcile.Result{}, nil
 	}
-	clusterOperatorInstance.Status.RelatedObjects = getRelatedObjects(sc)
+	clusterOperatorInstance.Status.RelatedObjects = getRelatedObjects(newSCFromFile)
 
 	// Set the clusteroperator to be the owner of the SC
-	ocontroller.EnsureOwnerRef(sc, metav1.OwnerReference{
+	ocontroller.EnsureOwnerRef(newSCFromFile, metav1.OwnerReference{
 		APIVersion: "v1",
 		Kind:       "clusteroperator",
 		Name:       clusterOperatorName,
@@ -165,11 +166,11 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 	})
 
 	// Check if this StorageClass already exists
-	found := &storagev1.StorageClass{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: sc.Name, Namespace: corev1.NamespaceAll}, found)
+	existingSC := &storagev1.StorageClass{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: newSCFromFile.Name, Namespace: corev1.NamespaceAll}, existingSC)
 	if err != nil && apierrors.IsNotFound(err) {
-		reqLogger.Info("Creating a new StorageClass", "StorageClass.Name", sc.Name)
-		err = r.client.Create(context.TODO(), sc)
+		reqLogger.Info("Creating a new StorageClass", "StorageClass.Name", newSCFromFile.Name)
+		err = r.client.Create(context.TODO(), newSCFromFile)
 		if err != nil {
 			_ = r.syncStatus(clusterOperatorInstance, err)
 			return reconcile.Result{}, err
@@ -183,8 +184,34 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	// StorageClass already exists - don't requeue
-	reqLogger.Info("Skip reconcile: StorageClass already exists", "StorageClass.Name", found.Name)
+	// Check to see if modifications have been made to the StorageClass attributes
+	comparisonSC := newSCFromFile.DeepCopy()
+	// Copy over the ObjectMeta, which includes the annotations and labels
+	comparisonSC.ObjectMeta = existingSC.ObjectMeta
+
+	// Define a default ReclaimPolicy for comparison
+	if comparisonSC.ReclaimPolicy == nil {
+		deletePolicy := corev1.PersistentVolumeReclaimDelete
+		comparisonSC.ReclaimPolicy = &deletePolicy
+	}
+
+	// If a change has been detected, update the StorageClass.
+	if !reflect.DeepEqual(comparisonSC, existingSC) {
+		reqLogger.Info("StorageClass already exists and needs to be updated", "StorageClass.Name", existingSC.Name)
+
+		err = r.client.Update(context.TODO(), comparisonSC)
+		if err != nil {
+			_ = r.syncStatus(clusterOperatorInstance, err)
+			return reconcile.Result{}, err
+		}
+
+		// StorageClass updated successfully - don't requeue
+		_ = r.syncStatus(clusterOperatorInstance, nil)
+		return reconcile.Result{}, nil
+	}
+
+	// StorageClass already exists and doesn't need to be updated - don't requeue
+	reqLogger.Info("Skip reconcile: StorageClass already exists", "StorageClass.Name", existingSC.Name)
 	_ = r.syncStatus(clusterOperatorInstance, nil)
 	return reconcile.Result{}, nil
 }
