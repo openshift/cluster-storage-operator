@@ -358,6 +358,8 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/openstack.yaml")), nil
 	case configv1.VSpherePlatformType:
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/vsphere.yaml")), nil
+	case configv1.OvirtPlatformType:
+		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("assets/ovirt.yaml")), nil
 	default:
 		return nil, unsupportedPlatformError
 	}
