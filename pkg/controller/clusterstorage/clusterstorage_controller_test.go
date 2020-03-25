@@ -7,6 +7,10 @@ import (
 	"strconv"
 	"testing"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
+	"k8s.io/apimachinery/pkg/util/diff"
+
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/apis"
 	corev1 "k8s.io/api/core/v1"
@@ -16,6 +20,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+)
+
+const (
+	storageClassName = "gp2"
 )
 
 func TestSetStatusProgressing(t *testing.T) {
@@ -105,20 +113,29 @@ func TestReconcile(t *testing.T) {
 	tests := []struct {
 		name                 string
 		existingStorageClass *storagev1.StorageClass
-		newStorageClass      *storagev1.StorageClass
 		expectedStorageClass *storagev1.StorageClass
+		oldNamespaceExists   bool
 	}{
 		{
 			name:                 "StorageClass needs to be updated. Annotations must be kept intact.",
 			existingStorageClass: getFakeStorageClass(false, false, ""),
-			newStorageClass:      getFakeStorageClass(false, true, ""),
 			expectedStorageClass: getFakeStorageClass(true, false, "kubernetes.io/aws-ebs"),
 		},
 		{
 			name:                 "StorageClass matches and does not need to be updated",
 			existingStorageClass: getFakeStorageClass(true, true, "kubernetes.io/aws-ebs"),
-			newStorageClass:      getFakeStorageClass(true, true, "kubernetes.io/aws-ebs"),
 			expectedStorageClass: getFakeStorageClass(true, true, "kubernetes.io/aws-ebs"),
+		},
+		{
+			name:                 "StorageClass does not exist",
+			existingStorageClass: nil,
+			expectedStorageClass: getFakeStorageClass(true, true, "kubernetes.io/aws-ebs"),
+		},
+		{
+			name:                 "Old namespace must be deleted.",
+			existingStorageClass: nil,
+			expectedStorageClass: getFakeStorageClass(true, true, "kubernetes.io/aws-ebs"),
+			oldNamespaceExists:   true,
 		},
 	}
 
@@ -149,7 +166,25 @@ func TestReconcile(t *testing.T) {
 			if err := storagev1.AddToScheme(scheme); err != nil {
 				t.Errorf("storagev1.AddToScheme: %v", err)
 			}
-			client := fake.NewFakeClientWithScheme(scheme, clusterOperator, test.existingStorageClass, infrastructure)
+			if err := corev1.AddToScheme(scheme); err != nil {
+				t.Errorf("corev1.AddToScheme: %v", err)
+			}
+
+			objs := []runtime.Object{clusterOperator, infrastructure}
+			if test.existingStorageClass != nil {
+				objs = append(objs, test.existingStorageClass)
+			}
+
+			if test.oldNamespaceExists {
+				ns := &corev1.Namespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: oldClusterOperatorNamespace,
+					},
+				}
+				objs = append(objs, ns)
+			}
+
+			client := fake.NewFakeClientWithScheme(scheme, objs...)
 			reconciler := &ReconcileClusterStorage{client: client, scheme: scheme}
 
 			request := reconcile.Request{
@@ -163,22 +198,31 @@ func TestReconcile(t *testing.T) {
 				t.Errorf("Reconcile: %v", err)
 			}
 
-			err = client.Get(context.TODO(), types.NamespacedName{Name: test.newStorageClass.Name, Namespace: corev1.NamespaceAll}, test.newStorageClass)
+			sc := &storagev1.StorageClass{}
+			err = client.Get(context.TODO(), types.NamespacedName{Name: storageClassName, Namespace: corev1.NamespaceAll}, sc)
 			if err != nil {
 				t.Errorf("Get: %v", err)
 			}
 			// Manually update the OwnerReferences to match the Operator added values
-			test.newStorageClass.OwnerReferences = test.expectedStorageClass.OwnerReferences
+			sc.OwnerReferences = test.expectedStorageClass.OwnerReferences
 
-			if !reflect.DeepEqual(test.newStorageClass, test.expectedStorageClass) {
-				t.Errorf("StorageClass doesn't match expected result: %v", test.newStorageClass)
+			if !reflect.DeepEqual(sc, test.expectedStorageClass) {
+				t.Errorf("StorageClass doesn't match expected result: %v", diff.ObjectDiff(test.expectedStorageClass, sc))
+			}
+
+			ns := &corev1.Namespace{}
+			err = client.Get(context.TODO(), types.NamespacedName{Name: oldClusterOperatorNamespace, Namespace: corev1.NamespaceAll}, ns)
+			if err == nil {
+				t.Errorf("Expected the old namespace to be deleted, but it was found")
+			}
+			if !apierrors.IsNotFound(err) {
+				t.Errorf("Expected the old namespace to be deleted, but got err: %s", err)
 			}
 		})
 	}
 }
 
 func getFakeStorageClass(allowVolumeExpansion, isDefaultClass bool, provisioner string) *storagev1.StorageClass {
-	deletePolicy := corev1.PersistentVolumeReclaimDelete
 	volumeBindingMode := storagev1.VolumeBindingWaitForFirstConsumer
 
 	sc := &storagev1.StorageClass{
@@ -187,7 +231,7 @@ func getFakeStorageClass(allowVolumeExpansion, isDefaultClass bool, provisioner 
 			APIVersion: "storage.k8s.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "gp2",
+			Name: storageClassName,
 			Annotations: map[string]string{
 				"storageclass.kubernetes.io/is-default-class": strconv.FormatBool(isDefaultClass),
 			},
@@ -198,7 +242,6 @@ func getFakeStorageClass(allowVolumeExpansion, isDefaultClass bool, provisioner 
 			"encrypted": "true",
 			"type":      "gp2",
 		},
-		ReclaimPolicy: &deletePolicy,
 	}
 
 	if provisioner != "" {

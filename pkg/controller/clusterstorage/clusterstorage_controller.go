@@ -7,6 +7,8 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/go-logr/logr"
+
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/generated"
 	v1helpers "github.com/openshift/library-go/pkg/config/clusteroperator/v1helpers"
@@ -31,10 +33,12 @@ import (
 
 var log = logf.Log.WithName("controller_clusterstorage")
 var unsupportedPlatformError = errors.New("unsupported platform")
+var oldNamespaceExistsError = errors.New("old namespace still exists")
 
 const (
-	infrastructureName  = "cluster"
-	clusterOperatorName = "storage"
+	infrastructureName          = "cluster"
+	clusterOperatorName         = "storage"
+	oldClusterOperatorNamespace = "openshift-cluster-storage-operator"
 )
 
 // Add creates a new ClusterStorage Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -81,6 +85,27 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
+
+	// Upgrade OCP 4.4 -> 4.5: watch the old namespace and delete it.
+	// TODO: remove in 4.6
+	source := &source.Kind{Type: &corev1.Namespace{}}
+	handler := &handler.EnqueueRequestsFromMapFunc{
+		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
+			return []reconcile.Request{
+				{NamespacedName: types.NamespacedName{
+					Namespace: corev1.NamespaceAll,
+					Name:      infrastructureName,
+				}},
+			}
+		}),
+	}
+	predicate := predicate.Funcs{
+		CreateFunc:  func(e event.CreateEvent) bool { return e.Meta.GetName() == oldClusterOperatorNamespace },
+		DeleteFunc:  func(e event.DeleteEvent) bool { return e.Meta.GetName() == oldClusterOperatorNamespace },
+		UpdateFunc:  func(e event.UpdateEvent) bool { return e.MetaNew.GetName() == oldClusterOperatorNamespace },
+		GenericFunc: func(e event.GenericEvent) bool { return e.Meta.GetName() == oldClusterOperatorNamespace },
+	}
+	err = c.Watch(source, handler, predicate)
 
 	return nil
 }
@@ -138,24 +163,43 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 			return reconcile.Result{}, err
 		}
 	}
-	clusterOperatorInstance.Status.RelatedObjects = getRelatedObjects(nil)
 
+	clusterOperatorInstance.Status.RelatedObjects = getRelatedObjects(nil)
 	err = r.setStatusProgressing(clusterOperatorInstance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
+	// Make sure the default storage class exists
+	sc, storageClassErr := r.ensureDefaultStorageClass(instance, reqLogger)
+	clusterOperatorInstance.Status.RelatedObjects = getRelatedObjects(sc)
+
+	// Delete old namespace
+	namespaceDeletionErr := r.deleteOldNamespace(reqLogger)
+	r.syncStatus(clusterOperatorInstance, storageClassErr, namespaceDeletionErr)
+
+	if namespaceDeletionErr == oldNamespaceExistsError {
+		// No need to requeue, the controller gets Namespace event when the namespace is deleted.
+		// Returning namespaceDeletionErr would just pollute logs.
+		namespaceDeletionErr = nil
+	}
+
+	if storageClassErr != nil {
+		return reconcile.Result{}, storageClassErr
+	}
+	return reconcile.Result{}, namespaceDeletionErr
+}
+
+func (r *ReconcileClusterStorage) ensureDefaultStorageClass(instance *configv1.Infrastructure, logger logr.Logger) (*storagev1.StorageClass, error) {
 	// Define a new StorageClass object
 	newSCFromFile, err := newStorageClassForCluster(instance)
 	if err != nil {
-		_ = r.syncStatus(clusterOperatorInstance, err)
 		// requeue only if platform is supported
 		if err != unsupportedPlatformError {
-			return reconcile.Result{}, err
+			return nil, err
 		}
-		return reconcile.Result{}, nil
+		return nil, nil
 	}
-	clusterOperatorInstance.Status.RelatedObjects = getRelatedObjects(newSCFromFile)
 
 	// Set the clusteroperator to be the owner of the SC
 	ocontroller.EnsureOwnerRef(newSCFromFile, metav1.OwnerReference{
@@ -169,19 +213,11 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 	existingSC := &storagev1.StorageClass{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: newSCFromFile.Name, Namespace: corev1.NamespaceAll}, existingSC)
 	if err != nil && apierrors.IsNotFound(err) {
-		reqLogger.Info("Creating a new StorageClass", "StorageClass.Name", newSCFromFile.Name)
+		logger.Info("Creating a new StorageClass", "StorageClass.Name", newSCFromFile.Name)
 		err = r.client.Create(context.TODO(), newSCFromFile)
-		if err != nil {
-			_ = r.syncStatus(clusterOperatorInstance, err)
-			return reconcile.Result{}, err
-		}
-
-		// StorageClass created successfully - don't requeue
-		_ = r.syncStatus(clusterOperatorInstance, nil)
-		return reconcile.Result{}, nil
+		return newSCFromFile, err
 	} else if err != nil {
-		_ = r.syncStatus(clusterOperatorInstance, err)
-		return reconcile.Result{}, err
+		return newSCFromFile, err
 	}
 
 	// Check to see if modifications have been made to the StorageClass attributes
@@ -197,23 +233,41 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 
 	// If a change has been detected, update the StorageClass.
 	if !reflect.DeepEqual(comparisonSC, existingSC) {
-		reqLogger.Info("StorageClass already exists and needs to be updated", "StorageClass.Name", existingSC.Name)
+		logger.Info("StorageClass already exists and needs to be updated", "StorageClass.Name", existingSC.Name)
+
+		// Restore original delete policy (for stable unit tests)
+		comparisonSC.ReclaimPolicy = newSCFromFile.ReclaimPolicy
 
 		err = r.client.Update(context.TODO(), comparisonSC)
-		if err != nil {
-			_ = r.syncStatus(clusterOperatorInstance, err)
-			return reconcile.Result{}, err
-		}
-
-		// StorageClass updated successfully - don't requeue
-		_ = r.syncStatus(clusterOperatorInstance, nil)
-		return reconcile.Result{}, nil
+		return newSCFromFile, err
 	}
 
 	// StorageClass already exists and doesn't need to be updated - don't requeue
-	reqLogger.Info("Skip reconcile: StorageClass already exists", "StorageClass.Name", existingSC.Name)
-	_ = r.syncStatus(clusterOperatorInstance, nil)
-	return reconcile.Result{}, nil
+	logger.Info("Skip reconcile: StorageClass already exists", "StorageClass.Name", existingSC.Name)
+	return newSCFromFile, nil
+}
+
+func (r *ReconcileClusterStorage) deleteOldNamespace(logger logr.Logger) error {
+	ns := &corev1.Namespace{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: oldClusterOperatorNamespace, Namespace: corev1.NamespaceAll}, ns)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			// Nothing to delete
+			return nil
+		}
+		logger.Error(err, "Failed to get namespace "+oldClusterOperatorNamespace)
+		return err
+	}
+
+	// Old namespace found
+	if err = r.client.Delete(context.TODO(), ns); err != nil {
+		logger.Error(err, "Failed to delete namespace "+oldClusterOperatorNamespace)
+		return err
+	}
+	logger.Info("Deleted namespace " + oldClusterOperatorNamespace)
+	// Report error, so the progressing condition is true.
+	// It will be cleared when the namespace is not found (few lines above, on the next resync).
+	return oldNamespaceExistsError
 }
 
 var (
@@ -281,29 +335,27 @@ func (r *ReconcileClusterStorage) setStatusProgressing(clusterOperator *configv1
 
 // syncStatus will set either Available=true;Degraded=false;Progressing=false;Upgradeable=true
 // or Available=false;Degraded=true;Progressing=false;Upgradeable=false depending on the error
-func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOperator, err error) error {
+func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOperator, storageClassErr, namespaceDeletionErr error) error {
 	// we set versions if we are "available" to indicate we have rolled out the latest
 	// version of the cluster storage object
 	if releaseVersion := os.Getenv("RELEASE_VERSION"); len(releaseVersion) > 0 {
-		if err == nil || err == unsupportedPlatformError {
+		if storageClassErr == nil || storageClassErr == unsupportedPlatformError {
 			clusterOperator.Status.Versions = []configv1.OperandVersion{{Name: "operator", Version: releaseVersion}}
 		}
 	} else {
 		clusterOperator.Status.Versions = nil
 	}
 
-	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notProgressing)
-
 	var message string
 
 	// if error is anything other than unsupported platform, we are degraded
-	if err != nil {
-		if err != unsupportedPlatformError {
+	if storageClassErr != nil {
+		if storageClassErr != unsupportedPlatformError {
 			degraded := configv1.ClusterOperatorStatusCondition{
 				Type:    configv1.OperatorDegraded,
 				Status:  configv1.ConditionTrue,
 				Reason:  "Error",
-				Message: err.Error(),
+				Message: storageClassErr.Error(),
 			}
 			v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, degraded)
 			v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, unavailable)
@@ -334,6 +386,14 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 		Status: configv1.ConditionTrue,
 	}
 
+	progressing := notProgressing
+	if namespaceDeletionErr != nil {
+		// Waiting for namespace deletion.
+		progressing.Status = configv1.ConditionTrue
+		progressing.Message = "Deleting old namespace"
+	}
+
+	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, progressing)
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, available)
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notDegraded)
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, upgradeable)
