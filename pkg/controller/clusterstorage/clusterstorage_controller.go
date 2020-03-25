@@ -365,7 +365,7 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 
 func getRelatedObjects(sc *storagev1.StorageClass) []configv1.ObjectReference {
 	relatedObjects := []configv1.ObjectReference{
-		{Resource: "namespaces", Name: "openshift-cluster-storage-operator"},
+		{Resource: "namespaces", Name: "openshift-cluster-storage-operators"},
 		{Group: "config.openshift.io", Resource: "infrastructures", Name: infrastructureName},
 	}
 	if sc != nil {

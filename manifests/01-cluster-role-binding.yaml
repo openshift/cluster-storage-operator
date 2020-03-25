@@ -5,7 +5,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: cluster-storage-operator
-  namespace: openshift-cluster-storage-operator
+  namespace: openshift-cluster-storage-operators
 roleRef:
   kind: ClusterRole
   name: cluster-storage-operator

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cluster-storage-operator
-  namespace: openshift-cluster-storage-operator
+  namespace: openshift-cluster-storage-operators
 spec:
   replicas: 1
   selector:
