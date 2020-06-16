@@ -89,6 +89,22 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch for changes to second resource CustomResourceDefinition and requeue the Infrastructure
+	// This is necessary to check if VolumeSnapshot CRDs are installed after the Operator
+	err = c.Watch(&source.Kind{Type: &apiextv1beta1.CustomResourceDefinition{}}, &handler.EnqueueRequestsFromMapFunc{
+		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
+			return []reconcile.Request{
+				{NamespacedName: types.NamespacedName{
+					Namespace: corev1.NamespaceAll,
+					Name:      infrastructureName,
+				}},
+			}
+		}),
+	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -152,11 +168,11 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	// Run validation checks
+	// Run validation checks for VolumeSnapshot, VolumeSnapshotClass, VolumeSnapshotContent
 	err = validation.CheckAlphaSnapshot(r.client)
 	if err != nil {
-		if apierrors.IsConflict(err) {
-			r.setStatusUnupgradeable(clusterOperatorInstance, "v1alpha1 VolumeSnapshot CRD found; it must be removed to upgrade")
+		if err, ok := err.(*validation.AlphaVersionError); ok {
+			r.setStatusUnupgradeable(clusterOperatorInstance, err.Error())
 		}
 		return reconcile.Result{}, err
 	}
@@ -300,7 +316,6 @@ func (r *ReconcileClusterStorage) setStatusProgressing(clusterOperator *configv1
 // v1alpha1 of VolumeSnapshots or CSI Drivers that we don't support
 func (r *ReconcileClusterStorage) setStatusUnupgradeable(clusterOperator *configv1.ClusterOperator, message string) error {
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notDegraded)
-	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notUpgradeable)
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notProgressing)
 
 	available := configv1.ClusterOperatorStatusCondition{
@@ -310,9 +325,10 @@ func (r *ReconcileClusterStorage) setStatusUnupgradeable(clusterOperator *config
 	}
 
 	if message != "" {
-		available.Message = message
+		notUpgradeable.Message = message
 	}
 
+	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notUpgradeable)
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, available)
 
 	clusterOperator.Status.RelatedObjects = getRelatedObjects(nil)
