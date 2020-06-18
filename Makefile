@@ -1,39 +1,54 @@
-IMG ?= openshift/origin-cluster-storage-operator:latest
-
-PACKAGE=github.com/openshift/cluster-storage-operator
-MAIN_PACKAGE=$(PACKAGE)/cmd/manager
-
-BIN=$(lastword $(subst /, ,$(MAIN_PACKAGE)))
-
-GOOS=linux
-GO_BUILD_RECIPE=GOOS=$(GOOS) CGO_ENABLED=0 go build -o $(BIN) $(MAIN_PACKAGE)
-
-BINDATA=pkg/generated/bindata.go
-FIRST_GOPATH := $(firstword $(subst :, ,$(shell go env GOPATH)))
-GOBINDATA_BIN=$(FIRST_GOPATH)/bin/go-bindata
+SHELL :=/bin/bash
 
 all: build
+.PHONY: all
 
-build: generate
-	$(GO_BUILD_RECIPE)
+# Include the library makefile
+include $(addprefix ./vendor/github.com/openshift/build-machinery-go/make/, \
+	golang.mk \
+	targets/openshift/deps-gomod.mk \
+	targets/openshift/images.mk \
+	targets/openshift/bindata.mk \
+)
 
-generate: $(GOBINDATA_BIN)
-	$(GOBINDATA_BIN) -nometadata -pkg generated -o $(BINDATA) assets/...
+# Run core verification and all self contained tests.
+#
+# Example:
+#   make check
+check: | verify test-unit
+.PHONY: check
 
-$(GOBINDATA_BIN):
-	go build -o $(GOBINDATA_BIN) ./vendor/github.com/jteeuwen/go-bindata/go-bindata
+IMAGE_REGISTRY?=registry.svc.ci.openshift.org
 
-test:
-	go test ./pkg/...
+# This will call a macro called "build-image" which will generate image specific targets based on the parameters:
+# $0 - macro name
+# $1 - target name
+# $2 - image ref
+# $3 - Dockerfile path
+# $4 - context directory for image build
+# It will generate target "image-$(1)" for building the image and binding it as a prerequisite to target "images".
+$(call build-image,cluster-storage-operator,$(IMAGE_REGISTRY)/ocp/4.5:cluster-storage-operator,./Dockerfile.rhel7,.)
 
-verify:
-	hack/verify-gofmt.sh
-	# TODO not installed hack/verify-gometalinter.sh
-	hack/verify-govet.sh
-
-container: build test verify
-	docker build . -t $(IMG)
+# generate bindata targets
+# $0 - macro name
+# $1 - target suffix
+# $2 - input dirs
+# $3 - prefix
+# $4 - pkg
+# $5 - output
+$(call add-bindata,generated,./assets/...,assets,generated,pkg/generated/bindata.go)
 
 clean:
-	go clean
-	rm -f $(BIN)
+	$(RM) cluster-storage-operator
+.PHONY: clean
+
+GO_TEST_PACKAGES :=./pkg/... ./cmd/...
+
+# Run e2e tests. Requires openshift-tests in $PATH.
+#
+# Example:
+#   make test-e2e
+test-e2e:
+	hack/e2e.sh
+
+.PHONY: test-e2e

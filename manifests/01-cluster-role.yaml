@@ -29,6 +29,7 @@ rules:
   resources:
   - clusteroperators/status
   verbs:
+  - patch
   - update
 - apiGroups:
   - config.openshift.io
