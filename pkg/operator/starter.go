@@ -8,6 +8,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/snapshotcrd"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -20,6 +21,9 @@ import (
 
 	cfgclientset "github.com/openshift/client-go/config/clientset/versioned"
 	cfginformers "github.com/openshift/client-go/config/informers/externalversions"
+
+	apiextclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apiextinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/loglevel"
@@ -57,6 +61,12 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	}
 	cfgInformers := cfginformers.NewSharedInformerFactoryWithOptions(cfgClientset, resync)
 
+	apiExtClientset, err := apiextclient.NewForConfig(controllerConfig.KubeConfig)
+	if err != nil {
+		return err
+	}
+	apiExtInformers := apiextinformers.NewSharedInformerFactoryWithOptions(apiExtClientset, resync)
+
 	operatorClient := &operatorclient.OperatorClient{
 		Informers: operatorInformers,
 		Client:    operatorClientSet,
@@ -69,6 +79,12 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		kubeClient,
 		kubeInformers,
 		cfgInformers,
+		controllerConfig.EventRecorder,
+	)
+
+	snapshotCRDController := snapshotcrd.NewController(
+		operatorClient,
+		apiExtInformers,
 		controllerConfig.EventRecorder,
 	)
 
@@ -99,6 +115,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		kubeInformers,
 		operatorInformers,
 		cfgInformers,
+		apiExtInformers,
 	} {
 		informer.Start(ctx.Done())
 	}
@@ -111,6 +128,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		clusterOperatorStatus,
 		managementStateController,
 		storageClassController,
+		snapshotCRDController,
 	} {
 		go controller.Run(ctx, 1)
 	}

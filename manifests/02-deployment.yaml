@@ -38,10 +38,11 @@ spec:
             name: metrics
           command:
           - cluster-storage-operator
+          - start
           imagePullPolicy: IfNotPresent
           env:
-            - name: RELEASE_VERSION
-              value: "0.0.1-snapshot"
+          - name: OPERATOR_IMAGE_VERSION
+            value: "0.0.1-snapshot"
           resources:
             requests:
               cpu: 10m
