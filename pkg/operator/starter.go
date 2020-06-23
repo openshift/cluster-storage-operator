@@ -73,6 +73,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	}
 
 	versionGetter := status.NewVersionGetter()
+	versionGetter.SetVersion("operator", status.VersionForOperatorFromEnv())
 
 	storageClassController := defaultstorageclass.NewController(
 		operatorClient,
