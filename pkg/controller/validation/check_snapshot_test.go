@@ -1,14 +1,11 @@
 package validation
 
 import (
-	"reflect"
 	"testing"
 
 	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -16,22 +13,22 @@ func TestCheckAlphaSnapshot(t *testing.T) {
 	tests := []struct {
 		name          string
 		snapshotCRD   *apiextv1beta1.CustomResourceDefinition
-		expectedError error
+		expectedError string
 	}{
 		{
 			name:          "no VolumeSnapshot installed, return nil",
 			snapshotCRD:   &apiextv1beta1.CustomResourceDefinition{},
-			expectedError: nil,
+			expectedError: "",
 		},
 		{
 			name:          "v1alpha1 VolumeSnapshot installed, return conflict error",
 			snapshotCRD:   getFakeSnapshotCRD("v1alpha1"),
-			expectedError: apierrors.NewConflict(schema.GroupResource{Resource: "VolumeSnapshot"}, "v1alpha1 VolumeSnapshot installed.", nil),
+			expectedError: "conflict",
 		},
 		{
 			name:          "v1beta1 VolumeSnapshot installed, return nil",
 			snapshotCRD:   getFakeSnapshotCRD("v1beta1"),
-			expectedError: nil,
+			expectedError: "",
 		},
 	}
 	for _, test := range tests {
@@ -44,9 +41,9 @@ func TestCheckAlphaSnapshot(t *testing.T) {
 			client := fake.NewFakeClientWithScheme(scheme, test.snapshotCRD)
 			err := CheckAlphaSnapshot(client)
 
-			if test.expectedError != nil {
-				if !reflect.DeepEqual(err, test.expectedError) {
-					t.Errorf("Expected error doesn't match received error: %v \r\n %v", test.expectedError, err)
+			if test.expectedError != "" {
+				if err, ok := err.(*AlphaVersionError); !ok {
+					t.Errorf("expected AlphaVersionError error, received: %v", err)
 				}
 			} else if err != nil {
 				t.Errorf("Test expects nil error, received: %v", err)
