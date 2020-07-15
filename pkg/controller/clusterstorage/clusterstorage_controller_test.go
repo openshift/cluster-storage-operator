@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/apis"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -148,6 +149,9 @@ func TestReconcile(t *testing.T) {
 			}
 			if err := storagev1.AddToScheme(scheme); err != nil {
 				t.Errorf("storagev1.AddToScheme: %v", err)
+			}
+			if err := apiextv1beta1.AddToScheme(scheme); err != nil {
+				t.Errorf("apiextv1beta1.AddToScheme: %v", err)
 			}
 			client := fake.NewFakeClientWithScheme(scheme, clusterOperator, test.existingStorageClass, infrastructure)
 			reconciler := &ReconcileClusterStorage{client: client, scheme: scheme}

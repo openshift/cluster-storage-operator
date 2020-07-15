@@ -8,12 +8,14 @@ import (
 	"reflect"
 
 	configv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/cluster-storage-operator/pkg/controller/validation"
 	"github.com/openshift/cluster-storage-operator/pkg/generated"
 	v1helpers "github.com/openshift/library-go/pkg/config/clusteroperator/v1helpers"
 	ocontroller "github.com/openshift/library-go/pkg/controller"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -45,7 +47,12 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileClusterStorage{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	reconciler := &ReconcileClusterStorage{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	err := apiextv1beta1.AddToScheme(reconciler.scheme)
+	if err != nil {
+		log.Error(err, "Unable to add apiextv1beta1 to scheme")
+	}
+	return reconciler
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -69,6 +76,22 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	// Watch for changes to secondary resource StorageClasses and requeue the Infrastructure
 	err = c.Watch(&source.Kind{Type: &storagev1.StorageClass{}}, &handler.EnqueueRequestsFromMapFunc{
+		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
+			return []reconcile.Request{
+				{NamespacedName: types.NamespacedName{
+					Namespace: corev1.NamespaceAll,
+					Name:      infrastructureName,
+				}},
+			}
+		}),
+	})
+	if err != nil {
+		return err
+	}
+
+	// Watch for changes to second resource CustomResourceDefinition and requeue the Infrastructure
+	// This is necessary to check if VolumeSnapshot CRDs are installed after the Operator
+	err = c.Watch(&source.Kind{Type: &apiextv1beta1.CustomResourceDefinition{}}, &handler.EnqueueRequestsFromMapFunc{
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			return []reconcile.Request{
 				{NamespacedName: types.NamespacedName{
@@ -142,6 +165,15 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 
 	err = r.setStatusProgressing(clusterOperatorInstance)
 	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	// Run validation checks for VolumeSnapshot, VolumeSnapshotClass, VolumeSnapshotContent
+	err = validation.CheckAlphaSnapshot(r.client)
+	if err != nil {
+		if err, ok := err.(*validation.AlphaVersionError); ok {
+			r.setStatusUnupgradeable(clusterOperatorInstance, err.Error())
+		}
 		return reconcile.Result{}, err
 	}
 
@@ -268,6 +300,36 @@ func (r *ReconcileClusterStorage) setStatusProgressing(clusterOperator *configv1
 		progressing.Message = fmt.Sprintf("Working towards %v", releaseVersion)
 	}
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, progressing)
+
+	clusterOperator.Status.RelatedObjects = getRelatedObjects(nil)
+
+	updateErr := r.client.Status().Update(context.TODO(), clusterOperator)
+	if updateErr != nil {
+		log.Error(updateErr, "Failed to update ClusterOperator status")
+		return updateErr
+	}
+	return nil
+}
+
+// setStatusUnupgradeable sets Available=true;Degraded=false;Progressing=false;Upgradeable=false
+// This status is set if we detect unsupported storage components, such as manually installed
+// v1alpha1 of VolumeSnapshots or CSI Drivers that we don't support
+func (r *ReconcileClusterStorage) setStatusUnupgradeable(clusterOperator *configv1.ClusterOperator, message string) error {
+	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notDegraded)
+	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notProgressing)
+
+	available := configv1.ClusterOperatorStatusCondition{
+		Type:   configv1.OperatorAvailable,
+		Reason: "AsExpected",
+		Status: configv1.ConditionTrue,
+	}
+
+	if message != "" {
+		notUpgradeable.Message = message
+	}
+
+	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notUpgradeable)
+	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, available)
 
 	clusterOperator.Status.RelatedObjects = getRelatedObjects(nil)
 
