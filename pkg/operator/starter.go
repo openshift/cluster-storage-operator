@@ -41,12 +41,14 @@ const (
 )
 
 func RunOperator(ctx context.Context, controllerConfig *controllercmd.ControllerContext) error {
+	// Kubernetes client, used to manipulate StorageClasses
 	kubeClient, err := kubernetes.NewForConfig(controllerConfig.ProtoKubeConfig)
 	if err != nil {
 		return err
 	}
 	kubeInformers := informers.NewSharedInformerFactory(kubeClient, resync)
 
+	// operator.openshift.io client, used to manipulate the operator CR
 	operatorClientSet, err := opclient.NewForConfig(controllerConfig.KubeConfig)
 	if err != nil {
 		return err
@@ -55,12 +57,14 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		opinformers.WithTweakListOptions(singleNameListOptions(operatorclient.GlobalConfigName)),
 	)
 
+	// config.openshift.io client, used to get Infrastructure
 	cfgClientset, err := cfgclientset.NewForConfig(controllerConfig.KubeConfig)
 	if err != nil {
 		return err
 	}
 	cfgInformers := cfginformers.NewSharedInformerFactoryWithOptions(cfgClientset, resync)
 
+	// CRD client, used to list CRDs
 	apiExtClientset, err := apiextclient.NewForConfig(controllerConfig.KubeConfig)
 	if err != nil {
 		return err
