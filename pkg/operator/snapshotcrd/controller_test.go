@@ -170,6 +170,25 @@ func TestSync(t *testing.T) {
 			expectErr: false,
 		},
 		{
+			name: "unrelated conditions are not overwritten",
+			initialObjects: testObjects{
+				storage: getCR(
+					withTrueConditions("UnrelatedConditionAvailable"),
+					withFalseConditions("AnotherConditionAvailable"),
+				),
+			},
+			expectedObjects: testObjects{
+				storage: getCR(
+					withTrueConditions(
+						"UnrelatedConditionAvailable",
+						conditionsPrefix+opv1.OperatorStatusTypeUpgradeable,
+					),
+					withFalseConditions("AnotherConditionAvailable"),
+				),
+			},
+			expectErr: false,
+		},
+		{
 			name: "beta CRDs",
 			initialObjects: testObjects{
 				storage: getCR(),
