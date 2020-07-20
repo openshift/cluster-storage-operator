@@ -213,7 +213,8 @@ func TestSync(t *testing.T) {
 			},
 			expectedObjects: testObjects{
 				storage: getCR(
-					withTrueConditions(conditionsPrefix + "Disabled"),
+					withTrueConditions(conditionsPrefix+"Disabled", conditionsPrefix+opv1.OperatorStatusTypeAvailable),
+					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
 			},
 			expectErr: false,
