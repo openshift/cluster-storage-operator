@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	opclient "github.com/openshift/client-go/operator/clientset/versioned"
 	opinformers "github.com/openshift/client-go/operator/informers/externalversions"

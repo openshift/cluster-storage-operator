@@ -22,5 +22,5 @@ require (
 	k8s.io/client-go v0.18.3
 	k8s.io/code-generator v0.18.3
 	k8s.io/component-base v0.18.2
-	k8s.io/klog v1.0.0
+	k8s.io/klog/v2 v2.3.0
 )
