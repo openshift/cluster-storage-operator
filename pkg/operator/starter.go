@@ -50,17 +50,18 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		controllerConfig.EventRecorder,
 	)
 
+	relatedObjects := []configv1.ObjectReference{
+		{Resource: "namespaces", Name: operatorNamespace},
+		{Resource: "namespaces", Name: csoclients.CSIOperatorNamespace},
+		{Group: operatorv1.GroupName, Resource: "storages", Name: operatorclient.GlobalConfigName},
+		// Sync with operatorv1.CSIDriverName consts!
+		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.AWSEBSCSIDriver)},
+		// TODO: remove when the driver moves to csidriveroperator.CSIOperatorNamespace
+		{Resource: "namespaces", Name: "openshift-aws-ebs-csi-driver"},
+	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
 		clusterOperatorName,
-		[]configv1.ObjectReference{
-			{Resource: "namespaces", Name: operatorNamespace},
-			{Resource: "namespaces", Name: csoclients.CSIOperatorNamespace},
-			{Group: operatorv1.GroupName, Resource: "storages", Name: operatorclient.GlobalConfigName},
-			{Group: "csi.openshift.io", Resource: "awsebsdrivers", Name: operatorclient.GlobalConfigName},
-
-			// TODO: remove when the driver moves to csidriveroperator.CSIOperatorNamespace
-			{Resource: "namespaces", Name: "openshift-aws-ebs-csi-driver"},
-		},
+		relatedObjects,
 		clients.ConfigClientSet.ConfigV1(),
 		clients.ConfigInformers.Config().V1().ClusterOperators(),
 		clients.OperatorClient,
