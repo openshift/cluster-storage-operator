@@ -44,13 +44,15 @@ type Clients struct {
 }
 
 const (
-	OperatorNamespace = "openshift-cluster-storage-operator"
+	OperatorNamespace    = "openshift-cluster-storage-operator"
+	CSIOperatorNamespace = "openshift-cluster-csi-drivers"
 )
 
 var (
 	informerNamespaces = []string{
 		"", // For non-namespaced objects
 		OperatorNamespace,
+		CSIOperatorNamespace,
 	}
 )
 

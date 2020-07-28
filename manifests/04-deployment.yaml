@@ -31,7 +31,7 @@ spec:
       serviceAccountName: cluster-storage-operator
       containers:
         - name: cluster-storage-operator
-          image: openshift/origin-cluster-storage-operator:latest
+          image: quay.io/openshift/origin-cluster-storage-operator:latest
           terminationMessagePolicy: FallbackToLogsOnError
           ports:
           - containerPort: 60000
@@ -43,6 +43,24 @@ spec:
           env:
           - name: OPERATOR_IMAGE_VERSION
             value: "0.0.1-snapshot"
+          - name: OPERAND_IMAGE_VERSION
+            value: "0.0.1-snapshot"
+          - name: AWS_EBS_DRIVER_OPERATOR_IMAGE
+            value: quay.io/openshift/origin-aws-ebs-csi-driver-operator:latest
+          - name: AWS_EBS_DRIVER_IMAGE
+            value: quay.io/openshift/origin-aws-ebs-csi-driver:latest
+          - name: PROVISIONER_IMAGE
+            value: quay.io/openshift/origin-csi-external-provisioner:latest
+          - name: ATTACHER_IMAGE
+            value: quay.io/openshift/origin-csi-external-attacher:latest
+          - name: RESIZER_IMAGE
+            value: quay.io/openshift/origin-csi-external-resizer:latest
+          - name: SNAPSHOTTER_IMAGE
+            value: quay.io/openshift/origin-csi-external-snapshotter:latest
+          - name: NODE_DRIVER_REGISTRAR_IMAGE
+            value: quay.io/openshift/origin-csi-node-driver-registrar:latest
+          - name: LIVENESS_PROBE_IMAGE
+            value: quay.io/openshift/origin-csi-livenessprobe:latest
           resources:
             requests:
               cpu: 10m
