@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	operatorapi "github.com/openshift/api/operator/v1"
+	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
-	apiextinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	v1 "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"
@@ -40,17 +40,16 @@ type Controller struct {
 }
 
 func NewController(
-	operatorClient v1helpers.OperatorClient,
-	extensionInformer apiextinformers.SharedInformerFactory,
+	clients *csoclients.Clients,
 	eventRecorder events.Recorder) factory.Controller {
 	c := &Controller{
-		operatorClient: operatorClient,
-		crdLister:      extensionInformer.Apiextensions().V1().CustomResourceDefinitions().Lister(),
+		operatorClient: clients.OperatorClient,
+		crdLister:      clients.ExtensionInformer.Apiextensions().V1().CustomResourceDefinitions().Lister(),
 		eventRecorder:  eventRecorder,
 	}
-	return factory.New().WithSync(c.sync).WithSyncDegradedOnError(operatorClient).WithInformers(
-		operatorClient.Informer(),
-		extensionInformer.Apiextensions().V1().CustomResourceDefinitions().Informer(),
+	return factory.New().WithSync(c.sync).WithSyncDegradedOnError(clients.OperatorClient).WithInformers(
+		clients.OperatorClient.Informer(),
+		clients.ExtensionInformer.Apiextensions().V1().CustomResourceDefinitions().Informer(),
 	).ToController("SnapshotCRDController", eventRecorder)
 }
 

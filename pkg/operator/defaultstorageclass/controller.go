@@ -6,8 +6,8 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	operatorapi "github.com/openshift/api/operator/v1"
-	cfginformers "github.com/openshift/client-go/config/informers/externalversions"
 	openshiftv1 "github.com/openshift/client-go/config/listers/config/v1"
+	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/generated"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -17,7 +17,6 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	errutil "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/klog/v2"
@@ -48,22 +47,19 @@ type Controller struct {
 }
 
 func NewController(
-	operatorClient v1helpers.OperatorClient,
-	kubeClient kubernetes.Interface,
-	kubeInformers informers.SharedInformerFactory,
-	infraInformer cfginformers.SharedInformerFactory,
+	clients *csoclients.Clients,
 	eventRecorder events.Recorder) factory.Controller {
 	c := &Controller{
-		operatorClient:     operatorClient,
-		kubeClient:         kubeClient,
-		infraLister:        infraInformer.Config().V1().Infrastructures().Lister(),
-		storageClassLister: kubeInformers.Storage().V1().StorageClasses().Lister(),
+		operatorClient:     clients.OperatorClient,
+		kubeClient:         clients.KubeClient,
+		infraLister:        clients.ConfigInformers.Config().V1().Infrastructures().Lister(),
+		storageClassLister: clients.KubeInformers.InformersFor("").Storage().V1().StorageClasses().Lister(),
 		eventRecorder:      eventRecorder,
 	}
-	return factory.New().WithSync(c.sync).WithSyncDegradedOnError(operatorClient).WithInformers(
-		operatorClient.Informer(),
-		infraInformer.Config().V1().Infrastructures().Informer(),
-		kubeInformers.Storage().V1().StorageClasses().Informer(),
+	return factory.New().WithSync(c.sync).WithSyncDegradedOnError(clients.OperatorClient).WithInformers(
+		clients.OperatorClient.Informer(),
+		clients.ConfigInformers.Config().V1().Infrastructures().Informer(),
+		clients.KubeInformers.InformersFor("").Storage().V1().StorageClasses().Informer(),
 	).ToController("DefaultStorageClassController", eventRecorder)
 }
 

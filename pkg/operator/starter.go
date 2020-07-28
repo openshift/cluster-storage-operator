@@ -7,23 +7,13 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
+	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/snapshotcrd"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-
-	opclient "github.com/openshift/client-go/operator/clientset/versioned"
-	opinformers "github.com/openshift/client-go/operator/informers/externalversions"
-
-	cfgclientset "github.com/openshift/client-go/config/clientset/versioned"
-	cfginformers "github.com/openshift/client-go/config/informers/externalversions"
-
-	apiextclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apiextinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/loglevel"
@@ -41,55 +31,21 @@ const (
 )
 
 func RunOperator(ctx context.Context, controllerConfig *controllercmd.ControllerContext) error {
-	// Kubernetes client, used to manipulate StorageClasses
-	kubeClient, err := kubernetes.NewForConfig(controllerConfig.ProtoKubeConfig)
+	clients, err := csoclients.NewClients(controllerConfig, resync)
 	if err != nil {
 		return err
-	}
-	kubeInformers := informers.NewSharedInformerFactory(kubeClient, resync)
-
-	// operator.openshift.io client, used to manipulate the operator CR
-	operatorClientSet, err := opclient.NewForConfig(controllerConfig.KubeConfig)
-	if err != nil {
-		return err
-	}
-	operatorInformers := opinformers.NewSharedInformerFactoryWithOptions(operatorClientSet, resync,
-		opinformers.WithTweakListOptions(singleNameListOptions(operatorclient.GlobalConfigName)),
-	)
-
-	// config.openshift.io client, used to get Infrastructure
-	cfgClientset, err := cfgclientset.NewForConfig(controllerConfig.KubeConfig)
-	if err != nil {
-		return err
-	}
-	cfgInformers := cfginformers.NewSharedInformerFactoryWithOptions(cfgClientset, resync)
-
-	// CRD client, used to list CRDs
-	apiExtClientset, err := apiextclient.NewForConfig(controllerConfig.KubeConfig)
-	if err != nil {
-		return err
-	}
-	apiExtInformers := apiextinformers.NewSharedInformerFactoryWithOptions(apiExtClientset, resync)
-
-	operatorClient := &operatorclient.OperatorClient{
-		Informers: operatorInformers,
-		Client:    operatorClientSet,
 	}
 
 	versionGetter := status.NewVersionGetter()
 	versionGetter.SetVersion("operator", status.VersionForOperatorFromEnv())
 
 	storageClassController := defaultstorageclass.NewController(
-		operatorClient,
-		kubeClient,
-		kubeInformers,
-		cfgInformers,
+		clients,
 		controllerConfig.EventRecorder,
 	)
 
 	snapshotCRDController := snapshotcrd.NewController(
-		operatorClient,
-		apiExtInformers,
+		clients,
 		controllerConfig.EventRecorder,
 	)
 
@@ -99,31 +55,23 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 			{Resource: "namespaces", Name: operatorNamespace},
 			{Group: operatorv1.GroupName, Resource: "storages", Name: operatorclient.GlobalConfigName},
 		},
-		cfgClientset.ConfigV1(),
-		cfgInformers.Config().V1().ClusterOperators(),
-		operatorClient,
+		clients.ConfigClientSet.ConfigV1(),
+		clients.ConfigInformers.Config().V1().ClusterOperators(),
+		clients.OperatorClient,
 		versionGetter,
 		controllerConfig.EventRecorder,
 	)
 
 	// This controller syncs CR.Status.Conditions with the value in the field CR.Spec.ManagementStatus. It only supports Managed state
-	managementStateController := management.NewOperatorManagementStateController(clusterOperatorName, operatorClient, controllerConfig.EventRecorder)
+	managementStateController := management.NewOperatorManagementStateController(clusterOperatorName, clients.OperatorClient, controllerConfig.EventRecorder)
 	management.SetOperatorNotRemovable()
 
 	// This controller syncs the operator log level with the value set in the CR.Spec.OperatorLogLevel
-	logLevelController := loglevel.NewClusterOperatorLoggingController(operatorClient, controllerConfig.EventRecorder)
+	logLevelController := loglevel.NewClusterOperatorLoggingController(clients.OperatorClient, controllerConfig.EventRecorder)
 
 	klog.Info("Starting the Informers.")
-	for _, informer := range []interface {
-		Start(stopCh <-chan struct{})
-	}{
-		kubeInformers,
-		operatorInformers,
-		cfgInformers,
-		apiExtInformers,
-	} {
-		informer.Start(ctx.Done())
-	}
+
+	csoclients.StartInformers(clients, ctx.Done())
 
 	klog.Info("Starting the controllers")
 	for _, controller := range []interface {
