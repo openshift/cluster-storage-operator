@@ -8,10 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	cfgv1 "github.com/openshift/api/config/v1"
 	opv1 "github.com/openshift/api/operator/v1"
-	fakeconfig "github.com/openshift/client-go/config/clientset/versioned/fake"
-	configinformers "github.com/openshift/client-go/config/informers/externalversions"
-	fakeop "github.com/openshift/client-go/operator/clientset/versioned/fake"
-	opinformers "github.com/openshift/client-go/operator/informers/externalversions"
+	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/generated"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
@@ -21,23 +18,14 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	coreinformers "k8s.io/client-go/informers"
-	fakecore "k8s.io/client-go/kubernetes/fake"
-	"k8s.io/client-go/tools/cache"
 )
 
 type testContext struct {
-	controller        factory.Controller
-	coreClient        *fakecore.Clientset
-	coreInformers     coreinformers.SharedInformerFactory
-	operatorClient    *fakeop.Clientset
-	operatorInformers opinformers.SharedInformerFactory
-	configClient      *fakeconfig.Clientset
-	configInformers   configinformers.SharedInformerFactory
+	controller factory.Controller
+	clients    *csoclients.Clients
 }
 
 type testObjects struct {
-	// TODO: use CSO CRD
 	storage        *opv1.Storage
 	infrastructure *cfgv1.Infrastructure
 	storageClasses []*storagev1.StorageClass
@@ -52,61 +40,25 @@ type operatorTest struct {
 
 func newController(test operatorTest) *testContext {
 	// Convert to []runtime.Object
-	var initialClasses []runtime.Object
+	initialObjects := &csoclients.FakeTestObjects{}
 	for _, c := range test.initialObjects.storageClasses {
-		initialClasses = append(initialClasses, c)
+		initialObjects.CoreObjects = append(initialObjects.CoreObjects, c)
 	}
-	coreClient := fakecore.NewSimpleClientset(initialClasses...)
-	coreInformerFactory := coreinformers.NewSharedInformerFactory(coreClient, 0 /*no resync */)
-	// Fill the informer
-	for _, c := range test.initialObjects.storageClasses {
-		coreInformerFactory.Storage().V1().StorageClasses().Informer().GetIndexer().Add(c)
-	}
-
-	// Convert to []runtime.Object
-	var initialStorages []runtime.Object
 	if test.initialObjects.storage != nil {
-		initialStorages = []runtime.Object{test.initialObjects.storage}
+		initialObjects.OperatorObjects = []runtime.Object{test.initialObjects.storage}
 	}
-	operatorClient := fakeop.NewSimpleClientset(initialStorages...)
-	operatorInformerFactory := opinformers.NewSharedInformerFactory(operatorClient, 0)
-	// Fill the informer
-	if test.initialObjects.storage != nil {
-		operatorInformerFactory.Operator().V1().Storages().Informer().GetIndexer().Add(test.initialObjects.storage)
+	if test.initialObjects.infrastructure != nil {
+		initialObjects.ConfigObjects = []runtime.Object{test.initialObjects.infrastructure}
 	}
 
-	var initialInfrastructures []runtime.Object
-	if test.initialObjects.infrastructure != nil {
-		initialInfrastructures = []runtime.Object{test.initialObjects.infrastructure}
-	}
-	configClient := fakeconfig.NewSimpleClientset(initialInfrastructures...)
-	configInformerFactory := configinformers.NewSharedInformerFactory(configClient, 0)
-	// Fill the informer
-	if test.initialObjects.infrastructure != nil {
-		configInformerFactory.Config().V1().Infrastructures().Informer().GetIndexer().Add(test.initialObjects.infrastructure)
-	}
-
-	client := operatorclient.OperatorClient{
-		Client:    operatorClient,
-		Informers: operatorInformerFactory,
-	}
+	clients := csoclients.NewFakeClients(initialObjects)
 
 	recorder := events.NewInMemoryRecorder("operator")
-	ctrl := NewController(client,
-		coreClient,
-		coreInformerFactory,
-		configInformerFactory,
-		recorder,
-	)
+	ctrl := NewController(clients, recorder)
 
 	return &testContext{
-		controller:        ctrl,
-		coreClient:        coreClient,
-		coreInformers:     coreInformerFactory,
-		operatorClient:    operatorClient,
-		operatorInformers: operatorInformerFactory,
-		configClient:      configClient,
-		configInformers:   configInformerFactory,
+		controller: ctrl,
+		clients:    clients,
 	}
 }
 
@@ -277,14 +229,8 @@ func TestSync(t *testing.T) {
 			ctx := newController(test)
 			finish, cancel := context.WithCancel(context.TODO())
 			defer cancel()
-			ctx.configInformers.Start(finish.Done())
-			ctx.operatorInformers.Start(finish.Done())
-			ctx.coreInformers.Start(finish.Done())
-			cache.WaitForCacheSync(finish.Done(),
-				ctx.configInformers.Config().V1().Infrastructures().Informer().HasSynced,
-				ctx.operatorInformers.Operator().V1().Storages().Informer().HasSynced,
-				ctx.coreInformers.Storage().V1().StorageClasses().Informer().HasSynced,
-			)
+			csoclients.StartInformers(ctx.clients, finish.Done())
+			csoclients.WaitForSync(ctx.clients, finish.Done())
 
 			// Act
 			err := ctx.controller.Sync(context.TODO(), nil)
@@ -300,7 +246,7 @@ func TestSync(t *testing.T) {
 
 			// Check expectedObjects.storage
 			if test.expectedObjects.storage != nil {
-				actualStorage, err := ctx.operatorClient.OperatorV1().Storages().Get(context.TODO(), "cluster", metav1.GetOptions{})
+				actualStorage, err := ctx.clients.OperatorClientSet.OperatorV1().Storages().Get(context.TODO(), "cluster", metav1.GetOptions{})
 				if err != nil {
 					t.Errorf("Failed to get Storage: %v", err)
 				}
@@ -311,7 +257,7 @@ func TestSync(t *testing.T) {
 				}
 			}
 			// Check expectedObjects.storageClasses
-			actualSCList, _ := ctx.coreClient.StorageV1().StorageClasses().List(context.TODO(), metav1.ListOptions{})
+			actualSCList, _ := ctx.clients.KubeClient.StorageV1().StorageClasses().List(context.TODO(), metav1.ListOptions{})
 			actualSCs := map[string]*storagev1.StorageClass{}
 			for i := range actualSCList.Items {
 				sc := &actualSCList.Items[i]

@@ -7,26 +7,19 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	opv1 "github.com/openshift/api/operator/v1"
-	fakeop "github.com/openshift/client-go/operator/clientset/versioned/fake"
-	opinformers "github.com/openshift/client-go/operator/informers/externalversions"
+	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	fakeextapi "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
-	apiextinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/cache"
 )
 
 type testContext struct {
-	controller        factory.Controller
-	apiExtClient      *fakeextapi.Clientset
-	apiExtInformers   apiextinformers.SharedInformerFactory
-	operatorClient    *fakeop.Clientset
-	operatorInformers opinformers.SharedInformerFactory
+	controller factory.Controller
+	clients    *csoclients.Clients
 }
 
 type testObjects struct {
@@ -44,46 +37,22 @@ type operatorTest struct {
 
 func newController(test operatorTest) *testContext {
 	// Convert to []runtime.Object
-	var initialCRDs []runtime.Object
+	initialObjects := &csoclients.FakeTestObjects{}
 	for _, c := range test.initialObjects.crds {
-		initialCRDs = append(initialCRDs, c)
+		initialObjects.ExtensionObjects = append(initialObjects.ExtensionObjects, c)
 	}
-	apiExtClient := fakeextapi.NewSimpleClientset(initialCRDs...)
-	apiExtInformerFactory := apiextinformers.NewSharedInformerFactory(apiExtClient, 0 /*no resync */)
-	// Fill the informer
-	for _, c := range test.initialObjects.crds {
-		apiExtInformerFactory.Apiextensions().V1().CustomResourceDefinitions().Informer().GetIndexer().Add(c)
+	if test.initialObjects.storage != nil {
+		initialObjects.OperatorObjects = []runtime.Object{test.initialObjects.storage}
 	}
 
-	// Convert to []runtime.Object
-	var initialStorages []runtime.Object
-	if test.initialObjects.storage != nil {
-		initialStorages = []runtime.Object{test.initialObjects.storage}
-	}
-	operatorClient := fakeop.NewSimpleClientset(initialStorages...)
-	operatorInformerFactory := opinformers.NewSharedInformerFactory(operatorClient, 0)
-	// Fill the informer
-	if test.initialObjects.storage != nil {
-		operatorInformerFactory.Operator().V1().Storages().Informer().GetIndexer().Add(test.initialObjects.storage)
-	}
-
-	client := operatorclient.OperatorClient{
-		Client:    operatorClient,
-		Informers: operatorInformerFactory,
-	}
+	clients := csoclients.NewFakeClients(initialObjects)
 
 	recorder := events.NewInMemoryRecorder("operator")
-	ctrl := NewController(client,
-		apiExtInformerFactory,
-		recorder,
-	)
+	ctrl := NewController(clients, recorder)
 
 	return &testContext{
-		controller:        ctrl,
-		apiExtClient:      apiExtClient,
-		apiExtInformers:   apiExtInformerFactory,
-		operatorClient:    operatorClient,
-		operatorInformers: operatorInformerFactory,
+		controller: ctrl,
+		clients:    clients,
 	}
 }
 
@@ -247,12 +216,8 @@ func TestSync(t *testing.T) {
 			ctx := newController(test)
 			finish, cancel := context.WithCancel(context.TODO())
 			defer cancel()
-			ctx.operatorInformers.Start(finish.Done())
-			ctx.apiExtInformers.Start(finish.Done())
-			cache.WaitForCacheSync(finish.Done(),
-				ctx.operatorInformers.Operator().V1().Storages().Informer().HasSynced,
-				ctx.apiExtInformers.Apiextensions().V1().CustomResourceDefinitions().Informer().HasSynced,
-			)
+			csoclients.StartInformers(ctx.clients, finish.Done())
+			csoclients.WaitForSync(ctx.clients, finish.Done())
 
 			// Act
 			err := ctx.controller.Sync(context.TODO(), nil)
@@ -268,7 +233,7 @@ func TestSync(t *testing.T) {
 
 			// Check expectedObjects.storage
 			if test.expectedObjects.storage != nil {
-				actualStorage, err := ctx.operatorClient.OperatorV1().Storages().Get(context.TODO(), "cluster", metav1.GetOptions{})
+				actualStorage, err := ctx.clients.OperatorClientSet.OperatorV1().Storages().Get(context.TODO(), "cluster", metav1.GetOptions{})
 				if err != nil {
 					t.Errorf("Failed to get Storage: %v", err)
 				}
