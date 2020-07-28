@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ovirt-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: ovirt-csi-driver-operator
+  template:
+    metadata:
+      labels:
+        name: ovirt-csi-driver-operator
+    spec:
+      serviceAccountName: ovirt-csi-driver-operator
+      priorityClassName: system-cluster-critical
+      containers:
+        - name: ovirt-csi-driver-operator
+          image: ${OPERATOR_IMAGE}
+          imagePullPolicy: IfNotPresent
+          tolerations:
+            - key: CriticalAddonsOnly
+              operator: Exists
+          args:
+            - start
+          env:
+            - name: OPERATOR_NAME
+              value: ovirt-csi-driver-operator
+            - name: DRIVER_IMAGE
+              value: ${DRIVER_IMAGE}
+            - name: PROVISIONER_IMAGE
+              value: ${PROVISIONER_IMAGE}
+            - name: ATTACHER_IMAGE
+              value: ${ATTACHER_IMAGE}
+            - name: RESIZER_IMAGE
+              value: ${RESIZER_IMAGE}
+            - name: SNAPSHOTTER_IMAGE
+              value: ${SNAPSHOTTER_IMAGE}
+            - name: NODE_DRIVER_REGISTRAR_IMAGE
+              value: ${NODE_DRIVER_REGISTRAR_IMAGE}
+            - name: LIVENESS_PROBE_IMAGE
+              value: ${LIVENESS_PROBE_IMAGE}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
