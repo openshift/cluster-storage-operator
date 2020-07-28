@@ -8,11 +8,12 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/snapshotcrd"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
+	"github.com/openshift/library-go/pkg/operator/events"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
@@ -53,7 +54,12 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		clusterOperatorName,
 		[]configv1.ObjectReference{
 			{Resource: "namespaces", Name: operatorNamespace},
+			{Resource: "namespaces", Name: csoclients.CSIOperatorNamespace},
 			{Group: operatorv1.GroupName, Resource: "storages", Name: operatorclient.GlobalConfigName},
+			{Group: "csi.openshift.io", Resource: "awsebsdrivers", Name: operatorclient.GlobalConfigName},
+
+			// TODO: remove when the driver moves to csidriveroperator.CSIOperatorNamespace
+			{Resource: "namespaces", Name: "openshift-aws-ebs-csi-driver"},
 		},
 		clients.ConfigClientSet.ConfigV1(),
 		clients.ConfigInformers.Config().V1().ClusterOperators(),
@@ -62,8 +68,18 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		controllerConfig.EventRecorder,
 	)
 
-	// This controller syncs CR.Status.Conditions with the value in the field CR.Spec.ManagementStatus. It only supports Managed state
+	csiDriverConfigs := populateConfigs(clients, controllerConfig.EventRecorder)
+	csiDriverController := csidriveroperator.NewCSIDriverStarterController(
+		clients,
+		resync,
+		versionGetter,
+		status.VersionForOperandFromEnv(),
+		controllerConfig.EventRecorder,
+		csiDriverConfigs)
+
 	managementStateController := management.NewOperatorManagementStateController(clusterOperatorName, clients.OperatorClient, controllerConfig.EventRecorder)
+
+	// This controller syncs CR.Status.Conditions with the value in the field CR.Spec.ManagementStatus. It only supports Managed state
 	management.SetOperatorNotRemovable()
 
 	// This controller syncs the operator log level with the value set in the CR.Spec.OperatorLogLevel
@@ -82,6 +98,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		managementStateController,
 		storageClassController,
 		snapshotCRDController,
+		csiDriverController,
 	} {
 		go controller.Run(ctx, 1)
 	}
@@ -91,8 +108,8 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	return fmt.Errorf("stopped")
 }
 
-func singleNameListOptions(name string) func(opts *metav1.ListOptions) {
-	return func(opts *metav1.ListOptions) {
-		opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", name).String()
+func populateConfigs(clients *csoclients.Clients, recorder events.Recorder) []csioperatorclient.CSIOperatorConfig {
+	return []csioperatorclient.CSIOperatorConfig{
+		csioperatorclient.GetAWSEBSCSIOperatorConfig(),
 	}
 }
