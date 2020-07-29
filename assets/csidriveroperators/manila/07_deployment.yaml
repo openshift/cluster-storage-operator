@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: manila-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: manila-csi-driver-operator
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        name: manila-csi-driver-operator
+    spec:
+      containers:
+      - args:
+        - start
+        - -v=${LOG_LEVEL}
+        env:
+        - name: DRIVER_IMAGE
+          value: ${DRIVER_IMAGE}
+        - name: NFS_DRIVER_IMAGE
+          value: ${NFS_DRIVER_IMAGE}
+        - name: PROVISIONER_IMAGE
+          value: ${PROVISIONER_IMAGE}
+        - name: ATTACHER_IMAGE
+          value: ${ATTACHER_IMAGE}
+        - name: RESIZER_IMAGE
+          value: ${RESIZER_IMAGE}
+        - name: SNAPSHOTTER_IMAGE
+          value: ${SNAPSHOTTER_IMAGE}
+        - name: NODE_DRIVER_REGISTRAR_IMAGE
+          value: ${NODE_DRIVER_REGISTRAR_IMAGE}
+        - name: LIVENESS_PROBE_IMAGE
+          value: ${LIVENESS_PROBE_IMAGE}
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        image: ${OPERATOR_IMAGE}
+        imagePullPolicy: IfNotPresent
+        name: manila-csi-driver-operator
+        volumeMounts:
+        - name: cacert
+          mountPath: /etc/openstack-ca/
+        - name: cloud-credentials
+          # Create /etc/openstack/clouds.yaml
+          mountPath: /etc/openstack/
+        resources:
+          requests:
+            memory: 50Mi
+            cpu: 10m
+      priorityClassName: system-cluster-critical
+      serviceAccountName: manila-csi-driver-operator
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      volumes:
+      - name: cacert
+        # Extract ca-bundle.pem to /usr/share/pki/ca-trust-source if present.
+        # Let the pod start when the ConfigMap does not exist or the certificate
+        # is not preset there. The certificate file will be created once the
+        # ConfigMap is created / the cerificate is added to it.
+        configMap:
+          name: cloud-provider-config
+          items:
+            - key: ca-bundle.pem
+              path: ca-bundle.pem
+          optional: true
+      - name: cloud-credentials
+        secret:
+          secretName: manila-cloud-credentials
+          optional: false

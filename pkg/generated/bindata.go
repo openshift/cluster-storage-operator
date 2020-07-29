@@ -8,6 +8,15 @@
 // assets/csidriveroperators/aws-ebs/06_clusterrolebinding.yaml
 // assets/csidriveroperators/aws-ebs/07_deployment.yaml
 // assets/csidriveroperators/aws-ebs/08_cr.yaml
+// assets/csidriveroperators/manila/01_namespace.yaml
+// assets/csidriveroperators/manila/02_sa.yaml
+// assets/csidriveroperators/manila/03_role.yaml
+// assets/csidriveroperators/manila/04_rolebinding.yaml
+// assets/csidriveroperators/manila/05_clusterrole.yaml
+// assets/csidriveroperators/manila/06_clusterrolebinding.yaml
+// assets/csidriveroperators/manila/07_deployment.yaml
+// assets/csidriveroperators/manila/08_cr.yaml
+// assets/csidriveroperators/manila/09_credentials.yaml
 // assets/csidriveroperators/ovirt/01_namespace.yaml
 // assets/csidriveroperators/ovirt/02_sa.yaml
 // assets/csidriveroperators/ovirt/03_role.yaml
@@ -586,6 +595,569 @@ func csidriveroperatorsAwsEbs08_crYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "csidriveroperators/aws-ebs/08_cr.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsManila01_namespaceYaml = []byte(`apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsManila01_namespaceYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsManila01_namespaceYaml, nil
+}
+
+func csidriveroperatorsManila01_namespaceYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsManila01_namespaceYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/manila/01_namespace.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsManila02_saYaml = []byte(`apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: manila-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsManila02_saYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsManila02_saYaml, nil
+}
+
+func csidriveroperatorsManila02_saYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsManila02_saYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/manila/02_sa.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsManila03_roleYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: manila-csi-driver-operator-role
+  namespace: openshift-cluster-csi-drivers
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  - services
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - namespaces
+  verbs:
+  - get
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
+  - create
+`)
+
+func csidriveroperatorsManila03_roleYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsManila03_roleYaml, nil
+}
+
+func csidriveroperatorsManila03_roleYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsManila03_roleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/manila/03_role.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsManila04_rolebindingYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: manila-csi-driver-operator-rolebinding
+  namespace: openshift-cluster-csi-drivers
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: manila-csi-driver-operator-role
+subjects:
+- kind: ServiceAccount
+  name: manila-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsManila04_rolebindingYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsManila04_rolebindingYaml, nil
+}
+
+func csidriveroperatorsManila04_rolebindingYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsManila04_rolebindingYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/manila/04_rolebinding.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsManila05_clusterroleYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manila-csi-driver-operator-clusterrole
+rules:
+- apiGroups:
+  - security.openshift.io
+  resourceNames:
+  - privileged
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - use
+- apiGroups:
+  - ''
+  resourceNames:
+  - extension-apiserver-authentication
+  - manila-csi-driver-operator-lock
+  resources:
+  - configmaps
+  verbs:
+  - '*'
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterroles
+  - clusterrolebindings
+  - roles
+  - rolebindings
+  verbs:
+  - watch
+  - list
+  - get
+  - create
+  - delete
+  - patch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - list
+  - create
+  - watch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - nodes
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - delete
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumes
+  verbs:
+  - create
+  - delete
+  - list
+  - get
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims/status
+  verbs:
+  - patch
+  - update
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattachments
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - delete
+  - create
+  - patch
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotcontents/status
+  verbs:
+  - update
+  - patch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  - csinodes
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - '*'
+  resources:
+  - events
+  verbs:
+  - get
+  - patch
+  - create
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotclasses
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotcontents
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshots
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - csidrivers
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - csi.openshift.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - cloudcredential.openshift.io
+  resources:
+  - credentialsrequests
+  verbs:
+  - '*'
+- apiGroups:
+  - config.openshift.io
+  resources:
+  - infrastructures
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - operator.openshift.io
+  resources:
+  - 'clustercsidrivers'
+  - 'clustercsidrivers/status'
+  verbs:
+  - '*'
+`)
+
+func csidriveroperatorsManila05_clusterroleYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsManila05_clusterroleYaml, nil
+}
+
+func csidriveroperatorsManila05_clusterroleYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsManila05_clusterroleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/manila/05_clusterrole.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsManila06_clusterrolebindingYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: manila-csi-driver-operator-clusterrolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: manila-csi-driver-operator-clusterrole
+subjects:
+- kind: ServiceAccount
+  name: manila-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsManila06_clusterrolebindingYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsManila06_clusterrolebindingYaml, nil
+}
+
+func csidriveroperatorsManila06_clusterrolebindingYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsManila06_clusterrolebindingYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/manila/06_clusterrolebinding.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsManila07_deploymentYaml = []byte(`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: manila-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: manila-csi-driver-operator
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        name: manila-csi-driver-operator
+    spec:
+      containers:
+      - args:
+        - start
+        - -v=${LOG_LEVEL}
+        env:
+        - name: DRIVER_IMAGE
+          value: ${DRIVER_IMAGE}
+        - name: NFS_DRIVER_IMAGE
+          value: ${NFS_DRIVER_IMAGE}
+        - name: PROVISIONER_IMAGE
+          value: ${PROVISIONER_IMAGE}
+        - name: ATTACHER_IMAGE
+          value: ${ATTACHER_IMAGE}
+        - name: RESIZER_IMAGE
+          value: ${RESIZER_IMAGE}
+        - name: SNAPSHOTTER_IMAGE
+          value: ${SNAPSHOTTER_IMAGE}
+        - name: NODE_DRIVER_REGISTRAR_IMAGE
+          value: ${NODE_DRIVER_REGISTRAR_IMAGE}
+        - name: LIVENESS_PROBE_IMAGE
+          value: ${LIVENESS_PROBE_IMAGE}
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        image: ${OPERATOR_IMAGE}
+        imagePullPolicy: IfNotPresent
+        name: manila-csi-driver-operator
+        volumeMounts:
+        - name: cacert
+          mountPath: /etc/openstack-ca/
+        - name: cloud-credentials
+          # Create /etc/openstack/clouds.yaml
+          mountPath: /etc/openstack/
+        resources:
+          requests:
+            memory: 50Mi
+            cpu: 10m
+      priorityClassName: system-cluster-critical
+      serviceAccountName: manila-csi-driver-operator
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      volumes:
+      - name: cacert
+        # Extract ca-bundle.pem to /usr/share/pki/ca-trust-source if present.
+        # Let the pod start when the ConfigMap does not exist or the certificate
+        # is not preset there. The certificate file will be created once the
+        # ConfigMap is created / the cerificate is added to it.
+        configMap:
+          name: cloud-provider-config
+          items:
+            - key: ca-bundle.pem
+              path: ca-bundle.pem
+          optional: true
+      - name: cloud-credentials
+        secret:
+          secretName: manila-cloud-credentials
+          optional: false
+`)
+
+func csidriveroperatorsManila07_deploymentYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsManila07_deploymentYaml, nil
+}
+
+func csidriveroperatorsManila07_deploymentYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsManila07_deploymentYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/manila/07_deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsManila08_crYaml = []byte(`apiVersion: operator.openshift.io/v1
+kind: ClusterCSIDriver
+metadata:
+  name: manila.csi.openstack.org
+spec:
+  managementState: Managed
+  logLevel: Normal
+  operatorLogLevel: Normal
+  driverConfig:
+    driverName: manila.csi.openstack.org
+`)
+
+func csidriveroperatorsManila08_crYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsManila08_crYaml, nil
+}
+
+func csidriveroperatorsManila08_crYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsManila08_crYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/manila/08_cr.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsManila09_credentialsYaml = []byte(`apiVersion: cloudcredential.openshift.io/v1
+kind: CredentialsRequest
+metadata:
+  name: openshift-manila-csi-driver
+  namespace: openshift-cloud-credential-operator
+spec:
+  secretRef:
+    name: manila-cloud-credentials
+    namespace: openshift-cluster-csi-drivers
+  providerSpec:
+    apiVersion: cloudcredential.openshift.io/v1
+    kind: OpenStackProviderSpec
+`)
+
+func csidriveroperatorsManila09_credentialsYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsManila09_credentialsYaml, nil
+}
+
+func csidriveroperatorsManila09_credentialsYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsManila09_credentialsYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/manila/09_credentials.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1411,6 +1983,15 @@ var _bindata = map[string]func() (*asset, error){
 	"csidriveroperators/aws-ebs/06_clusterrolebinding.yaml": csidriveroperatorsAwsEbs06_clusterrolebindingYaml,
 	"csidriveroperators/aws-ebs/07_deployment.yaml":         csidriveroperatorsAwsEbs07_deploymentYaml,
 	"csidriveroperators/aws-ebs/08_cr.yaml":                 csidriveroperatorsAwsEbs08_crYaml,
+	"csidriveroperators/manila/01_namespace.yaml":           csidriveroperatorsManila01_namespaceYaml,
+	"csidriveroperators/manila/02_sa.yaml":                  csidriveroperatorsManila02_saYaml,
+	"csidriveroperators/manila/03_role.yaml":                csidriveroperatorsManila03_roleYaml,
+	"csidriveroperators/manila/04_rolebinding.yaml":         csidriveroperatorsManila04_rolebindingYaml,
+	"csidriveroperators/manila/05_clusterrole.yaml":         csidriveroperatorsManila05_clusterroleYaml,
+	"csidriveroperators/manila/06_clusterrolebinding.yaml":  csidriveroperatorsManila06_clusterrolebindingYaml,
+	"csidriveroperators/manila/07_deployment.yaml":          csidriveroperatorsManila07_deploymentYaml,
+	"csidriveroperators/manila/08_cr.yaml":                  csidriveroperatorsManila08_crYaml,
+	"csidriveroperators/manila/09_credentials.yaml":         csidriveroperatorsManila09_credentialsYaml,
 	"csidriveroperators/ovirt/01_namespace.yaml":            csidriveroperatorsOvirt01_namespaceYaml,
 	"csidriveroperators/ovirt/02_sa.yaml":                   csidriveroperatorsOvirt02_saYaml,
 	"csidriveroperators/ovirt/03_role.yaml":                 csidriveroperatorsOvirt03_roleYaml,
@@ -1478,6 +2059,17 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"06_clusterrolebinding.yaml": {csidriveroperatorsAwsEbs06_clusterrolebindingYaml, map[string]*bintree{}},
 			"07_deployment.yaml":         {csidriveroperatorsAwsEbs07_deploymentYaml, map[string]*bintree{}},
 			"08_cr.yaml":                 {csidriveroperatorsAwsEbs08_crYaml, map[string]*bintree{}},
+		}},
+		"manila": {nil, map[string]*bintree{
+			"01_namespace.yaml":          {csidriveroperatorsManila01_namespaceYaml, map[string]*bintree{}},
+			"02_sa.yaml":                 {csidriveroperatorsManila02_saYaml, map[string]*bintree{}},
+			"03_role.yaml":               {csidriveroperatorsManila03_roleYaml, map[string]*bintree{}},
+			"04_rolebinding.yaml":        {csidriveroperatorsManila04_rolebindingYaml, map[string]*bintree{}},
+			"05_clusterrole.yaml":        {csidriveroperatorsManila05_clusterroleYaml, map[string]*bintree{}},
+			"06_clusterrolebinding.yaml": {csidriveroperatorsManila06_clusterrolebindingYaml, map[string]*bintree{}},
+			"07_deployment.yaml":         {csidriveroperatorsManila07_deploymentYaml, map[string]*bintree{}},
+			"08_cr.yaml":                 {csidriveroperatorsManila08_crYaml, map[string]*bintree{}},
+			"09_credentials.yaml":        {csidriveroperatorsManila09_credentialsYaml, map[string]*bintree{}},
 		}},
 		"ovirt": {nil, map[string]*bintree{
 			"01_namespace.yaml":          {csidriveroperatorsOvirt01_namespaceYaml, map[string]*bintree{}},
