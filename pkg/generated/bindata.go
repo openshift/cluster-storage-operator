@@ -8,6 +8,15 @@
 // assets/csidriveroperators/aws-ebs/06_clusterrolebinding.yaml
 // assets/csidriveroperators/aws-ebs/07_deployment.yaml
 // assets/csidriveroperators/aws-ebs/08_cr.yaml
+// assets/csidriveroperators/ovirt/01_namespace.yaml
+// assets/csidriveroperators/ovirt/02_sa.yaml
+// assets/csidriveroperators/ovirt/03_role.yaml
+// assets/csidriveroperators/ovirt/04_rolebinding.yaml
+// assets/csidriveroperators/ovirt/05_clusterrole.yaml
+// assets/csidriveroperators/ovirt/06_clusterrolebinding.yaml
+// assets/csidriveroperators/ovirt/07_deployment.yaml
+// assets/csidriveroperators/ovirt/08_cr.yaml
+// assets/csidriveroperators/ovirt/09_credential_request.yaml
 // assets/storageclasses/aws.yaml
 // assets/storageclasses/azure.yaml
 // assets/storageclasses/gcp.yaml
@@ -581,6 +590,624 @@ func csidriveroperatorsAwsEbs08_crYaml() (*asset, error) {
 	return a, nil
 }
 
+var _csidriveroperatorsOvirt01_namespaceYaml = []byte(`---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsOvirt01_namespaceYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOvirt01_namespaceYaml, nil
+}
+
+func csidriveroperatorsOvirt01_namespaceYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOvirt01_namespaceYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/ovirt/01_namespace.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOvirt02_saYaml = []byte(`---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ovirt-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsOvirt02_saYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOvirt02_saYaml, nil
+}
+
+func csidriveroperatorsOvirt02_saYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOvirt02_saYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/ovirt/02_sa.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOvirt03_roleYaml = []byte(`---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ovirt-csi-driver-operator-role
+  namespace: openshift-cluster-csi-drivers
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - pods
+      - services
+      - endpoints
+      - persistentvolumeclaims
+      - events
+      - configmaps
+      - secrets
+    verbs:
+      - '*'
+  - apiGroups:
+      - ''
+    resources:
+      - namespaces
+    verbs:
+      - get
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - daemonsets
+      - replicasets
+      - statefulsets
+    verbs:
+      - '*'
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - servicemonitors
+    verbs:
+      - get
+      - create
+`)
+
+func csidriveroperatorsOvirt03_roleYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOvirt03_roleYaml, nil
+}
+
+func csidriveroperatorsOvirt03_roleYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOvirt03_roleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/ovirt/03_role.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOvirt04_rolebindingYaml = []byte(`---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ovirt-csi-driver-operator-rolebinding
+  namespace: openshift-cluster-csi-drivers
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ovirt-csi-driver-operator-role
+subjects:
+  - kind: ServiceAccount
+    name: ovirt-csi-driver-operator
+    namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsOvirt04_rolebindingYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOvirt04_rolebindingYaml, nil
+}
+
+func csidriveroperatorsOvirt04_rolebindingYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOvirt04_rolebindingYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/ovirt/04_rolebinding.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOvirt05_clusterroleYaml = []byte(`---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ovirt-csi-driver-operator-clusterrole
+rules:
+- apiGroups:
+  - security.openshift.io
+  resourceNames:
+  - privileged
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - use
+- apiGroups:
+  - ''
+  resourceNames:
+  - extension-apiserver-authentication
+  - ovirt-csi-driver-operator-lock
+  resources:
+  - configmaps
+  verbs:
+  - '*'
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterroles
+  - clusterrolebindings
+  - roles
+  - rolebindings
+  verbs:
+  - watch
+  - list
+  - get
+  - create
+  - delete
+  - patch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - list
+  - create
+  - watch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - nodes
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - delete
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumes
+  verbs:
+  - create
+  - delete
+  - list
+  - get
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims/status
+  verbs:
+  - patch
+  - update
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattachments
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - delete
+  - create
+  - patch
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotcontents/status
+  verbs:
+  - update
+  - patch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  - csinodes
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - '*'
+  resources:
+  - events
+  verbs:
+  - get
+  - patch
+  - create
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotclasses
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotcontents
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshots
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - csidrivers
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - csi.openshift.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - cloudcredential.openshift.io
+  resources:
+  - credentialsrequests
+  verbs:
+  - '*'
+- apiGroups:
+  - config.openshift.io
+  resources:
+  - infrastructures
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - operator.openshift.io
+  resources:
+  - clustercsidrivers
+  - clustercsidrivers/status
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+`)
+
+func csidriveroperatorsOvirt05_clusterroleYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOvirt05_clusterroleYaml, nil
+}
+
+func csidriveroperatorsOvirt05_clusterroleYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOvirt05_clusterroleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/ovirt/05_clusterrole.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOvirt06_clusterrolebindingYaml = []byte(`---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ovirt-csi-driver-operator-clusterrolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ovirt-csi-driver-operator-clusterrole
+subjects:
+- kind: ServiceAccount
+  name: ovirt-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsOvirt06_clusterrolebindingYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOvirt06_clusterrolebindingYaml, nil
+}
+
+func csidriveroperatorsOvirt06_clusterrolebindingYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOvirt06_clusterrolebindingYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/ovirt/06_clusterrolebinding.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOvirt07_deploymentYaml = []byte(`---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ovirt-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: ovirt-csi-driver-operator
+  template:
+    metadata:
+      labels:
+        name: ovirt-csi-driver-operator
+    spec:
+      serviceAccountName: ovirt-csi-driver-operator
+      priorityClassName: system-cluster-critical
+      initContainers:
+        - name: prepare-ovirt-config
+          env:
+            - name: OVIRT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ovirt-credentials
+                  key: ovirt_url
+            - name: OVIRT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ovirt-credentials
+                  key: ovirt_username
+            - name: OVIRT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ovirt-credentials
+                  key: ovirt_password
+            - name: OVIRT_CAFILE
+              value: /tmp/config/ovirt-engine-ca.pem
+            - name: OVIRT_INSECURE
+              valueFrom:
+                secretKeyRef:
+                  name: ovirt-credentials
+                  key: ovirt_insecure
+            - name: OVIRT_CA_BUNDLE
+              valueFrom:
+                secretKeyRef:
+                  name: ovirt-credentials
+                  key: ovirt_ca_bundle
+          image: ${OPERATOR_IMAGE}
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 10m
+          command:
+            - /bin/sh
+            - -c
+            - |
+              #!/bin/sh
+              cat << EOF > /tmp/config/ovirt-config.yaml
+              ovirt_url: $OVIRT_URL
+              ovirt_username: $OVIRT_USERNAME
+              ovirt_password: $OVIRT_PASSWORD
+              # set a valid path only if ca bundle has content
+              ovirt_cafile: ${OVIRT_CA_BUNDLE:+$OVIRT_CAFILE}
+              ovirt_insecure: $OVIRT_INSECURE
+              EOF
+              if [[ -n "$OVIRT_CA_BUNDLE" ]]; then echo "$OVIRT_CA_BUNDLE" > $OVIRT_CAFILE ; fi
+          volumeMounts:
+            - name: config
+              mountPath: /tmp/config
+
+      containers:
+        - name: ovirt-csi-driver-operator
+          image: ${OPERATOR_IMAGE}
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 10m
+          tolerations:
+            - key: CriticalAddonsOnly
+              operator: Exists
+          args:
+            - start
+            - "--node=$(KUBE_NODE_NAME)"
+            - -v=${LOG_LEVEL}
+          env:
+            - name: OPERATOR_NAME
+              value: ovirt-csi-driver-operator
+            - name: DRIVER_IMAGE
+              value: ${DRIVER_IMAGE}
+            - name: PROVISIONER_IMAGE
+              value: ${PROVISIONER_IMAGE}
+            - name: ATTACHER_IMAGE
+              value: ${ATTACHER_IMAGE}
+            - name: RESIZER_IMAGE
+              value: ${RESIZER_IMAGE}
+            - name: SNAPSHOTTER_IMAGE
+              value: ${SNAPSHOTTER_IMAGE}
+            - name: NODE_DRIVER_REGISTRAR_IMAGE
+              value: ${NODE_DRIVER_REGISTRAR_IMAGE}
+            - name: LIVENESS_PROBE_IMAGE
+              value: ${LIVENESS_PROBE_IMAGE}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
+            - name: OVIRT_CONFIG
+              value: /tmp/config/ovirt-config.yaml
+          volumeMounts:
+            - name: config
+              mountPath: /tmp/config
+      volumes:
+        - name: config
+          emptyDir: {}
+`)
+
+func csidriveroperatorsOvirt07_deploymentYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOvirt07_deploymentYaml, nil
+}
+
+func csidriveroperatorsOvirt07_deploymentYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOvirt07_deploymentYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/ovirt/07_deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOvirt08_crYaml = []byte(`---
+apiVersion: operator.openshift.io/v1
+kind: ClusterCSIDriver
+metadata:
+  name: csi.ovirt.org
+spec:
+  driverConfig:
+    driverName: csi.ovirt.org
+  logLevel: Normal
+  managementState: Managed
+  operatorLogLevel: Normal
+`)
+
+func csidriveroperatorsOvirt08_crYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOvirt08_crYaml, nil
+}
+
+func csidriveroperatorsOvirt08_crYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOvirt08_crYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/ovirt/08_cr.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOvirt09_credential_requestYaml = []byte(`apiVersion: cloudcredential.openshift.io/v1
+kind: CredentialsRequest
+metadata:
+  name: ovirt-csi-driver-operator
+  namespace: openshift-cloud-credential-operator
+spec:
+  providerSpec:
+    apiVersion: cloudcredential.openshift.io/v1
+    kind: OvirtProviderSpec
+  secretRef:
+    name: ovirt-credentials
+    namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsOvirt09_credential_requestYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOvirt09_credential_requestYaml, nil
+}
+
+func csidriveroperatorsOvirt09_credential_requestYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOvirt09_credential_requestYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/ovirt/09_credential_request.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _storageclassesAwsYaml = []byte(`apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -784,6 +1411,15 @@ var _bindata = map[string]func() (*asset, error){
 	"csidriveroperators/aws-ebs/06_clusterrolebinding.yaml": csidriveroperatorsAwsEbs06_clusterrolebindingYaml,
 	"csidriveroperators/aws-ebs/07_deployment.yaml":         csidriveroperatorsAwsEbs07_deploymentYaml,
 	"csidriveroperators/aws-ebs/08_cr.yaml":                 csidriveroperatorsAwsEbs08_crYaml,
+	"csidriveroperators/ovirt/01_namespace.yaml":            csidriveroperatorsOvirt01_namespaceYaml,
+	"csidriveroperators/ovirt/02_sa.yaml":                   csidriveroperatorsOvirt02_saYaml,
+	"csidriveroperators/ovirt/03_role.yaml":                 csidriveroperatorsOvirt03_roleYaml,
+	"csidriveroperators/ovirt/04_rolebinding.yaml":          csidriveroperatorsOvirt04_rolebindingYaml,
+	"csidriveroperators/ovirt/05_clusterrole.yaml":          csidriveroperatorsOvirt05_clusterroleYaml,
+	"csidriveroperators/ovirt/06_clusterrolebinding.yaml":   csidriveroperatorsOvirt06_clusterrolebindingYaml,
+	"csidriveroperators/ovirt/07_deployment.yaml":           csidriveroperatorsOvirt07_deploymentYaml,
+	"csidriveroperators/ovirt/08_cr.yaml":                   csidriveroperatorsOvirt08_crYaml,
+	"csidriveroperators/ovirt/09_credential_request.yaml":   csidriveroperatorsOvirt09_credential_requestYaml,
 	"storageclasses/aws.yaml":                               storageclassesAwsYaml,
 	"storageclasses/azure.yaml":                             storageclassesAzureYaml,
 	"storageclasses/gcp.yaml":                               storageclassesGcpYaml,
@@ -842,6 +1478,17 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"06_clusterrolebinding.yaml": {csidriveroperatorsAwsEbs06_clusterrolebindingYaml, map[string]*bintree{}},
 			"07_deployment.yaml":         {csidriveroperatorsAwsEbs07_deploymentYaml, map[string]*bintree{}},
 			"08_cr.yaml":                 {csidriveroperatorsAwsEbs08_crYaml, map[string]*bintree{}},
+		}},
+		"ovirt": {nil, map[string]*bintree{
+			"01_namespace.yaml":          {csidriveroperatorsOvirt01_namespaceYaml, map[string]*bintree{}},
+			"02_sa.yaml":                 {csidriveroperatorsOvirt02_saYaml, map[string]*bintree{}},
+			"03_role.yaml":               {csidriveroperatorsOvirt03_roleYaml, map[string]*bintree{}},
+			"04_rolebinding.yaml":        {csidriveroperatorsOvirt04_rolebindingYaml, map[string]*bintree{}},
+			"05_clusterrole.yaml":        {csidriveroperatorsOvirt05_clusterroleYaml, map[string]*bintree{}},
+			"06_clusterrolebinding.yaml": {csidriveroperatorsOvirt06_clusterrolebindingYaml, map[string]*bintree{}},
+			"07_deployment.yaml":         {csidriveroperatorsOvirt07_deploymentYaml, map[string]*bintree{}},
+			"08_cr.yaml":                 {csidriveroperatorsOvirt08_crYaml, map[string]*bintree{}},
+			"09_credential_request.yaml": {csidriveroperatorsOvirt09_credential_requestYaml, map[string]*bintree{}},
 		}},
 	}},
 	"storageclasses": {nil, map[string]*bintree{
