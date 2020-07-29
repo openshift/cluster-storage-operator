@@ -30,9 +30,10 @@ import (
 // This CSIDriverOperatorCRController installs and syncs CSI driver operator CR. It monitors the
 // CR status and merges all its conditions to the CSO CR.
 // It produces following Conditions:
-// <CSI driver name>CSIDriverOperatorControllerDegraded on error
-// <CSI driver name>CSIDriverOperatorControllerAvailable - copied from *Available conditions from CR.
-// <CSI driver name>CSIDriverOperatorControllerProgressing - copied from *Progressing conditions from CR.
+// <CSI driver name>CSIDriverOperatorDegraded on error
+// <CSI driver name>CSIDriverOperatorCRDegraded - copied from *Degraded conditions from CR.
+// <CSI driver name>CSIDriverOperatorCRAvailable - copied from *Available conditions from CR.
+// <CSI driver name>CSIDriverOperatorCRProgressing - copied from *Progressing conditions from CR.
 type CSIDriverOperatorCRController struct {
 	name                   string
 	operatorClient         v1helpers.OperatorClient
@@ -49,8 +50,9 @@ type CSIDriverOperatorCRController struct {
 var _ factory.Controller = &CSIDriverOperatorCRController{}
 
 const (
-	csiDriverControllerName = "CSIDriverOperatorCR"
-	versionName             = "CSIDriverOperator"
+	csiDriverControllerName            = "CSIDriverOperator"
+	csiDriverControllerConditionPrefix = "CSIDriverOperatorCR"
+	versionName                        = "CSIDriverOperator"
 )
 
 var (
@@ -146,16 +148,16 @@ func (c *CSIDriverOperatorCRController) Sync(ctx context.Context, syncCtx factor
 	}
 
 	availableCnd := status.UnionCondition(operatorapi.OperatorStatusTypeAvailable, operatorapi.ConditionTrue, nil, cr.Status.Conditions...)
-	availableCnd.Type = c.Name() + operatorapi.OperatorStatusTypeAvailable
+	availableCnd.Type = c.crConditionName(operatorapi.OperatorStatusTypeAvailable)
 	if availableCnd.Status == operatorapi.ConditionUnknown {
 		availableCnd.Status = operatorapi.ConditionFalse
 		availableCnd.Reason = "WaitForOperator"
 		availableCnd.Message = fmt.Sprintf("Waiting for %s operator to report status", c.name)
 	}
 	progressingCnd := status.UnionCondition(operatorapi.OperatorStatusTypeProgressing, operatorapi.ConditionFalse, nil, cr.Status.Conditions...)
-	progressingCnd.Type = c.Name() + operatorapi.OperatorStatusTypeProgressing
+	progressingCnd.Type = c.crConditionName(operatorapi.OperatorStatusTypeProgressing)
 	degradedCnd := status.UnionCondition(operatorapi.OperatorStatusTypeDegraded, operatorapi.ConditionFalse, nil, cr.Status.Conditions...)
-	degradedCnd.Type = c.Name() + operatorapi.OperatorStatusTypeDegraded
+	degradedCnd.Type = c.crConditionName(operatorapi.OperatorStatusTypeDegraded)
 
 	// TODO: handle optional CSI driver operators (set Available: true with a proper message?)
 
@@ -190,6 +192,10 @@ func (c *CSIDriverOperatorCRController) Run(ctx context.Context, workers int) {
 
 func (c *CSIDriverOperatorCRController) Name() string {
 	return c.name + csiDriverControllerName
+}
+
+func (c *CSIDriverOperatorCRController) crConditionName(cndType string) string {
+	return c.name + csiDriverControllerConditionPrefix + cndType
 }
 
 func (c *CSIDriverOperatorCRController) applyClusterCSIDriver(requiredOriginal *operatorapi.ClusterCSIDriver, expectedGeneration int64) (*operatorapi.ClusterCSIDriver, bool, error) {
