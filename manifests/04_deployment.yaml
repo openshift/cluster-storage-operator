@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-storage-operator
+  namespace: openshift-cluster-storage-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: cluster-storage-operator
+  template:
+    metadata:
+      labels:
+        name: cluster-storage-operator
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - key: node-role.kubernetes.io/master  # Just tolerate NoSchedule taint on master node. If there are other conditions like disk-pressure etc, let's not schedule the control-plane pods onto that node.
+        operator: Exists
+        effect: "NoSchedule"
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 120 # Evict pods within 2 mins.
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 120 # Evict pods within 2 mins.
+      priorityClassName: system-cluster-critical
+      serviceAccountName: cluster-storage-operator
+      containers:
+        - name: cluster-storage-operator
+          image: quay.io/openshift/origin-cluster-storage-operator:latest
+          terminationMessagePolicy: FallbackToLogsOnError
+          ports:
+          - containerPort: 60000
+            name: metrics
+          command:
+          - cluster-storage-operator
+          - start
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: OPERATOR_IMAGE_VERSION
+            value: "0.0.1-snapshot"
+          - name: OPERAND_IMAGE_VERSION
+            value: "0.0.1-snapshot"
+          - name: AWS_EBS_DRIVER_OPERATOR_IMAGE
+            value: quay.io/openshift/origin-aws-ebs-csi-driver-operator:latest
+          - name: AWS_EBS_DRIVER_IMAGE
+            value: quay.io/openshift/origin-aws-ebs-csi-driver:latest
+          - name: PROVISIONER_IMAGE
+            value: quay.io/openshift/origin-csi-external-provisioner:latest
+          - name: ATTACHER_IMAGE
+            value: quay.io/openshift/origin-csi-external-attacher:latest
+          - name: RESIZER_IMAGE
+            value: quay.io/openshift/origin-csi-external-resizer:latest
+          - name: SNAPSHOTTER_IMAGE
+            value: quay.io/openshift/origin-csi-external-snapshotter:latest
+          - name: NODE_DRIVER_REGISTRAR_IMAGE
+            value: quay.io/openshift/origin-csi-node-driver-registrar:latest
+          - name: LIVENESS_PROBE_IMAGE
+            value: quay.io/openshift/origin-csi-livenessprobe:latest
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi

@@ -1,0 +1,10 @@
+apiVersion: config.openshift.io/v1
+kind: ClusterOperator
+metadata:
+  name: storage
+spec:
+  managementState: Managed
+status:
+  versions:
+  - name: operator
+    version: "0.0.1-snapshot"

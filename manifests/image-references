@@ -5,4 +5,36 @@ spec:
   - name: cluster-storage-operator
     from:
       kind: DockerImage
-      name: openshift/origin-cluster-storage-operator:latest
+      name: quay.io/openshift/origin-cluster-storage-operator:latest
+  - name: aws-ebs-csi-driver-operator
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-aws-ebs-csi-driver-operator:latest
+  - name: aws-ebs-csi-driver
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-aws-ebs-csi-driver:latest
+  - name: csi-external-provisioner
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-csi-external-provisioner:latest
+  - name: csi-external-attacher
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-csi-external-attacher:latest
+  - name: csi-external-resizer
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-csi-external-resizer:latest
+  - name: csi-external-snapshotter
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-csi-external-snapshotter:latest
+  - name: csi-node-driver-registrar
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-csi-node-driver-registrar:latest
+  - name: csi-livenessprobe
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-csi-livenessprobe:latest

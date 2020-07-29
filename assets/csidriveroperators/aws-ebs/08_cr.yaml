@@ -1,0 +1,10 @@
+apiVersion: operator.openshift.io/v1
+kind: "ClusterCSIDriver"
+metadata:
+  name: "ebs.csi.aws.com"
+spec:
+  driverConfig:
+    driverName: "ebs.csi.aws.com"
+  logLevel: Normal
+  managementState: Managed
+  operatorLogLevel: Normal
