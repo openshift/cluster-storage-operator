@@ -2,7 +2,6 @@ package csidriveroperator
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	operatorapi "github.com/openshift/api/operator/v1"
@@ -34,6 +33,9 @@ import (
 //    really removed. Keep the old namespace around, as it can contain
 //    Manila secrets that are used by existing PVs!
 // 3. Remove the old CR (incl. removing of all of its finalizers).
+// It produces following conditions:
+// <CSI driver name>OLMOperatorRemovalProgressing/Degraded: for status reporting.
+// <CSI driver name>OLMOperatorRemovalAvailable: to signal that the removal has been complete
 type OLMOperatorRemovalController struct {
 	name             string
 	operatorClient   *operatorclient.OperatorClient
@@ -45,12 +47,8 @@ type OLMOperatorRemovalController struct {
 	daemonSetLister  appslisters.DaemonSetLister
 	eventRecorder    events.Recorder
 	factory          *factory.Factory
-	onFinish         func()
 
 	olmOperatorNamespace string
-
-	lock     sync.Mutex
-	finished bool
 }
 
 const (
@@ -200,6 +198,7 @@ func (c *OLMOperatorRemovalController) Sync(ctx context.Context, syncCtx factory
 	}
 
 	// 6. Remove CR
+	removed, err = c.ensureCRRemoved(ctx, c.olmOptions.CRResource)
 	if err != nil {
 		return err
 	}
@@ -334,22 +333,11 @@ func (c *OLMOperatorRemovalController) markFinished(message string) error {
 	if err := c.saveOperatorNamespace(""); err != nil {
 		return err
 	}
-	if _, _, err := v1helpers.UpdateStatus(c.operatorClient,
+	_, _, err := v1helpers.UpdateStatus(c.operatorClient,
 		v1helpers.UpdateConditionFn(progressing),
 		v1helpers.UpdateConditionFn(available),
-	); err != nil {
-		return err
-	}
-
-	// Let the new CSI driver operator start
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	if !c.finished && c.onFinish != nil {
-		// Run it only once. Run asynchronusly so this function is not blocked.
-		go c.onFinish()
-	}
-	c.finished = true
-	return nil
+	)
+	return err
 }
 
 func (c *OLMOperatorRemovalController) ensureOperatorDeploymentRemoved(namespace, name string) (bool, error) {
@@ -437,12 +425,6 @@ func (c *OLMOperatorRemovalController) ensureCRRemoved(ctx context.Context, res 
 	return false, nil
 }
 
-func (c *OLMOperatorRemovalController) SetFinishedHandler(onFinish func()) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	c.onFinish = onFinish
-}
-
 func (c *OLMOperatorRemovalController) Run(ctx context.Context, workers int) {
 	// This adds event handlers to informers.
 	ctrl := c.factory.WithSync(c.Sync).ToController(c.name+csiDriverControllerName, c.eventRecorder)
@@ -451,13 +433,6 @@ func (c *OLMOperatorRemovalController) Run(ctx context.Context, workers int) {
 
 func (c *OLMOperatorRemovalController) Name() string {
 	return c.name + olmOperatorRemovalControllerName
-}
-
-func (c *OLMOperatorRemovalController) OldCSIDriverRemoved() bool {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	return c.finished
 }
 
 const (
@@ -477,4 +452,14 @@ var csvResourceGVR schema.GroupVersionResource = schema.GroupVersionResource{
 	Group:    olmGroup,
 	Version:  olmVersion,
 	Resource: csvResource,
+}
+
+func olmRemovalComplete(cfg csioperatorclient.CSIOperatorConfig, operatorStatus *operatorapi.OperatorStatus) bool {
+	if cfg.OLMOptions == nil {
+		// This CSI driver does not need removal from OLM
+		return true
+	}
+	return v1helpers.IsOperatorConditionTrue(
+		operatorStatus.Conditions,
+		cfg.ConditionPrefix+olmOperatorRemovalControllerName+operatorapi.OperatorStatusTypeAvailable)
 }

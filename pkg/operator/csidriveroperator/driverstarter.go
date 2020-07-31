@@ -41,12 +41,8 @@ type CSIDriverStarterController struct {
 
 type csiDriverControllerManager struct {
 	operatorConfig csioperatorclient.CSIOperatorConfig
-	// Controller that deletes old OLM-based operator (optional).
-	olmRemovalController        *OLMOperatorRemovalController
-	olmRemovalControllerRunning bool
 	// ControllerManager that installs the CSI driver operator and all its
-	// objects. It is started after olmRemovalController confirms the old
-	// driver is gone.
+	// objects.
 	driverManager        manager.ControllerManager
 	driverManagerRunning bool
 }
@@ -75,11 +71,9 @@ func NewCSIDriverStarterController(
 	c.controllers = []csiDriverControllerManager{}
 	for _, cfg := range driverConfigs {
 		c.controllers = append(c.controllers, csiDriverControllerManager{
-			operatorConfig:              cfg,
-			olmRemovalController:        NewOLMOperatorRemovalController(cfg, clients, c.eventRecorder, resyncInterval),
-			olmRemovalControllerRunning: false,
-			driverManager:               c.createCSIControllerManager(cfg, clients, resyncInterval),
-			driverManagerRunning:        false,
+			operatorConfig:       cfg,
+			driverManager:        c.createCSIControllerManager(cfg, clients, resyncInterval),
+			driverManagerRunning: false,
 		})
 	}
 
@@ -117,27 +111,6 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 		if ctrl.operatorConfig.Platform != platform {
 			continue
 		}
-		klog.V(4).Infof("CSIDriverStarterController syncing %s", ctrl.operatorConfig.ConditionPrefix)
-
-		if ctrl.olmRemovalController != nil {
-			if !ctrl.olmRemovalControllerRunning {
-				// Start the OLM removal controller
-				klog.V(2).Infof("Starting OLM removal controller for %s", ctrl.operatorConfig.ConditionPrefix)
-				queue := syncCtx.Queue()
-				key := syncCtx.QueueKey()
-				ctrl.olmRemovalController.SetFinishedHandler(func() {
-					// Resync this controller when the migration is completed
-					queue.Add(key)
-				})
-				go ctrl.olmRemovalController.Run(ctx, 1)
-				ctrl.olmRemovalControllerRunning = true
-			}
-			// Wait until the removal finishes
-			if !ctrl.olmRemovalController.OldCSIDriverRemoved() {
-				return nil
-			}
-		}
-		// Removal is either complete or is not needed
 		if !ctrl.driverManagerRunning {
 			klog.V(2).Infof("Starting ControllerManager for %s", ctrl.operatorConfig.ConditionPrefix)
 			go ctrl.driverManager.Start(ctx)
@@ -171,7 +144,6 @@ func (c *CSIDriverStarterController) createCSIControllerManager(
 	manager = manager.WithController(crController, 1)
 
 	manager = manager.WithController(NewCSIDriverOperatorDeploymentController(
-		cfg.ConditionPrefix,
 		clients,
 		cfg,
 		c.versionGetter,
@@ -179,6 +151,11 @@ func (c *CSIDriverStarterController) createCSIControllerManager(
 		c.eventRecorder,
 		resyncInterval,
 	), 1)
+
+	olmRemovalCtrl := NewOLMOperatorRemovalController(cfg, clients, c.eventRecorder, resyncInterval)
+	if olmRemovalCtrl != nil {
+		manager = manager.WithController(olmRemovalCtrl, 1)
+	}
 
 	for i := range cfg.ExtraControllers {
 		manager = manager.WithController(cfg.ExtraControllers[i], 1)
