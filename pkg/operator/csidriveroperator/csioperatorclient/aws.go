@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	configv1 "github.com/openshift/api/config/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
@@ -35,5 +36,17 @@ func GetAWSEBSCSIOperatorConfig() CSIOperatorConfig {
 		DeploymentAsset: "csidriveroperators/aws-ebs/07_deployment.yaml",
 		ImageReplacer:   strings.NewReplacer(pairs...),
 		Optional:        false,
+		OLMOptions: &OLMOptions{
+			CSIDriverNamespace:        "openshift-aws-ebs-csi-driver",
+			CSIDriverDeploymentName:   "aws-ebs-csi-driver-controller",
+			CSIDriverDaemonSetName:    "aws-ebs-csi-driver-node",
+			OLMOperatorDeploymentName: "aws-ebs-csi-driver-operator",
+			OLMPackageName:            "aws-ebs-csi-driver-operator",
+			CRResource: schema.GroupVersionResource{
+				Group:    "csi.openshift.io",
+				Version:  "v1alpha1",
+				Resource: "awsebsdrivers",
+			},
+		},
 	}
 }

@@ -2,6 +2,7 @@ package operatorclient
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -76,4 +77,19 @@ func (c OperatorClient) GetObjectMeta() (meta *metav1.ObjectMeta, err error) {
 		return nil, err
 	}
 	return &instance.ObjectMeta, nil
+}
+
+func (c OperatorClient) SetObjectAnnotation(name, value string) error {
+	instance, err := c.Informers.Operator().V1().Storages().Lister().Get(GlobalConfigName)
+	if err != nil {
+		return err
+	}
+
+	newInstance := instance.DeepCopy()
+	metav1.SetMetaDataAnnotation(&newInstance.ObjectMeta, name, value)
+	if !reflect.DeepEqual(instance.Annotations, newInstance.Annotations) {
+		_, err := c.Client.OperatorV1().Storages().Update(context.TODO(), newInstance, metav1.UpdateOptions{})
+		return err
+	}
+	return nil
 }

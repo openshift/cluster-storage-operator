@@ -10,13 +10,13 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/generated"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
+	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/controller/manager"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
 	"github.com/openshift/library-go/pkg/operator/status"
-	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"k8s.io/klog/v2"
 )
 
@@ -25,12 +25,12 @@ const (
 )
 
 // This CSIDriverStarterController starts CSI driver controllers based on the
-// underlying cloud. It does not install anything by itself, only monitors
-// Infrastructure instance and starts individual ControllerManagers for the
-// particular cloud. It produces following Conditions:
+// underlying cloud and removes it from OLM. It does not install anything by
+// itself, only monitors Infrastructure instance and starts individual
+// ControllerManagers for the particular cloud. It produces following Conditions:
 // CSIDriverStarterDegraded - error checking the Infrastructure
 type CSIDriverStarterController struct {
-	operatorClient v1helpers.OperatorClient
+	operatorClient *operatorclient.OperatorClient
 	infraLister    openshiftv1.InfrastructureLister
 	versionGetter  status.VersionGetter
 	targetVersion  string
@@ -41,8 +41,14 @@ type CSIDriverStarterController struct {
 
 type csiDriverControllerManager struct {
 	operatorConfig csioperatorclient.CSIOperatorConfig
-	mgr            manager.ControllerManager
-	running        bool
+	// Controller that deletes old OLM-based operator (optional).
+	olmRemovalController        *OLMOperatorRemovalController
+	olmRemovalControllerRunning bool
+	// ControllerManager that installs the CSI driver operator and all its
+	// objects. It is started after olmRemovalController confirms the old
+	// driver is gone.
+	driverManager        manager.ControllerManager
+	driverManagerRunning bool
 }
 
 func NewCSIDriverStarterController(
@@ -69,9 +75,11 @@ func NewCSIDriverStarterController(
 	c.controllers = []csiDriverControllerManager{}
 	for _, cfg := range driverConfigs {
 		c.controllers = append(c.controllers, csiDriverControllerManager{
-			operatorConfig: cfg,
-			mgr:            c.createCSIControllerManager(cfg, clients, resyncInterval),
-			running:        false,
+			operatorConfig:              cfg,
+			olmRemovalController:        NewOLMOperatorRemovalController(cfg, clients, c.eventRecorder, resyncInterval),
+			olmRemovalControllerRunning: false,
+			driverManager:               c.createCSIControllerManager(cfg, clients, resyncInterval),
+			driverManagerRunning:        false,
 		})
 	}
 
@@ -82,6 +90,9 @@ func NewCSIDriverStarterController(
 }
 
 func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	klog.V(4).Infof("CSIDriverStarterController.Sync started")
+	defer klog.V(4).Infof("CSIDriverStarterController.Sync finished")
+
 	opSpec, _, _, err := c.operatorClient.GetOperatorState()
 	if err != nil {
 		return err
@@ -102,10 +113,35 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 	}
 
 	for i := range c.controllers {
-		if c.controllers[i].operatorConfig.Platform == platform && !c.controllers[i].running {
-			klog.V(2).Infof("Starting CSI driver controller manager %s", c.controllers[i].operatorConfig.ConditionPrefix)
-			go c.controllers[i].mgr.Start(ctx)
-			c.controllers[i].running = true
+		ctrl := &c.controllers[i]
+		if ctrl.operatorConfig.Platform != platform {
+			continue
+		}
+		klog.V(4).Infof("CSIDriverStarterController syncing %s", ctrl.operatorConfig.ConditionPrefix)
+
+		if ctrl.olmRemovalController != nil {
+			if !ctrl.olmRemovalControllerRunning {
+				// Start the OLM removal controller
+				klog.V(2).Infof("Starting OLM removal controller for %s", ctrl.operatorConfig.ConditionPrefix)
+				queue := syncCtx.Queue()
+				key := syncCtx.QueueKey()
+				ctrl.olmRemovalController.SetFinishedHandler(func() {
+					// Resync this controller when the migration is completed
+					queue.Add(key)
+				})
+				go ctrl.olmRemovalController.Run(ctx, 1)
+				ctrl.olmRemovalControllerRunning = true
+			}
+			// Wait until the removal finishes
+			if !ctrl.olmRemovalController.OldCSIDriverRemoved() {
+				return nil
+			}
+		}
+		// Removal is either complete or is not needed
+		if !ctrl.driverManagerRunning {
+			klog.V(2).Infof("Starting ControllerManager for %s", ctrl.operatorConfig.ConditionPrefix)
+			go ctrl.driverManager.Start(ctx)
+			ctrl.driverManagerRunning = true
 		}
 	}
 	return nil
@@ -125,13 +161,14 @@ func (c *CSIDriverStarterController) createCSIControllerManager(
 		c.operatorClient,
 		c.eventRecorder).AddKubeInformers(clients.KubeInformers), 1)
 
-	manager = manager.WithController(NewCSIDriverOperatorCRController(
+	crController := NewCSIDriverOperatorCRController(
 		cfg.ConditionPrefix,
 		clients,
 		cfg,
 		c.eventRecorder,
 		resyncInterval,
-	), 1)
+	)
+	manager = manager.WithController(crController, 1)
 
 	manager = manager.WithController(NewCSIDriverOperatorDeploymentController(
 		cfg.ConditionPrefix,
