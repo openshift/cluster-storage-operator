@@ -143,5 +143,9 @@ func (c *CSIDriverStarterController) createCSIControllerManager(
 		resyncInterval,
 	), 1)
 
+	for i := range cfg.ExtraControllers {
+		manager = manager.WithController(cfg.ExtraControllers[i], 1)
+	}
+
 	return manager
 }

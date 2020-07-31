@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	configv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/library-go/pkg/controller/factory"
 )
 
 // CSIOperatorConfig is configuration of a CSI driver operator.
@@ -31,4 +32,6 @@ type CSIOperatorConfig struct {
 	ImageReplacer *strings.Replacer
 	// Whether the CSI driver is optional (i.e. CSO is Available / not Degraded).
 	Optional bool
+	// Extra controllers to start with the CSI driver operator
+	ExtraControllers []factory.Controller
 }

@@ -1,0 +1,10 @@
+apiVersion: operator.openshift.io/v1
+kind: ClusterCSIDriver
+metadata:
+  name: manila.csi.openstack.org
+spec:
+  managementState: Managed
+  logLevel: Normal
+  operatorLogLevel: Normal
+  driverConfig:
+    driverName: manila.csi.openstack.org

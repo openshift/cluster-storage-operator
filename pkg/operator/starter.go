@@ -56,6 +56,8 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		{Group: operatorv1.GroupName, Resource: "storages", Name: operatorclient.GlobalConfigName},
 		// Sync with operatorv1.CSIDriverName consts!
 		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.AWSEBSCSIDriver)},
+		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.OvirtCSIDriver)},
+		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.ManilaCSIDriver)},
 		// TODO: remove when the driver moves to csidriveroperator.CSIOperatorNamespace
 		{Resource: "namespaces", Name: "openshift-aws-ebs-csi-driver"},
 	}
@@ -112,5 +114,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 func populateConfigs(clients *csoclients.Clients, recorder events.Recorder) []csioperatorclient.CSIOperatorConfig {
 	return []csioperatorclient.CSIOperatorConfig{
 		csioperatorclient.GetAWSEBSCSIOperatorConfig(),
+		csioperatorclient.GetOVirtCSIOperatorConfig(clients, recorder),
+		csioperatorclient.GetManilaOperatorConfig(clients, recorder),
 	}
 }
