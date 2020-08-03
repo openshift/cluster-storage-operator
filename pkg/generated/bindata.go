@@ -807,6 +807,10 @@ rules:
   - get
   - list
   - watch
+  # For CA certificate sync
+  - create
+  - patch
+  - update
 - apiGroups:
   - ''
   resources:
@@ -1136,7 +1140,7 @@ func csidriveroperatorsManila08_crYaml() (*asset, error) {
 var _csidriveroperatorsManila09_credentialsYaml = []byte(`apiVersion: cloudcredential.openshift.io/v1
 kind: CredentialsRequest
 metadata:
-  name: openshift-manila-csi-driver
+  name: openshift-manila-csi-driver-operator
   namespace: openshift-cloud-credential-operator
 spec:
   secretRef:

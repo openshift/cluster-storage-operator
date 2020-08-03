@@ -76,6 +76,10 @@ rules:
   - get
   - list
   - watch
+  # For CA certificate sync
+  - create
+  - patch
+  - update
 - apiGroups:
   - ''
   resources:
