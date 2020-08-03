@@ -5,6 +5,7 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/library-go/pkg/controller/factory"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // CSIOperatorConfig is configuration of a CSI driver operator.
@@ -34,4 +35,17 @@ type CSIOperatorConfig struct {
 	Optional bool
 	// Extra controllers to start with the CSI driver operator
 	ExtraControllers []factory.Controller
+	// Optional configuration of migration from OLM to CSO
+	OLMOptions *OLMOptions
+}
+
+// OLMOptions contains information that is necessary to remove old CSI driver
+// operator from OLM.
+type OLMOptions struct {
+	// Name of Deployment of OLM-managed operator. The namespace is autodetected from Subscription.
+	OLMOperatorDeploymentName string
+	// Name of package in OLM
+	OLMPackageName string
+	// Resource of the old operator CR
+	CRResource schema.GroupVersionResource
 }

@@ -49,7 +49,6 @@ const (
 )
 
 func NewCSIDriverOperatorDeploymentController(
-	name string,
 	clients *csoclients.Clients,
 	csiOperatorConfig csioperatorclient.CSIOperatorConfig,
 	versionGetter status.VersionGetter,
@@ -73,13 +72,13 @@ func NewCSIDriverOperatorDeploymentController(
 		clients.KubeInformers.InformersFor(csoclients.CSIOperatorNamespace).Apps().V1().Deployments().Informer())
 
 	c := &CSIDriverOperatorDeploymentController{
-		name:              name,
+		name:              csiOperatorConfig.ConditionPrefix,
 		operatorClient:    clients.OperatorClient,
 		csiOperatorConfig: csiOperatorConfig,
 		kubeClient:        clients.KubeClient,
 		versionGetter:     versionGetter,
 		targetVersion:     targetVersion,
-		eventRecorder:     eventRecorder.WithComponentSuffix(name),
+		eventRecorder:     eventRecorder.WithComponentSuffix(csiOperatorConfig.ConditionPrefix),
 		factory:           f,
 	}
 	return c
@@ -94,6 +93,13 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 		return err
 	}
 	if opSpec.ManagementState != operatorapi.Managed {
+		return nil
+	}
+
+	if !olmRemovalComplete(c.csiOperatorConfig, opStatus) {
+		// Wait for the OLM driver to be removed first.
+		// OLMOperatorRemovalController already reports its own progress, so
+		// users know what's going on.
 		return nil
 	}
 
