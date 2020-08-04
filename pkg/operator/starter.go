@@ -53,13 +53,13 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	relatedObjects := []configv1.ObjectReference{
 		{Resource: "namespaces", Name: operatorNamespace},
 		{Resource: "namespaces", Name: csoclients.CSIOperatorNamespace},
+		// Manila is in its own namespace due to migration from OLM.
+		{Resource: "namespaces", Name: "openshift-manila-csi-driver"},
 		{Group: operatorv1.GroupName, Resource: "storages", Name: operatorclient.GlobalConfigName},
 		// Sync with operatorv1.CSIDriverName consts!
 		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.AWSEBSCSIDriver)},
 		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.OvirtCSIDriver)},
 		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.ManilaCSIDriver)},
-		// TODO: remove when the driver moves to csidriveroperator.CSIOperatorNamespace
-		{Resource: "namespaces", Name: "openshift-aws-ebs-csi-driver"},
 	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
 		clusterOperatorName,
