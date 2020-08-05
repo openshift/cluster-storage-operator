@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/csi/credentialsrequestcontroller"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resourcesynccontroller"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
@@ -49,6 +50,16 @@ func GetManilaOperatorConfig(clients *csoclients.Clients, recorder events.Record
 			newManilaCredentialsRequest(clients, recorder),
 		},
 		Optional: true,
+		OLMOptions: &OLMOptions{
+			OLMOperatorDeploymentName: "csi-driver-manila-operator",
+
+			OLMPackageName: "manila-csi-driver-operator",
+			CRResource: schema.GroupVersionResource{
+				Group:    "csi.openshift.io",
+				Version:  "v1alpha1",
+				Resource: "maniladrivers",
+			},
+		},
 	}
 }
 

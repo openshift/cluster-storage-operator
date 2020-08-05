@@ -10,13 +10,13 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/generated"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
+	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/controller/manager"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
 	"github.com/openshift/library-go/pkg/operator/status"
-	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"k8s.io/klog/v2"
 )
 
@@ -25,12 +25,12 @@ const (
 )
 
 // This CSIDriverStarterController starts CSI driver controllers based on the
-// underlying cloud. It does not install anything by itself, only monitors
-// Infrastructure instance and starts individual ControllerManagers for the
-// particular cloud. It produces following Conditions:
+// underlying cloud and removes it from OLM. It does not install anything by
+// itself, only monitors Infrastructure instance and starts individual
+// ControllerManagers for the particular cloud. It produces following Conditions:
 // CSIDriverStarterDegraded - error checking the Infrastructure
 type CSIDriverStarterController struct {
-	operatorClient v1helpers.OperatorClient
+	operatorClient *operatorclient.OperatorClient
 	infraLister    openshiftv1.InfrastructureLister
 	versionGetter  status.VersionGetter
 	targetVersion  string
@@ -41,8 +41,10 @@ type CSIDriverStarterController struct {
 
 type csiDriverControllerManager struct {
 	operatorConfig csioperatorclient.CSIOperatorConfig
-	mgr            manager.ControllerManager
-	running        bool
+	// ControllerManager that installs the CSI driver operator and all its
+	// objects.
+	mgr     manager.ControllerManager
+	running bool
 }
 
 func NewCSIDriverStarterController(
@@ -82,6 +84,9 @@ func NewCSIDriverStarterController(
 }
 
 func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	klog.V(4).Infof("CSIDriverStarterController.Sync started")
+	defer klog.V(4).Infof("CSIDriverStarterController.Sync finished")
+
 	opSpec, _, _, err := c.operatorClient.GetOperatorState()
 	if err != nil {
 		return err
@@ -102,10 +107,14 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 	}
 
 	for i := range c.controllers {
-		if c.controllers[i].operatorConfig.Platform == platform && !c.controllers[i].running {
-			klog.V(2).Infof("Starting CSI driver controller manager %s", c.controllers[i].operatorConfig.ConditionPrefix)
-			go c.controllers[i].mgr.Start(ctx)
-			c.controllers[i].running = true
+		ctrl := &c.controllers[i]
+		if ctrl.operatorConfig.Platform != platform {
+			continue
+		}
+		if !ctrl.running {
+			klog.V(2).Infof("Starting ControllerManager for %s", ctrl.operatorConfig.ConditionPrefix)
+			go ctrl.mgr.Start(ctx)
+			ctrl.running = true
 		}
 	}
 	return nil
@@ -125,16 +134,16 @@ func (c *CSIDriverStarterController) createCSIControllerManager(
 		c.operatorClient,
 		c.eventRecorder).AddKubeInformers(clients.KubeInformers), 1)
 
-	manager = manager.WithController(NewCSIDriverOperatorCRController(
+	crController := NewCSIDriverOperatorCRController(
 		cfg.ConditionPrefix,
 		clients,
 		cfg,
 		c.eventRecorder,
 		resyncInterval,
-	), 1)
+	)
+	manager = manager.WithController(crController, 1)
 
 	manager = manager.WithController(NewCSIDriverOperatorDeploymentController(
-		cfg.ConditionPrefix,
 		clients,
 		cfg,
 		c.versionGetter,
@@ -142,6 +151,11 @@ func (c *CSIDriverStarterController) createCSIControllerManager(
 		c.eventRecorder,
 		resyncInterval,
 	), 1)
+
+	olmRemovalCtrl := NewOLMOperatorRemovalController(cfg, clients, c.eventRecorder, resyncInterval)
+	if olmRemovalCtrl != nil {
+		manager = manager.WithController(olmRemovalCtrl, 1)
+	}
 
 	for i := range cfg.ExtraControllers {
 		manager = manager.WithController(cfg.ExtraControllers[i], 1)
