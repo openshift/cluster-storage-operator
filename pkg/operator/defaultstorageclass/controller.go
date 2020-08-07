@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	conditionsPrefix      = "DefaultStorageClassController"
+	ConditionsPrefix      = "DefaultStorageClassController"
 	infraConfigName       = "cluster"
 	disabledConditionType = "Disabled"
 )
@@ -76,11 +76,11 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 	}
 
 	availableCnd := operatorapi.OperatorCondition{
-		Type:   conditionsPrefix + operatorapi.OperatorStatusTypeAvailable,
+		Type:   ConditionsPrefix + operatorapi.OperatorStatusTypeAvailable,
 		Status: operatorapi.ConditionTrue,
 	}
 	progressingCnd := operatorapi.OperatorCondition{
-		Type:   conditionsPrefix + operatorapi.OperatorStatusTypeProgressing,
+		Type:   ConditionsPrefix + operatorapi.OperatorStatusTypeProgressing,
 		Status: operatorapi.ConditionFalse,
 	}
 
@@ -89,7 +89,7 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 		if syncErr == unsupportedPlatformError {
 			// Set Disabled condition - there is nothing to do
 			disabledCnd := operatorapi.OperatorCondition{
-				Type:    conditionsPrefix + disabledConditionType,
+				Type:    ConditionsPrefix + disabledConditionType,
 				Status:  operatorapi.ConditionTrue,
 				Reason:  "UnsupportedPlatform",
 				Message: syncErr.Error(),
@@ -121,7 +121,7 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 	if _, _, updateErr := v1helpers.UpdateStatus(c.operatorClient,
 		v1helpers.UpdateConditionFn(availableCnd),
 		v1helpers.UpdateConditionFn(progressingCnd),
-		removeConditionFn(conditionsPrefix+disabledConditionType),
+		removeConditionFn(ConditionsPrefix+disabledConditionType),
 	); updateErr != nil {
 		return errutil.NewAggregate([]error{syncErr, updateErr})
 	}

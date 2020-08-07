@@ -175,10 +175,6 @@ func (c *CSIDriverOperatorCRController) Name() string {
 	return c.name + csiDriverControllerName
 }
 
-func (c *CSIDriverOperatorCRController) crConditionName(cndType string) string {
-	return c.name + csiDriverControllerConditionPrefix + cndType
-}
-
 func (c *CSIDriverOperatorCRController) applyClusterCSIDriver(requiredOriginal *operatorapi.ClusterCSIDriver, expectedGeneration int64) (*operatorapi.ClusterCSIDriver, bool, error) {
 	err := resourceapply.SetSpecHashAnnotation(&requiredOriginal.ObjectMeta, requiredOriginal.Spec)
 	if err != nil {
@@ -238,10 +234,10 @@ func (c *CSIDriverOperatorCRController) syncConditions(conditions []operatorapi.
 			availableCnd.Message = fmt.Sprintf("Waiting for %s operator to report status", c.name)
 		}
 	}
-	availableCnd.Type = c.crConditionName(operatorapi.OperatorStatusTypeAvailable)
+	availableCnd.Type = csiDriverOperatorConditionType(c.name, operatorapi.OperatorStatusTypeAvailable)
 
 	progressingCnd := status.UnionCondition(operatorapi.OperatorStatusTypeProgressing, operatorapi.ConditionFalse, nil, conditions...)
-	progressingCnd.Type = c.crConditionName(operatorapi.OperatorStatusTypeProgressing)
+	progressingCnd.Type = csiDriverOperatorConditionType(c.name, operatorapi.OperatorStatusTypeProgressing)
 	if progressingCnd.Status == operatorapi.ConditionUnknown {
 		if disabled && c.optional {
 			progressingCnd.Status = operatorapi.ConditionFalse
@@ -253,7 +249,7 @@ func (c *CSIDriverOperatorCRController) syncConditions(conditions []operatorapi.
 	}
 
 	degradedCnd := status.UnionCondition(operatorapi.OperatorStatusTypeDegraded, operatorapi.ConditionFalse, nil, conditions...)
-	degradedCnd.Type = c.crConditionName(operatorapi.OperatorStatusTypeDegraded)
+	degradedCnd.Type = csiDriverOperatorConditionType(c.name, operatorapi.OperatorStatusTypeDegraded)
 	if degradedCnd.Status == operatorapi.ConditionUnknown {
 		degradedCnd.Status = operatorapi.ConditionFalse
 	}
@@ -282,4 +278,14 @@ func readClusterCSIDriverOrDie(objBytes []byte) *operatorapi.ClusterCSIDriver {
 		panic(err)
 	}
 	return requiredObj.(*operatorapi.ClusterCSIDriver)
+}
+
+// GetCSIDriverOperatorCRAvailableName returns name of condition that reports
+// CSI driver operator CR is Available.
+func GetCSIDriverOperatorCRAvailableName(cfg csioperatorclient.CSIOperatorConfig) string {
+	return csiDriverOperatorConditionType(cfg.ConditionPrefix, operatorapi.OperatorStatusTypeAvailable)
+}
+
+func csiDriverOperatorConditionType(csiDriverPrefix string, cndType string) string {
+	return csiDriverPrefix + csiDriverControllerConditionPrefix + cndType
 }

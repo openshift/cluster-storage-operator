@@ -149,8 +149,8 @@ func TestSync(t *testing.T) {
 			},
 			expectedObjects: testObjects{
 				storage: getCR(
-					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
-					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
+					withTrueConditions(ConditionsPrefix+opv1.OperatorStatusTypeAvailable),
+					withFalseConditions(ConditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
 				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/aws.yaml")},
 			},
@@ -165,8 +165,8 @@ func TestSync(t *testing.T) {
 			},
 			expectedObjects: testObjects{
 				storage: getCR(
-					withTrueConditions(conditionsPrefix+"Disabled", conditionsPrefix+opv1.OperatorStatusTypeAvailable),
-					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
+					withTrueConditions(ConditionsPrefix+"Disabled", ConditionsPrefix+opv1.OperatorStatusTypeAvailable),
+					withFalseConditions(ConditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
 			},
 			expectErr: false,
@@ -176,16 +176,16 @@ func TestSync(t *testing.T) {
 			name: "everything deployed",
 			initialObjects: testObjects{
 				storage: getCR(
-					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
-					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
+					withTrueConditions(ConditionsPrefix+opv1.OperatorStatusTypeAvailable),
+					withFalseConditions(ConditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
 				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/aws.yaml")},
 				infrastructure: getInfrastructure(cfgv1.AWSPlatformType),
 			},
 			expectedObjects: testObjects{
 				storage: getCR(
-					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
-					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
+					withTrueConditions(ConditionsPrefix+opv1.OperatorStatusTypeAvailable),
+					withFalseConditions(ConditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
 				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/aws.yaml")},
 			},
@@ -201,8 +201,8 @@ func TestSync(t *testing.T) {
 			},
 			expectedObjects: testObjects{
 				storage: getCR(
-					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
-					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
+					withTrueConditions(ConditionsPrefix+opv1.OperatorStatusTypeAvailable),
+					withFalseConditions(ConditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
 				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/aws.yaml", withNoDefault)},
 			},
@@ -216,8 +216,8 @@ func TestSync(t *testing.T) {
 			},
 			expectedObjects: testObjects{
 				storage: getCR(
-					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
-					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
+					withTrueConditions(ConditionsPrefix+opv1.OperatorStatusTypeProgressing),
+					withFalseConditions(ConditionsPrefix+opv1.OperatorStatusTypeAvailable),
 				),
 			},
 			expectErr: true,

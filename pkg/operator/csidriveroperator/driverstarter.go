@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
 	"github.com/openshift/library-go/pkg/operator/status"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"k8s.io/klog/v2"
 )
 
@@ -106,9 +107,13 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 		platform = infrastructure.Status.PlatformStatus.Type
 	}
 
+	var conditionsToRemove []string
+
 	for i := range c.controllers {
 		ctrl := &c.controllers[i]
 		if ctrl.operatorConfig.Platform != platform {
+			toRemove := GetCSIDriverOperatorCRAvailableName(ctrl.operatorConfig)
+			conditionsToRemove = append(conditionsToRemove, toRemove)
 			continue
 		}
 		if !ctrl.running {
@@ -117,7 +122,17 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 			ctrl.running = true
 		}
 	}
-	return nil
+
+	// Remove placeholder conditions for CSI drivers that are not supported on
+	// this platform and that were pre-filled at CSO startup.
+	_, _, err = v1helpers.UpdateStatus(c.operatorClient, func(status *operatorapi.OperatorStatus) error {
+		for _, cndType := range conditionsToRemove {
+			v1helpers.RemoveOperatorCondition(&status.Conditions, cndType)
+		}
+		return nil
+	})
+
+	return err
 }
 
 func (c *CSIDriverStarterController) createCSIControllerManager(
