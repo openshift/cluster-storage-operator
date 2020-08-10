@@ -346,6 +346,14 @@ rules:
 - apiGroups:
   - ''
   resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
   - persistentvolumeclaims/status
   verbs:
   - patch
