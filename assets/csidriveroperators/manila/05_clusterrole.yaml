@@ -11,15 +11,23 @@ rules:
   - securitycontextconstraints
   verbs:
   - use
+
+# The operator needs these config maps:
+# - read/write openshift-manila-csi-driver/cloud-provider-config
+# - read-only kube-system/extension-apiserver-authentication
+# - read/write manila-csi-driver-operator-lock
 - apiGroups:
   - ''
-  resourceNames:
-  - extension-apiserver-authentication
-  - manila-csi-driver-operator-lock
   resources:
   - configmaps
   verbs:
-  - '*'
+  - watch
+  - list
+  - get
+  - create
+  - delete
+  - patch
+  - update
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:
