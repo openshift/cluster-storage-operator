@@ -12,11 +12,11 @@ import (
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resourcesynccontroller"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/klog/v2"
 )
 
 const (
-	CloudConfigNamespace = "openshift-config"
-	CloudConfigName      = "cloud-provider-config"
+	CloudConfigName = "cloud-provider-config"
 
 	envManilaDriverOperatorImage = "MANILA_DRIVER_OPERATOR_IMAGE"
 	envManilaDriverImage         = "MANILA_DRIVER_IMAGE"
@@ -46,7 +46,7 @@ func GetManilaOperatorConfig(clients *csoclients.Clients, recorder events.Record
 		DeploymentAsset: "csidriveroperators/manila/07_deployment.yaml",
 		ImageReplacer:   strings.NewReplacer(pairs...),
 		ExtraControllers: []factory.Controller{
-			newSecretSyncer(clients, recorder),
+			newCertificateSyncerOrDie(clients, recorder),
 			newManilaCredentialsRequest(clients, recorder),
 		},
 		Optional: true,
@@ -63,11 +63,11 @@ func GetManilaOperatorConfig(clients *csoclients.Clients, recorder events.Record
 	}
 }
 
-func newSecretSyncer(clients *csoclients.Clients, recorder events.Recorder) factory.Controller {
+func newCertificateSyncerOrDie(clients *csoclients.Clients, recorder events.Recorder) factory.Controller {
 	// sync config map with OpenStack CA certificate to the operator namespace,
 	// so the operator can get it as a ConfigMap volume.
 	srcConfigMap := resourcesynccontroller.ResourceLocation{
-		Namespace: CloudConfigNamespace,
+		Namespace: csoclients.CloudConfigNamespace,
 		Name:      CloudConfigName,
 	}
 	dstConfigMap := resourcesynccontroller.ResourceLocation{
@@ -80,7 +80,12 @@ func newSecretSyncer(clients *csoclients.Clients, recorder events.Recorder) fact
 		clients.KubeClient.CoreV1(),
 		clients.KubeClient.CoreV1(),
 		recorder)
-	certController.SyncConfigMap(dstConfigMap, srcConfigMap)
+	err := certController.SyncConfigMap(dstConfigMap, srcConfigMap)
+	if err != nil {
+		// This can fail if provided clients.KubeInformers does not watch requested namespaces,
+		// which is programmatic error.
+		klog.Fatalf("Failed to start Manila CA certificate sync controller: %s", err)
+	}
 	return certController
 }
 
