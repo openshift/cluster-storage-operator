@@ -4,8 +4,6 @@ kind: ClusterCSIDriver
 metadata:
   name: csi.ovirt.org
 spec:
-  driverConfig:
-    driverName: csi.ovirt.org
   logLevel: Normal
   managementState: Managed
   operatorLogLevel: Normal

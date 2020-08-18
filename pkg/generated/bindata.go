@@ -585,8 +585,6 @@ kind: "ClusterCSIDriver"
 metadata:
   name: "ebs.csi.aws.com"
 spec:
-  driverConfig:
-    driverName: "ebs.csi.aws.com"
   logLevel: Normal
   managementState: Managed
   operatorLogLevel: Normal
@@ -1134,8 +1132,6 @@ spec:
   managementState: Managed
   logLevel: Normal
   operatorLogLevel: Normal
-  driverConfig:
-    driverName: manila.csi.openstack.org
 `)
 
 func csidriveroperatorsManila08_crYamlBytes() ([]byte, error) {
@@ -1749,8 +1745,6 @@ kind: ClusterCSIDriver
 metadata:
   name: csi.ovirt.org
 spec:
-  driverConfig:
-    driverName: csi.ovirt.org
   logLevel: Normal
   managementState: Managed
   operatorLogLevel: Normal
