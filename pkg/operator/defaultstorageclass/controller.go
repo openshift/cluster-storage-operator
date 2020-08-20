@@ -134,6 +134,11 @@ func (c *Controller) syncStorageClass() error {
 	if err != nil {
 		return err
 	}
+	// Check to see if the PlatformStatus is nil. This has been seen on some
+	// UPI installs on baremetal platforms
+	if infrastructure.Status.PlatformStatus == nil {
+		return unsupportedPlatformError
+	}
 
 	expectedSC, err := newStorageClassForCluster(infrastructure)
 	if err != nil {
