@@ -380,6 +380,12 @@ rules:
   - create
   - patch
 - apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattachments/status
+  verbs:
+  - patch
+- apiGroups:
   - snapshot.storage.k8s.io
   resources:
   - volumesnapshotcontents/status
@@ -1451,6 +1457,12 @@ rules:
   - update
   - delete
   - create
+  - patch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattachments/status
+  verbs:
   - patch
 - apiGroups:
   - snapshot.storage.k8s.io
