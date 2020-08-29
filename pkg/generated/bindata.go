@@ -566,9 +566,14 @@ spec:
             cpu: 10m
       priorityClassName: system-cluster-critical
       serviceAccountName: aws-ebs-csi-driver-operator
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: "NoSchedule"
 `)
 
 func csidriveroperatorsAwsEbs07_deploymentYamlBytes() ([]byte, error) {
@@ -1094,9 +1099,14 @@ spec:
             cpu: 10m
       priorityClassName: system-cluster-critical
       serviceAccountName: manila-csi-driver-operator
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: "NoSchedule"
       volumes:
       - name: cacert
         # Extract ca-bundle.pem to /usr/share/pki/ca-trust-source if present.
@@ -1632,6 +1642,14 @@ spec:
     spec:
       serviceAccountName: ovirt-csi-driver-operator
       priorityClassName: system-cluster-critical
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: "NoSchedule"
       initContainers:
         - name: prepare-ovirt-config
           env:
@@ -1684,7 +1702,6 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /tmp/config
-
       containers:
         - name: ovirt-csi-driver-operator
           image: ${OPERATOR_IMAGE}
@@ -1693,9 +1710,6 @@ spec:
             requests:
               memory: 50Mi
               cpu: 10m
-          tolerations:
-            - key: CriticalAddonsOnly
-              operator: Exists
           args:
             - start
             - "--node=$(KUBE_NODE_NAME)"

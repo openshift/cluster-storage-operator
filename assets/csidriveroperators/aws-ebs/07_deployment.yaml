@@ -46,6 +46,11 @@ spec:
             cpu: 10m
       priorityClassName: system-cluster-critical
       serviceAccountName: aws-ebs-csi-driver-operator
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: "NoSchedule"
