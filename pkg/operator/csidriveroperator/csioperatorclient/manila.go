@@ -6,9 +6,7 @@ import (
 
 	v1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
-	"github.com/openshift/cluster-storage-operator/pkg/generated"
 	"github.com/openshift/library-go/pkg/controller/factory"
-	"github.com/openshift/library-go/pkg/operator/csi/credentialsrequestcontroller"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resourcesynccontroller"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -47,7 +45,6 @@ func GetManilaOperatorConfig(clients *csoclients.Clients, recorder events.Record
 		ImageReplacer:   strings.NewReplacer(pairs...),
 		ExtraControllers: []factory.Controller{
 			newCertificateSyncerOrDie(clients, recorder),
-			newManilaCredentialsRequest(clients, recorder),
 		},
 		Optional: true,
 		OLMOptions: &OLMOptions{
@@ -87,15 +84,4 @@ func newCertificateSyncerOrDie(clients *csoclients.Clients, recorder events.Reco
 		klog.Fatalf("Failed to start Manila CA certificate sync controller: %s", err)
 	}
 	return certController
-}
-
-func newManilaCredentialsRequest(clients *csoclients.Clients, recorder events.Recorder) factory.Controller {
-	crController := credentialsrequestcontroller.NewCredentialsRequestController(
-		"Manila",
-		csoclients.CSIOperatorNamespace,
-		generated.MustAsset("csidriveroperators/manila/09_credentials.yaml"),
-		clients.DynamicClient,
-		clients.OperatorClient,
-		recorder)
-	return crController
 }
