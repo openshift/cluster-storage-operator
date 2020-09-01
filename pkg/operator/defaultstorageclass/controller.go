@@ -29,6 +29,7 @@ const (
 )
 
 var unsupportedPlatformError = errors.New("unsupported platform")
+var supportedByCSIError = errors.New("only supported by a provided CSI Driver")
 
 // This Controller deploys a default StorageClass for in-tree volume plugins,
 // based on the underlying cloud (read from Infrastructure instance).
@@ -107,6 +108,18 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 				v1helpers.UpdateConditionFn(progressingCnd),
 			)
 			return updateErr
+		} else if syncErr == supportedByCSIError {
+			// Set Available=true, Progressing=false - everything is OK
+			// for this operator, but there may be work remaining for the
+			// external CSI Drivers.
+			availableCnd.Message = "StorageClass provided by supplied CSI Driver instead of the cluster-storage-operator"
+			availableCnd.Status = operatorapi.ConditionTrue
+
+			_, _, updateErr := v1helpers.UpdateStatus(c.operatorClient,
+				v1helpers.UpdateConditionFn(availableCnd),
+				v1helpers.UpdateConditionFn(progressingCnd),
+			)
+			return updateErr
 		}
 
 		// Set Available=false, Progressing=true
@@ -164,6 +177,8 @@ func (c *Controller) syncStorageClass() error {
 	return err
 }
 
+// Returns either the StorageClass, if the PlatformType is supported, or an error
+// indicating whether the StorageClass is provided by a CSI driver or an unsupported platform
 func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storagev1.StorageClass, error) {
 	switch infrastructure.Status.PlatformStatus.Type {
 	case configv1.AWSPlatformType:
@@ -176,6 +191,8 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("storageclasses/openstack.yaml")), nil
 	case configv1.VSpherePlatformType:
 		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("storageclasses/vsphere.yaml")), nil
+	case configv1.OvirtPlatformType:
+		return nil, supportedByCSIError
 	default:
 		return nil, unsupportedPlatformError
 	}
