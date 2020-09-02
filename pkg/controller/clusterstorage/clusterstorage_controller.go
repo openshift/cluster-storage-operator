@@ -168,15 +168,6 @@ func (r *ReconcileClusterStorage) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	// Run validation checks for VolumeSnapshot, VolumeSnapshotClass, VolumeSnapshotContent
-	err = validation.CheckAlphaSnapshot(r.client)
-	if err != nil {
-		if err, ok := err.(*validation.AlphaVersionError); ok {
-			r.setStatusUnupgradeable(clusterOperatorInstance, err.Error())
-		}
-		return reconcile.Result{}, err
-	}
-
 	// Define a new StorageClass object
 	newSCFromFile, err := newStorageClassForCluster(instance)
 	if err != nil {
@@ -390,15 +381,21 @@ func (r *ReconcileClusterStorage) syncStatus(clusterOperator *configv1.ClusterOp
 		available.Message = message
 	}
 
-	upgradeable := configv1.ClusterOperatorStatusCondition{
-		Type:   configv1.OperatorUpgradeable,
-		Reason: "AsExpected",
-		Status: configv1.ConditionTrue,
+	// Run validation checks for VolumeSnapshot, VolumeSnapshotClass, VolumeSnapshotContent
+	err = validation.CheckAlphaSnapshot(r.client)
+	if err != nil {
+		notUpgradeable.Message = err.Error()
+		v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notUpgradeable)
+	} else {
+		upgradeable := configv1.ClusterOperatorStatusCondition{
+			Type:   configv1.OperatorUpgradeable,
+			Reason: "AsExpected",
+			Status: configv1.ConditionTrue,
+		}
+		v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, upgradeable)
 	}
-
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, available)
 	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, notDegraded)
-	v1helpers.SetStatusCondition(&clusterOperator.Status.Conditions, upgradeable)
 
 	updateErr := r.client.Status().Update(context.TODO(), clusterOperator)
 	if updateErr != nil {
