@@ -147,7 +147,8 @@ func (c *OLMOperatorRemovalController) Sync(ctx context.Context, syncCtx factory
 		if c.olmOperatorNamespace == "" {
 			// There is no Subscription + there is no work recorded in CR annotations: we're done!
 			klog.V(4).Infof("OLMOperatorRemovalController.Sync the old driver was not installed")
-			return c.markFinished("CSI driver installed by OLM is not preset")
+			// Since the old driver wasn't installed, we don't add any messages to avoid noisy Available/Progressing conditions.
+			return c.markFinished("")
 		}
 	}
 
