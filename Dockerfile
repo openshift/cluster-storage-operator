@@ -6,6 +6,8 @@ RUN make
 FROM registry.svc.ci.openshift.org/ocp/4.6:base
 COPY --from=builder /go/src/github.com/openshift/cluster-storage-operator/cluster-storage-operator /usr/bin/
 COPY manifests /manifests
+COPY vendor/github.com/openshift/api/operator/v1/0000_50_cluster_storage_operator_01_crd.yaml manifests/05_crd_operator.yaml
+COPY vendor/github.com/openshift/api/operator/v1/0000_90_cluster_csi_driver_01_config.crd.yaml manifests/04_cluster_csi_driver_crd.yaml
 ENTRYPOINT ["/usr/bin/cluster-storage-operator"]
 LABEL io.openshift.release.operator true
 LABEL io.k8s.display-name="OpenShift Cluster Storage Operator" \
