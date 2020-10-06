@@ -6,7 +6,7 @@ require (
 	github.com/go-bindata/go-bindata v3.1.2+incompatible
 	github.com/google/go-cmp v0.4.0
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/openshift/api v0.0.0-20200929125329-c3027fc03b92
+	github.com/openshift/api v0.0.0-20201005153912-821561a7f2a2
 	github.com/openshift/build-machinery-go v0.0.0-20200819073603-48aa266c95f7
 	github.com/openshift/client-go v0.0.0-20200827190008-3062137373b5
 	github.com/openshift/library-go v0.0.0-20200909144351-f29d76719396
