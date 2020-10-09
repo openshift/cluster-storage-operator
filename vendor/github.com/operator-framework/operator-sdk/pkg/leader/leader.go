@@ -85,6 +85,14 @@ func Become(ctx context.Context, lockName string) error {
 
 	switch {
 	case err == nil:
+		if len(existing.GetOwnerReferences()) == 0 {
+			// The ConfigMap created by CSO 4.6 has been deleted already,
+			// so if we got here is because it has been re-created. This
+			// means that CSO 4.6 is racing with CSO 4.5. In that case
+			// we simply error out and wait for CSO 4.5 to restart
+			// and try to become the leader again.
+			return fmt.Errorf("found invalid lock without ownerReferences")
+		}
 		for _, existingOwner := range existing.GetOwnerReferences() {
 			if existingOwner.Name == owner.Name {
 				log.Info("Found existing lock with my name. I was likely restarted.")
