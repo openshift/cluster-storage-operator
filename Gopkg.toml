@@ -36,6 +36,10 @@ required = [
   version = "=v0.1.8"
 
 [[constraint]]
+  # WARNING: don't update operator-sdk.
+  # There's a patch in ./vendor intended to workaround
+  # a 4.6 -> 4.5 downgrade issue. See:
+  # https://bugzilla.redhat.com/show_bug.cgi?id=1882394
   name = "github.com/operator-framework/operator-sdk"
   version = "=v0.4.0" #osdk_version_annotation
 
