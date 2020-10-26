@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: cluster-storage-operator
   namespace: openshift-cluster-storage-operator
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
 spec:
   replicas: 1
   selector:
