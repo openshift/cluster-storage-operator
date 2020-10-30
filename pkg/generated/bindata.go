@@ -16,6 +16,14 @@
 // assets/csidriveroperators/manila/06_clusterrolebinding.yaml
 // assets/csidriveroperators/manila/07_deployment.yaml
 // assets/csidriveroperators/manila/08_cr.yaml
+// assets/csidriveroperators/openstack-cinder/01_namespace.yaml
+// assets/csidriveroperators/openstack-cinder/02_sa.yaml
+// assets/csidriveroperators/openstack-cinder/03_role.yaml
+// assets/csidriveroperators/openstack-cinder/04_rolebinding.yaml
+// assets/csidriveroperators/openstack-cinder/05_clusterrole.yaml
+// assets/csidriveroperators/openstack-cinder/06_clusterrolebinding.yaml
+// assets/csidriveroperators/openstack-cinder/07_deployment.yaml
+// assets/csidriveroperators/openstack-cinder/08_cr.yaml
 // assets/csidriveroperators/ovirt/01_namespace.yaml
 // assets/csidriveroperators/ovirt/02_sa.yaml
 // assets/csidriveroperators/ovirt/03_role.yaml
@@ -1163,6 +1171,548 @@ func csidriveroperatorsManila08_crYaml() (*asset, error) {
 	return a, nil
 }
 
+var _csidriveroperatorsOpenstackCinder01_namespaceYaml = []byte(`apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsOpenstackCinder01_namespaceYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOpenstackCinder01_namespaceYaml, nil
+}
+
+func csidriveroperatorsOpenstackCinder01_namespaceYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOpenstackCinder01_namespaceYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/openstack-cinder/01_namespace.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOpenstackCinder02_saYaml = []byte(`apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openstack-cinder-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsOpenstackCinder02_saYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOpenstackCinder02_saYaml, nil
+}
+
+func csidriveroperatorsOpenstackCinder02_saYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOpenstackCinder02_saYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/openstack-cinder/02_sa.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOpenstackCinder03_roleYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: openstack-cinder-csi-driver-operator-role
+  namespace: openshift-cluster-csi-drivers
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  - services
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - namespaces
+  verbs:
+  - get
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
+  - create
+`)
+
+func csidriveroperatorsOpenstackCinder03_roleYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOpenstackCinder03_roleYaml, nil
+}
+
+func csidriveroperatorsOpenstackCinder03_roleYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOpenstackCinder03_roleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/openstack-cinder/03_role.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOpenstackCinder04_rolebindingYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openstack-cinder-csi-driver-operator-rolebinding
+  namespace: openshift-cluster-csi-drivers
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: openstack-cinder-csi-driver-operator-role
+subjects:
+- kind: ServiceAccount
+  name: openstack-cinder-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsOpenstackCinder04_rolebindingYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOpenstackCinder04_rolebindingYaml, nil
+}
+
+func csidriveroperatorsOpenstackCinder04_rolebindingYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOpenstackCinder04_rolebindingYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/openstack-cinder/04_rolebinding.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOpenstackCinder05_clusterroleYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: openstack-cinder-csi-driver-operator-clusterrole
+rules:
+- apiGroups:
+  - security.openshift.io
+  resourceNames:
+  - privileged
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - use
+
+# The operator needs these config maps:
+# - read/write openshift-cluster-csi-drivers/cloud-provider-config
+# - read-only kube-system/extension-apiserver-authentication
+# - read/write openstack-cinder-csi-driver-operator-lock
+- apiGroups:
+  - ''
+  resources:
+  - configmaps
+  verbs:
+  - watch
+  - list
+  - get
+  - create
+  - delete
+  - patch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  verbs:
+  - watch
+  - list
+  - get
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterroles
+  - clusterrolebindings
+  - roles
+  - rolebindings
+  verbs:
+  - watch
+  - list
+  - get
+  - create
+  - delete
+  - patch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - list
+  - create
+  - watch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - nodes
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+  # For CA certificate sync
+  - create
+  - patch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - delete
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumes
+  verbs:
+  - create
+  - delete
+  - list
+  - get
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims/status
+  verbs:
+  - patch
+  - update
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattachments
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - delete
+  - create
+  - patch
+- apiGroups:
+  - "storage.k8s.io"
+  resources:
+  - "volumeattachments/status"
+  verbs:
+  - "patch"
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotcontents/status
+  verbs:
+  - update
+  - patch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  - csinodes
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - '*'
+  resources:
+  - events
+  verbs:
+  - get
+  - patch
+  - create
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotclasses
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotcontents
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshots
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - csidrivers
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - csi.openshift.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - cloudcredential.openshift.io
+  resources:
+  - credentialsrequests
+  verbs:
+  - '*'
+- apiGroups:
+  - config.openshift.io
+  resources:
+  - infrastructures
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - operator.openshift.io
+  resources:
+  - 'clustercsidrivers'
+  - 'clustercsidrivers/status'
+  verbs:
+  - '*'
+`)
+
+func csidriveroperatorsOpenstackCinder05_clusterroleYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOpenstackCinder05_clusterroleYaml, nil
+}
+
+func csidriveroperatorsOpenstackCinder05_clusterroleYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOpenstackCinder05_clusterroleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/openstack-cinder/05_clusterrole.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOpenstackCinder06_clusterrolebindingYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openstack-cinder-csi-driver-operator-clusterrolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: openstack-cinder-csi-driver-operator-clusterrole
+subjects:
+- kind: ServiceAccount
+  name: openstack-cinder-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsOpenstackCinder06_clusterrolebindingYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOpenstackCinder06_clusterrolebindingYaml, nil
+}
+
+func csidriveroperatorsOpenstackCinder06_clusterrolebindingYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOpenstackCinder06_clusterrolebindingYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/openstack-cinder/06_clusterrolebinding.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOpenstackCinder07_deploymentYaml = []byte(`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openstack-cinder-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: openstack-cinder-csi-driver-operator
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        name: openstack-cinder-csi-driver-operator
+    spec:
+      containers:
+      - args:
+        - start
+        env:
+        - name: DRIVER_IMAGE
+          value: quay.io/fedosin/cinder-csi-plugin:latest
+        - name: NFS_DRIVER_IMAGE
+          value: quay.io/openshift/origin-csi-driver-nfs:latest
+        - name: PROVISIONER_IMAGE
+          value: quay.io/openshift/origin-csi-external-provisioner:latest
+        - name: ATTACHER_IMAGE
+          value: quay.io/openshift/origin-csi-external-attacher:latest
+        - name: RESIZER_IMAGE
+          value: quay.io/openshift/origin-csi-external-resizer:latest
+        - name: SNAPSHOTTER_IMAGE
+          value: quay.io/openshift/origin-csi-external-snapshotter:latest
+        - name: NODE_DRIVER_REGISTRAR_IMAGE
+          value: quay.io/openshift/origin-csi-node-driver-registrar:latest
+        - name: LIVENESS_PROBE_IMAGE
+          value: quay.io/openshift/origin-csi-livenessprobe:latest
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        image: quay.io/fedosin/origin-openstack-cinder-csi-driver-operator:latest
+        imagePullPolicy: IfNotPresent
+        name: openstack-cinder-csi-driver-operator
+      priorityClassName: system-cluster-critical
+      serviceAccountName: openstack-cinder-csi-driver-operator
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: "NoSchedule"
+      resources:
+        requests:
+          cpu: 10m
+          memory: 20Mi
+`)
+
+func csidriveroperatorsOpenstackCinder07_deploymentYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOpenstackCinder07_deploymentYaml, nil
+}
+
+func csidriveroperatorsOpenstackCinder07_deploymentYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOpenstackCinder07_deploymentYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/openstack-cinder/07_deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsOpenstackCinder08_crYaml = []byte(`apiVersion: operator.openshift.io/v1
+kind: ClusterCSIDriver
+metadata:
+  name: cinder.csi.openstack.org
+spec:
+  managementState: Managed
+  logLevel: Trace
+  operatorLogLevel: Trace
+  driverConfig:
+    driverName: cinder.csi.openstack.org
+`)
+
+func csidriveroperatorsOpenstackCinder08_crYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsOpenstackCinder08_crYaml, nil
+}
+
+func csidriveroperatorsOpenstackCinder08_crYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsOpenstackCinder08_crYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/openstack-cinder/08_cr.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _csidriveroperatorsOvirt01_namespaceYaml = []byte(`---
 apiVersion: v1
 kind: Namespace
@@ -1955,35 +2505,43 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"csidriveroperators/aws-ebs/01_namespace.yaml":          csidriveroperatorsAwsEbs01_namespaceYaml,
-	"csidriveroperators/aws-ebs/02_sa.yaml":                 csidriveroperatorsAwsEbs02_saYaml,
-	"csidriveroperators/aws-ebs/03_role.yaml":               csidriveroperatorsAwsEbs03_roleYaml,
-	"csidriveroperators/aws-ebs/04_rolebinding.yaml":        csidriveroperatorsAwsEbs04_rolebindingYaml,
-	"csidriveroperators/aws-ebs/05_clusterrole.yaml":        csidriveroperatorsAwsEbs05_clusterroleYaml,
-	"csidriveroperators/aws-ebs/06_clusterrolebinding.yaml": csidriveroperatorsAwsEbs06_clusterrolebindingYaml,
-	"csidriveroperators/aws-ebs/07_deployment.yaml":         csidriveroperatorsAwsEbs07_deploymentYaml,
-	"csidriveroperators/aws-ebs/08_cr.yaml":                 csidriveroperatorsAwsEbs08_crYaml,
-	"csidriveroperators/manila/01_namespace.yaml":           csidriveroperatorsManila01_namespaceYaml,
-	"csidriveroperators/manila/02_sa.yaml":                  csidriveroperatorsManila02_saYaml,
-	"csidriveroperators/manila/03_role.yaml":                csidriveroperatorsManila03_roleYaml,
-	"csidriveroperators/manila/04_rolebinding.yaml":         csidriveroperatorsManila04_rolebindingYaml,
-	"csidriveroperators/manila/05_clusterrole.yaml":         csidriveroperatorsManila05_clusterroleYaml,
-	"csidriveroperators/manila/06_clusterrolebinding.yaml":  csidriveroperatorsManila06_clusterrolebindingYaml,
-	"csidriveroperators/manila/07_deployment.yaml":          csidriveroperatorsManila07_deploymentYaml,
-	"csidriveroperators/manila/08_cr.yaml":                  csidriveroperatorsManila08_crYaml,
-	"csidriveroperators/ovirt/01_namespace.yaml":            csidriveroperatorsOvirt01_namespaceYaml,
-	"csidriveroperators/ovirt/02_sa.yaml":                   csidriveroperatorsOvirt02_saYaml,
-	"csidriveroperators/ovirt/03_role.yaml":                 csidriveroperatorsOvirt03_roleYaml,
-	"csidriveroperators/ovirt/04_rolebinding.yaml":          csidriveroperatorsOvirt04_rolebindingYaml,
-	"csidriveroperators/ovirt/05_clusterrole.yaml":          csidriveroperatorsOvirt05_clusterroleYaml,
-	"csidriveroperators/ovirt/06_clusterrolebinding.yaml":   csidriveroperatorsOvirt06_clusterrolebindingYaml,
-	"csidriveroperators/ovirt/07_deployment.yaml":           csidriveroperatorsOvirt07_deploymentYaml,
-	"csidriveroperators/ovirt/08_cr.yaml":                   csidriveroperatorsOvirt08_crYaml,
-	"storageclasses/aws.yaml":                               storageclassesAwsYaml,
-	"storageclasses/azure.yaml":                             storageclassesAzureYaml,
-	"storageclasses/gcp.yaml":                               storageclassesGcpYaml,
-	"storageclasses/openstack.yaml":                         storageclassesOpenstackYaml,
-	"storageclasses/vsphere.yaml":                           storageclassesVsphereYaml,
+	"csidriveroperators/aws-ebs/01_namespace.yaml":                   csidriveroperatorsAwsEbs01_namespaceYaml,
+	"csidriveroperators/aws-ebs/02_sa.yaml":                          csidriveroperatorsAwsEbs02_saYaml,
+	"csidriveroperators/aws-ebs/03_role.yaml":                        csidriveroperatorsAwsEbs03_roleYaml,
+	"csidriveroperators/aws-ebs/04_rolebinding.yaml":                 csidriveroperatorsAwsEbs04_rolebindingYaml,
+	"csidriveroperators/aws-ebs/05_clusterrole.yaml":                 csidriveroperatorsAwsEbs05_clusterroleYaml,
+	"csidriveroperators/aws-ebs/06_clusterrolebinding.yaml":          csidriveroperatorsAwsEbs06_clusterrolebindingYaml,
+	"csidriveroperators/aws-ebs/07_deployment.yaml":                  csidriveroperatorsAwsEbs07_deploymentYaml,
+	"csidriveroperators/aws-ebs/08_cr.yaml":                          csidriveroperatorsAwsEbs08_crYaml,
+	"csidriveroperators/manila/01_namespace.yaml":                    csidriveroperatorsManila01_namespaceYaml,
+	"csidriveroperators/manila/02_sa.yaml":                           csidriveroperatorsManila02_saYaml,
+	"csidriveroperators/manila/03_role.yaml":                         csidriveroperatorsManila03_roleYaml,
+	"csidriveroperators/manila/04_rolebinding.yaml":                  csidriveroperatorsManila04_rolebindingYaml,
+	"csidriveroperators/manila/05_clusterrole.yaml":                  csidriveroperatorsManila05_clusterroleYaml,
+	"csidriveroperators/manila/06_clusterrolebinding.yaml":           csidriveroperatorsManila06_clusterrolebindingYaml,
+	"csidriveroperators/manila/07_deployment.yaml":                   csidriveroperatorsManila07_deploymentYaml,
+	"csidriveroperators/manila/08_cr.yaml":                           csidriveroperatorsManila08_crYaml,
+	"csidriveroperators/openstack-cinder/01_namespace.yaml":          csidriveroperatorsOpenstackCinder01_namespaceYaml,
+	"csidriveroperators/openstack-cinder/02_sa.yaml":                 csidriveroperatorsOpenstackCinder02_saYaml,
+	"csidriveroperators/openstack-cinder/03_role.yaml":               csidriveroperatorsOpenstackCinder03_roleYaml,
+	"csidriveroperators/openstack-cinder/04_rolebinding.yaml":        csidriveroperatorsOpenstackCinder04_rolebindingYaml,
+	"csidriveroperators/openstack-cinder/05_clusterrole.yaml":        csidriveroperatorsOpenstackCinder05_clusterroleYaml,
+	"csidriveroperators/openstack-cinder/06_clusterrolebinding.yaml": csidriveroperatorsOpenstackCinder06_clusterrolebindingYaml,
+	"csidriveroperators/openstack-cinder/07_deployment.yaml":         csidriveroperatorsOpenstackCinder07_deploymentYaml,
+	"csidriveroperators/openstack-cinder/08_cr.yaml":                 csidriveroperatorsOpenstackCinder08_crYaml,
+	"csidriveroperators/ovirt/01_namespace.yaml":                     csidriveroperatorsOvirt01_namespaceYaml,
+	"csidriveroperators/ovirt/02_sa.yaml":                            csidriveroperatorsOvirt02_saYaml,
+	"csidriveroperators/ovirt/03_role.yaml":                          csidriveroperatorsOvirt03_roleYaml,
+	"csidriveroperators/ovirt/04_rolebinding.yaml":                   csidriveroperatorsOvirt04_rolebindingYaml,
+	"csidriveroperators/ovirt/05_clusterrole.yaml":                   csidriveroperatorsOvirt05_clusterroleYaml,
+	"csidriveroperators/ovirt/06_clusterrolebinding.yaml":            csidriveroperatorsOvirt06_clusterrolebindingYaml,
+	"csidriveroperators/ovirt/07_deployment.yaml":                    csidriveroperatorsOvirt07_deploymentYaml,
+	"csidriveroperators/ovirt/08_cr.yaml":                            csidriveroperatorsOvirt08_crYaml,
+	"storageclasses/aws.yaml":                                        storageclassesAwsYaml,
+	"storageclasses/azure.yaml":                                      storageclassesAzureYaml,
+	"storageclasses/gcp.yaml":                                        storageclassesGcpYaml,
+	"storageclasses/openstack.yaml":                                  storageclassesOpenstackYaml,
+	"storageclasses/vsphere.yaml":                                    storageclassesVsphereYaml,
 }
 
 // AssetDir returns the file names below a certain
@@ -2047,6 +2605,16 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"06_clusterrolebinding.yaml": {csidriveroperatorsManila06_clusterrolebindingYaml, map[string]*bintree{}},
 			"07_deployment.yaml":         {csidriveroperatorsManila07_deploymentYaml, map[string]*bintree{}},
 			"08_cr.yaml":                 {csidriveroperatorsManila08_crYaml, map[string]*bintree{}},
+		}},
+		"openstack-cinder": {nil, map[string]*bintree{
+			"01_namespace.yaml":          {csidriveroperatorsOpenstackCinder01_namespaceYaml, map[string]*bintree{}},
+			"02_sa.yaml":                 {csidriveroperatorsOpenstackCinder02_saYaml, map[string]*bintree{}},
+			"03_role.yaml":               {csidriveroperatorsOpenstackCinder03_roleYaml, map[string]*bintree{}},
+			"04_rolebinding.yaml":        {csidriveroperatorsOpenstackCinder04_rolebindingYaml, map[string]*bintree{}},
+			"05_clusterrole.yaml":        {csidriveroperatorsOpenstackCinder05_clusterroleYaml, map[string]*bintree{}},
+			"06_clusterrolebinding.yaml": {csidriveroperatorsOpenstackCinder06_clusterrolebindingYaml, map[string]*bintree{}},
+			"07_deployment.yaml":         {csidriveroperatorsOpenstackCinder07_deploymentYaml, map[string]*bintree{}},
+			"08_cr.yaml":                 {csidriveroperatorsOpenstackCinder08_crYaml, map[string]*bintree{}},
 		}},
 		"ovirt": {nil, map[string]*bintree{
 			"01_namespace.yaml":          {csidriveroperatorsOvirt01_namespaceYaml, map[string]*bintree{}},
