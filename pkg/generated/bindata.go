@@ -8,6 +8,14 @@
 // assets/csidriveroperators/aws-ebs/06_clusterrolebinding.yaml
 // assets/csidriveroperators/aws-ebs/07_deployment.yaml
 // assets/csidriveroperators/aws-ebs/08_cr.yaml
+// assets/csidriveroperators/gcp-pd/01_namespace.yaml
+// assets/csidriveroperators/gcp-pd/02_sa.yaml
+// assets/csidriveroperators/gcp-pd/03_role.yaml
+// assets/csidriveroperators/gcp-pd/04_rolebinding.yaml
+// assets/csidriveroperators/gcp-pd/05_clusterrole.yaml
+// assets/csidriveroperators/gcp-pd/06_clusterrolebinding.yaml
+// assets/csidriveroperators/gcp-pd/07_deployment.yaml
+// assets/csidriveroperators/gcp-pd/08_cr.yaml
 // assets/csidriveroperators/manila/01_namespace.yaml
 // assets/csidriveroperators/manila/02_sa.yaml
 // assets/csidriveroperators/manila/03_role.yaml
@@ -613,6 +621,539 @@ func csidriveroperatorsAwsEbs08_crYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "csidriveroperators/aws-ebs/08_cr.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsGcpPd01_namespaceYaml = []byte(`apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-cluster-csi-drivers
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    openshift.io/node-selector: ""
+`)
+
+func csidriveroperatorsGcpPd01_namespaceYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsGcpPd01_namespaceYaml, nil
+}
+
+func csidriveroperatorsGcpPd01_namespaceYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsGcpPd01_namespaceYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/gcp-pd/01_namespace.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsGcpPd02_saYaml = []byte(`apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gcp-pd-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsGcpPd02_saYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsGcpPd02_saYaml, nil
+}
+
+func csidriveroperatorsGcpPd02_saYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsGcpPd02_saYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/gcp-pd/02_sa.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsGcpPd03_roleYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: gcp-pd-csi-driver-operator-role
+  namespace: openshift-cluster-csi-drivers
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  - services
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - namespaces
+  verbs:
+  - get
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
+  - create
+`)
+
+func csidriveroperatorsGcpPd03_roleYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsGcpPd03_roleYaml, nil
+}
+
+func csidriveroperatorsGcpPd03_roleYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsGcpPd03_roleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/gcp-pd/03_role.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsGcpPd04_rolebindingYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gcp-pd-csi-driver-operator-rolebinding
+  namespace: openshift-cluster-csi-drivers
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: gcp-pd-csi-driver-operator-role
+subjects:
+- kind: ServiceAccount
+  name: gcp-pd-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsGcpPd04_rolebindingYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsGcpPd04_rolebindingYaml, nil
+}
+
+func csidriveroperatorsGcpPd04_rolebindingYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsGcpPd04_rolebindingYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/gcp-pd/04_rolebinding.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsGcpPd05_clusterroleYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gcp-pd-csi-driver-operator-clusterrole
+rules:
+- apiGroups:
+  - security.openshift.io
+  resourceNames:
+  - privileged
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - use
+- apiGroups:
+  - operator.openshift.io
+  resources:
+  - clustercsidrivers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - operator.openshift.io
+  resources:
+  - clustercsidrivers/status
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - ''
+  resourceNames:
+  - extension-apiserver-authentication
+  - gcp-pd-csi-driver-operator-lock
+  resources:
+  - configmaps
+  verbs:
+  - '*'
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterroles
+  - clusterrolebindings
+  - roles
+  - rolebindings
+  verbs:
+  - watch
+  - list
+  - get
+  - create
+  - delete
+  - patch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - list
+  - create
+  - watch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - nodes
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - delete
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumes
+  verbs:
+  - create
+  - delete
+  - list
+  - get
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims/status
+  verbs:
+  - patch
+  - update
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattachments
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - delete
+  - create
+  - patch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattachments/status
+  verbs:
+  - patch
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotcontents/status
+  verbs:
+  - update
+  - patch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  - csinodes
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - '*'
+  resources:
+  - events
+  verbs:
+  - get
+  - patch
+  - create
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotclasses
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotcontents
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshots
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - csidrivers
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - cloudcredential.openshift.io
+  resources:
+  - credentialsrequests
+  verbs:
+  - '*'
+- apiGroups:
+  - config.openshift.io
+  resources:
+  - infrastructures
+  verbs:
+  - get
+  - list
+  - watch
+`)
+
+func csidriveroperatorsGcpPd05_clusterroleYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsGcpPd05_clusterroleYaml, nil
+}
+
+func csidriveroperatorsGcpPd05_clusterroleYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsGcpPd05_clusterroleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/gcp-pd/05_clusterrole.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsGcpPd06_clusterrolebindingYaml = []byte(`kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gcp-pd-csi-driver-operator-clusterrolebinding
+subjects:
+  - kind: ServiceAccount
+    name: gcp-pd-csi-driver-operator
+    namespace: openshift-cluster-csi-drivers
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: gcp-pd-csi-driver-operator-clusterrole`)
+
+func csidriveroperatorsGcpPd06_clusterrolebindingYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsGcpPd06_clusterrolebindingYaml, nil
+}
+
+func csidriveroperatorsGcpPd06_clusterrolebindingYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsGcpPd06_clusterrolebindingYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/gcp-pd/06_clusterrolebinding.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsGcpPd07_deploymentYaml = []byte(`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gcp-pd-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: gcp-pd-csi-driver-operator
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        name: gcp-pd-csi-driver-operator
+    spec:
+      containers:
+      - args:
+        - start
+        env:
+        - name: DRIVER_IMAGE
+          value: ${DRIVER_IMAGE}
+        - name: PROVISIONER_IMAGE
+          value: ${PROVISIONER_IMAGE}
+        - name: ATTACHER_IMAGE
+          value: ${ATTACHER_IMAGE}
+        - name: RESIZER_IMAGE
+          value: ${RESIZER_IMAGE}
+        - name: SNAPSHOTTER_IMAGE
+          value: ${SNAPSHOTTER_IMAGE}
+        - name: NODE_DRIVER_REGISTRAR_IMAGE
+          value: ${NODE_DRIVER_REGISTRAR_IMAGE}
+        - name: LIVENESS_PROBE_IMAGE
+          value: ${LIVENESS_PROBE_IMAGE}
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        image: ${OPERATOR_IMAGE}
+        imagePullPolicy: IfNotPresent
+        name: gcp-pd-csi-driver-operator
+        resources:
+          requests:
+            memory: 50Mi
+            cpu: 10m
+      priorityClassName: system-cluster-critical
+      serviceAccountName: gcp-pd-csi-driver-operator
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: "NoSchedule"
+`)
+
+func csidriveroperatorsGcpPd07_deploymentYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsGcpPd07_deploymentYaml, nil
+}
+
+func csidriveroperatorsGcpPd07_deploymentYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsGcpPd07_deploymentYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/gcp-pd/07_deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsGcpPd08_crYaml = []byte(`apiVersion: operator.openshift.io/v1
+kind: "ClusterCSIDriver"
+metadata:
+  name: "pd.csi.storage.gke.io"
+spec:
+  logLevel: Normal
+  managementState: Managed
+  operatorLogLevel: Normal
+`)
+
+func csidriveroperatorsGcpPd08_crYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsGcpPd08_crYaml, nil
+}
+
+func csidriveroperatorsGcpPd08_crYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsGcpPd08_crYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/gcp-pd/08_cr.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1971,6 +2512,14 @@ var _bindata = map[string]func() (*asset, error){
 	"csidriveroperators/aws-ebs/06_clusterrolebinding.yaml": csidriveroperatorsAwsEbs06_clusterrolebindingYaml,
 	"csidriveroperators/aws-ebs/07_deployment.yaml":         csidriveroperatorsAwsEbs07_deploymentYaml,
 	"csidriveroperators/aws-ebs/08_cr.yaml":                 csidriveroperatorsAwsEbs08_crYaml,
+	"csidriveroperators/gcp-pd/01_namespace.yaml":           csidriveroperatorsGcpPd01_namespaceYaml,
+	"csidriveroperators/gcp-pd/02_sa.yaml":                  csidriveroperatorsGcpPd02_saYaml,
+	"csidriveroperators/gcp-pd/03_role.yaml":                csidriveroperatorsGcpPd03_roleYaml,
+	"csidriveroperators/gcp-pd/04_rolebinding.yaml":         csidriveroperatorsGcpPd04_rolebindingYaml,
+	"csidriveroperators/gcp-pd/05_clusterrole.yaml":         csidriveroperatorsGcpPd05_clusterroleYaml,
+	"csidriveroperators/gcp-pd/06_clusterrolebinding.yaml":  csidriveroperatorsGcpPd06_clusterrolebindingYaml,
+	"csidriveroperators/gcp-pd/07_deployment.yaml":          csidriveroperatorsGcpPd07_deploymentYaml,
+	"csidriveroperators/gcp-pd/08_cr.yaml":                  csidriveroperatorsGcpPd08_crYaml,
 	"csidriveroperators/manila/01_namespace.yaml":           csidriveroperatorsManila01_namespaceYaml,
 	"csidriveroperators/manila/02_sa.yaml":                  csidriveroperatorsManila02_saYaml,
 	"csidriveroperators/manila/03_role.yaml":                csidriveroperatorsManila03_roleYaml,
@@ -2045,6 +2594,16 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"06_clusterrolebinding.yaml": {csidriveroperatorsAwsEbs06_clusterrolebindingYaml, map[string]*bintree{}},
 			"07_deployment.yaml":         {csidriveroperatorsAwsEbs07_deploymentYaml, map[string]*bintree{}},
 			"08_cr.yaml":                 {csidriveroperatorsAwsEbs08_crYaml, map[string]*bintree{}},
+		}},
+		"gcp-pd": {nil, map[string]*bintree{
+			"01_namespace.yaml":          {csidriveroperatorsGcpPd01_namespaceYaml, map[string]*bintree{}},
+			"02_sa.yaml":                 {csidriveroperatorsGcpPd02_saYaml, map[string]*bintree{}},
+			"03_role.yaml":               {csidriveroperatorsGcpPd03_roleYaml, map[string]*bintree{}},
+			"04_rolebinding.yaml":        {csidriveroperatorsGcpPd04_rolebindingYaml, map[string]*bintree{}},
+			"05_clusterrole.yaml":        {csidriveroperatorsGcpPd05_clusterroleYaml, map[string]*bintree{}},
+			"06_clusterrolebinding.yaml": {csidriveroperatorsGcpPd06_clusterrolebindingYaml, map[string]*bintree{}},
+			"07_deployment.yaml":         {csidriveroperatorsGcpPd07_deploymentYaml, map[string]*bintree{}},
+			"08_cr.yaml":                 {csidriveroperatorsGcpPd08_crYaml, map[string]*bintree{}},
 		}},
 		"manila": {nil, map[string]*bintree{
 			"01_namespace.yaml":          {csidriveroperatorsManila01_namespaceYaml, map[string]*bintree{}},
