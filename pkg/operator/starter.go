@@ -58,6 +58,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		{Group: operatorv1.GroupName, Resource: "storages", Name: operatorclient.GlobalConfigName},
 		// Sync with operatorv1.CSIDriverName consts!
 		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.AWSEBSCSIDriver)},
+		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.CinderCSIDriver)},
 		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.GCPPDCSIDriver)},
 		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.OvirtCSIDriver)},
 		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.ManilaCSIDriver)},
@@ -116,6 +117,7 @@ func populateConfigs(clients *csoclients.Clients, recorder events.Recorder) []cs
 	return []csioperatorclient.CSIOperatorConfig{
 		csioperatorclient.GetAWSEBSCSIOperatorConfig(),
 		csioperatorclient.GetGCPPDCSIOperatorConfig(),
+		csioperatorclient.GetOpenStackCinderCSIOperatorConfig(clients, recorder),
 		csioperatorclient.GetOVirtCSIOperatorConfig(clients, recorder),
 		csioperatorclient.GetManilaOperatorConfig(clients, recorder),
 	}

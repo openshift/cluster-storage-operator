@@ -22,6 +22,14 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-gcp-pd-csi-driver:latest
+  - name: openstack-cinder-csi-driver-operator
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-openstack-cinder-csi-driver-operator:latest
+  - name: openstack-cinder-csi-driver
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-openstack-cinder-csi-driver:latest
   - name: ovirt-csi-driver-operator
     from:
       kind: DockerImage
