@@ -2180,24 +2180,24 @@ spec:
         - start
         env:
         - name: DRIVER_IMAGE
-          value: quay.io/fedosin/cinder-csi-plugin:latest
+          value: ${DRIVER_IMAGE}
         - name: PROVISIONER_IMAGE
-          value: quay.io/openshift/origin-csi-external-provisioner:latest
+          value: ${PROVISIONER_IMAGE}
         - name: ATTACHER_IMAGE
-          value: quay.io/openshift/origin-csi-external-attacher:latest
+          value: ${ATTACHER_IMAGE}
         - name: RESIZER_IMAGE
-          value: quay.io/openshift/origin-csi-external-resizer:latest
+          value: ${RESIZER_IMAGE}
         - name: SNAPSHOTTER_IMAGE
-          value: quay.io/openshift/origin-csi-external-snapshotter:latest
+          value: ${SNAPSHOTTER_IMAGE}
         - name: NODE_DRIVER_REGISTRAR_IMAGE
-          value: quay.io/openshift/origin-csi-node-driver-registrar:latest
+          value: ${NODE_DRIVER_REGISTRAR_IMAGE}
         - name: LIVENESS_PROBE_IMAGE
-          value: quay.io/openshift/origin-csi-livenessprobe:latest
+          value: ${LIVENESS_PROBE_IMAGE}
         - name: POD_NAME
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: quay.io/fedosin/origin-openstack-cinder-csi-driver-operator:latest
+        image: ${OPERATOR_IMAGE}
         imagePullPolicy: IfNotPresent
         name: openstack-cinder-csi-driver-operator
       priorityClassName: system-cluster-critical
