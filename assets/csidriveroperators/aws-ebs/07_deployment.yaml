@@ -33,6 +33,8 @@ spec:
           value: ${NODE_DRIVER_REGISTRAR_IMAGE}
         - name: LIVENESS_PROBE_IMAGE
           value: ${LIVENESS_PROBE_IMAGE}
+        - name: CA_BUNDLE_CONFIG_MAP
+          value: ${CA_BUNDLE_CONFIG_MAP}
         - name: POD_NAME
           valueFrom:
             fieldRef:
