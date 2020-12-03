@@ -2200,6 +2200,10 @@ spec:
         image: ${OPERATOR_IMAGE}
         imagePullPolicy: IfNotPresent
         name: openstack-cinder-csi-driver-operator
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
       priorityClassName: system-cluster-critical
       serviceAccountName: openstack-cinder-csi-driver-operator
       nodeSelector:
@@ -2210,10 +2214,6 @@ spec:
       - key: node-role.kubernetes.io/master
         operator: Exists
         effect: "NoSchedule"
-      resources:
-        requests:
-          cpu: 10m
-          memory: 20Mi
 `)
 
 func csidriveroperatorsOpenstackCinder07_deploymentYamlBytes() ([]byte, error) {
