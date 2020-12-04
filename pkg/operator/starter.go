@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/snapshotcrd"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/vsphereproblemdetector"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"k8s.io/klog/v2"
@@ -82,6 +83,13 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		controllerConfig.EventRecorder,
 		csiDriverConfigs)
 
+	vsphereProblemDetector := vsphereproblemdetector.NewVSphereProblemDetectorStarter(
+		clients,
+		resync,
+		versionGetter,
+		status.VersionForOperandFromEnv(),
+		controllerConfig.EventRecorder)
+
 	managementStateController := management.NewOperatorManagementStateController(clusterOperatorName, clients.OperatorClient, controllerConfig.EventRecorder)
 
 	// This controller syncs CR.Status.Conditions with the value in the field CR.Spec.ManagementStatus. It only supports Managed state
@@ -104,6 +112,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		storageClassController,
 		snapshotCRDController,
 		csiDriverController,
+		vsphereProblemDetector,
 	} {
 		go controller.Run(ctx, 1)
 	}

@@ -1,8 +1,7 @@
-# Configure cluster-monitoring for cluster-storage-operator
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: cluster-storage-operator
+  name: vsphere-problem-detector
   namespace: openshift-cluster-storage-operator
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
@@ -16,8 +15,8 @@ spec:
     scheme: https
     tlsConfig:
       caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
-      serverName: cluster-storage-operator-metrics.openshift-cluster-storage-operator.svc
+      serverName: vsphere-problem-detector-metrics.openshift-cluster-storage-operator.svc
   jobLabel: component
   selector:
     matchLabels:
-      app: cluster-storage-operator-metrics
+      app: vsphere-problem-detector-metrics
