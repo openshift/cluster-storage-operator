@@ -322,6 +322,14 @@ rules:
 - apiGroups:
   - ''
   resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
   - secrets
   verbs:
   - get
