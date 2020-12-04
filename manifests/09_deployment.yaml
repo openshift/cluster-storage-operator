@@ -85,3 +85,16 @@ spec:
             requests:
               cpu: 10m
               memory: 20Mi
+        - name: vsphere-problem-detector
+          image: quay.io/openshift/origin-vsphere-problem-detector:latest
+          args:
+          - start
+          - --listen=0.0.0.0:8444
+          ports:
+          - containerPort: 8444
+            name: metrics
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 10m
+              memory: 100Mi
