@@ -37,7 +37,7 @@ spec:
           image: quay.io/openshift/origin-cluster-storage-operator:latest
           terminationMessagePolicy: FallbackToLogsOnError
           ports:
-          - containerPort: 60000
+          - containerPort: 8443
             name: metrics
           command:
           - cluster-storage-operator
@@ -86,6 +86,9 @@ spec:
             requests:
               cpu: 10m
               memory: 20Mi
+          volumeMounts:
+            - mountPath: /var/run/secrets/serving-cert
+              name: cluster-storage-operator-serving-cert
         - name: vsphere-problem-detector
           image: quay.io/openshift/origin-vsphere-problem-detector:latest
           args:
@@ -93,9 +96,21 @@ spec:
           - --listen=0.0.0.0:8444
           ports:
           - containerPort: 8444
-            name: metrics
+            name: vsphere-metrics
           imagePullPolicy: IfNotPresent
           resources:
             requests:
               cpu: 10m
               memory: 100Mi
+          volumeMounts:
+            - mountPath: /var/run/secrets/serving-cert
+              name: vsphere-problem-detector-serving-cert
+      volumes:
+        - name: cluster-storage-operator-serving-cert
+          secret:
+            secretName: cluster-storage-operator-serving-cert
+            optional: true
+        - name: vsphere-problem-detector-serving-cert
+          secret:
+            secretName: vsphere-problem-detector-serving-cert
+            optional: true
