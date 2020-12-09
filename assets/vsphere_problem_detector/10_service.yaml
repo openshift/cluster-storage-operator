@@ -11,10 +11,10 @@ metadata:
   namespace: openshift-cluster-storage-operator
 spec:
   ports:
-  - name: https
-    port: 443
+  - name: vsphere-metrics
+    port: 8444
     protocol: TCP
-    targetPort: 8444
+    targetPort: vsphere-metrics
   selector:
     name: vsphere-problem-detector-operator
   sessionAffinity: None

@@ -3174,6 +3174,18 @@ rules:
   - patch
   - delete
 - apiGroups:
+  - authentication.k8s.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
   - apiextensions.k8s.io
   resources:
   - customresourcedefinitions
@@ -3461,10 +3473,10 @@ metadata:
   namespace: openshift-cluster-storage-operator
 spec:
   ports:
-  - name: https
-    port: 443
+  - name: vsphere-metrics
+    port: 8444
     protocol: TCP
-    targetPort: 8444
+    targetPort: vsphere-metrics
   selector:
     name: vsphere-problem-detector-operator
   sessionAffinity: None
@@ -3499,7 +3511,7 @@ spec:
   - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
     interval: 30s
     path: /metrics
-    port: https
+    port: vsphere-metrics
     scheme: https
     tlsConfig:
       caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
