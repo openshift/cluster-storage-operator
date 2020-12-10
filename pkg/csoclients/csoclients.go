@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
+	promclient "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned"
 	apiextclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	"k8s.io/client-go/dynamic"
@@ -38,6 +39,8 @@ type Clients struct {
 	ConfigClientSet cfgclientset.Interface
 	// config.openshift.io informers
 	ConfigInformers cfginformers.SharedInformerFactory
+
+	MonitoringClient promclient.Interface
 
 	// Dynamic client for OLM and old CSI operator APIs
 	DynamicClient dynamic.Interface
