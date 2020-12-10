@@ -7,6 +7,8 @@ import (
 	opinformers "github.com/openshift/client-go/operator/informers/externalversions"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
+	prominformer "github.com/prometheus-operator/prometheus-operator/pkg/client/informers/externalversions"
+	fakemonitoring "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned/fake"
 	fakeextapi "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	apiextinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -14,7 +16,7 @@ import (
 )
 
 type FakeTestObjects struct {
-	CoreObjects, ExtensionObjects, OperatorObjects, ConfigObjects, DynamicObjects []runtime.Object
+	CoreObjects, ExtensionObjects, OperatorObjects, ConfigObjects, DynamicObjects, MonitoringObjects []runtime.Object
 }
 
 func WaitForSync(clients *Clients, stopCh <-chan struct{}) {
@@ -37,6 +39,9 @@ func NewFakeClients(initialObjects *FakeTestObjects) *Clients {
 	configClient := fakeconfig.NewSimpleClientset(initialObjects.ConfigObjects...)
 	configInformerFactory := cfginformers.NewSharedInformerFactory(configClient, 0)
 
+	monitoringClient := fakemonitoring.NewSimpleClientset(initialObjects.MonitoringObjects...)
+	monitoringInformer := prominformer.NewSharedInformerFactory(monitoringClient, 0)
+
 	//dynamicClient := fake.NewSimpleDynamicClient()
 
 	opClient := operatorclient.OperatorClient{
@@ -54,6 +59,8 @@ func NewFakeClients(initialObjects *FakeTestObjects) *Clients {
 		OperatorInformers:  operatorInformerFactory,
 		ConfigClientSet:    configClient,
 		ConfigInformers:    configInformerFactory,
+		MonitoringClient:   monitoringClient,
+		MonitoringInformer: monitoringInformer,
 		//		DynamicClient:      dynamicClient,
 	}
 }

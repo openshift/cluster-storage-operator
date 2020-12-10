@@ -39,9 +39,11 @@ func newMonitoringController(
 		eventRecorder:  eventRecorder,
 	}
 	return factory.New().
-		WithInformers(c.operatorClient.Informer()).
 		WithSync(c.sync).
-		ResyncEvery(time.Minute).
+		WithInformers(
+			c.operatorClient.Informer(),
+			clients.MonitoringInformer.Monitoring().V1().ServiceMonitors().Informer()).
+		ResyncEvery(resyncInterval).
 		WithSyncDegradedOnError(clients.OperatorClient).
 		ToController(monitoringControllerName, eventRecorder.WithComponentSuffix("vsphere-monitoring-controller"))
 }

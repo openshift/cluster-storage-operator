@@ -41,7 +41,9 @@ type Clients struct {
 	// config.openshift.io informers
 	ConfigInformers cfginformers.SharedInformerFactory
 
-	MonitoringClient   promclient.Interface
+	// Client for talking using prometheus-operator APIs (ServiceMonitor)
+	MonitoringClient promclient.Interface
+	// informer for prometheus-operator APIs
 	MonitoringInformer prominformer.SharedInformerFactory
 
 	// Dynamic client for OLM and old CSI operator APIs
@@ -102,6 +104,12 @@ func NewClients(controllerConfig *controllercmd.ControllerContext, resync time.D
 	}
 	c.ExtensionInformer = apiextinformers.NewSharedInformerFactory(c.ExtensionClientSet, resync)
 
+	c.MonitoringClient, err = promclient.NewForConfig(controllerConfig.KubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	c.MonitoringInformer = prominformer.NewSharedInformerFactory(c.MonitoringClient, resync)
+
 	c.OperatorClient = &operatorclient.OperatorClient{
 		Informers: c.OperatorInformers,
 		Client:    c.OperatorClientSet,
@@ -117,6 +125,7 @@ func StartInformers(clients *Clients, stopCh <-chan struct{}) {
 		clients.OperatorInformers,
 		clients.ConfigInformers,
 		clients.ExtensionInformer,
+		clients.MonitoringInformer,
 	} {
 		informer.Start(stopCh)
 	}
