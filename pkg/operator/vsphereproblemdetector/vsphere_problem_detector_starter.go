@@ -30,6 +30,7 @@ type VSphereProblemDetectorStarter struct {
 	versionGetter  status.VersionGetter
 	targetVersion  string
 	eventRecorder  events.Recorder
+	running        bool
 }
 
 func NewVSphereProblemDetectorStarter(
@@ -80,7 +81,10 @@ func (c *VSphereProblemDetectorStarter) sync(ctx context.Context, syncCtx factor
 		return nil
 	}
 
-	go c.controller.Start(ctx)
+	if !c.running {
+		go c.controller.Start(ctx)
+		c.running = true
+	}
 	return nil
 }
 

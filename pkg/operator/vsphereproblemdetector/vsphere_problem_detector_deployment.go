@@ -118,8 +118,6 @@ func (c *VSphereProblemDetectorDeploymentController) Sync(ctx context.Context, s
 		}
 	}
 
-	resourcemerge.SetDeploymentGeneration(&opStatus.Generations, deployment)
-
 	updateGenerationFn := func(newStatus *operatorapi.OperatorStatus) error {
 		if deployment != nil {
 			resourcemerge.SetDeploymentGeneration(&newStatus.Generations, deployment)

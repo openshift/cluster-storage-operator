@@ -51,8 +51,6 @@
 // assets/vsphere_problem_detector/04_clusterrole.yaml
 // assets/vsphere_problem_detector/05_clusterrolebinding.yaml
 // assets/vsphere_problem_detector/06_deployment.yaml
-// assets/vsphere_problem_detector/08_prometheus_role.yaml
-// assets/vsphere_problem_detector/09_prometheus_rolebinding.yaml
 // assets/vsphere_problem_detector/10_service.yaml
 // assets/vsphere_problem_detector/11_service_monitor.yaml
 package generated
@@ -3391,75 +3389,6 @@ func vsphere_problem_detector06_deploymentYaml() (*asset, error) {
 	return a, nil
 }
 
-var _vsphere_problem_detector08_prometheus_roleYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: prometheus-k8s
-  namespace: openshift-cluster-storage-operator
-  annotations:
-    include.release.openshift.io/self-managed-high-availability: "true"
-    include.release.openshift.io/single-node-developer: "true"
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - services
-  - endpoints
-  - pods
-  verbs:
-  - get
-  - list
-  - watch
-`)
-
-func vsphere_problem_detector08_prometheus_roleYamlBytes() ([]byte, error) {
-	return _vsphere_problem_detector08_prometheus_roleYaml, nil
-}
-
-func vsphere_problem_detector08_prometheus_roleYaml() (*asset, error) {
-	bytes, err := vsphere_problem_detector08_prometheus_roleYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "vsphere_problem_detector/08_prometheus_role.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _vsphere_problem_detector09_prometheus_rolebindingYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: prometheus-k8s
-  namespace: openshift-cluster-storage-operator
-  annotations:
-    include.release.openshift.io/self-managed-high-availability: "true"
-    include.release.openshift.io/single-node-developer: "true"
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: prometheus-k8s
-subjects:
-- kind: ServiceAccount
-  name: prometheus-k8s
-  namespace: openshift-monitoring
-`)
-
-func vsphere_problem_detector09_prometheus_rolebindingYamlBytes() ([]byte, error) {
-	return _vsphere_problem_detector09_prometheus_rolebindingYaml, nil
-}
-
-func vsphere_problem_detector09_prometheus_rolebindingYaml() (*asset, error) {
-	bytes, err := vsphere_problem_detector09_prometheus_rolebindingYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "vsphere_problem_detector/09_prometheus_rolebinding.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _vsphere_problem_detector10_serviceYaml = []byte(`apiVersion: v1
 kind: Service
 metadata:
@@ -3640,8 +3569,6 @@ var _bindata = map[string]func() (*asset, error){
 	"vsphere_problem_detector/04_clusterrole.yaml":                   vsphere_problem_detector04_clusterroleYaml,
 	"vsphere_problem_detector/05_clusterrolebinding.yaml":            vsphere_problem_detector05_clusterrolebindingYaml,
 	"vsphere_problem_detector/06_deployment.yaml":                    vsphere_problem_detector06_deploymentYaml,
-	"vsphere_problem_detector/08_prometheus_role.yaml":               vsphere_problem_detector08_prometheus_roleYaml,
-	"vsphere_problem_detector/09_prometheus_rolebinding.yaml":        vsphere_problem_detector09_prometheus_rolebindingYaml,
 	"vsphere_problem_detector/10_service.yaml":                       vsphere_problem_detector10_serviceYaml,
 	"vsphere_problem_detector/11_service_monitor.yaml":               vsphere_problem_detector11_service_monitorYaml,
 }
@@ -3747,16 +3674,14 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"vsphere.yaml":   {storageclassesVsphereYaml, map[string]*bintree{}},
 	}},
 	"vsphere_problem_detector": {nil, map[string]*bintree{
-		"01_sa.yaml":                     {vsphere_problem_detector01_saYaml, map[string]*bintree{}},
-		"02_role.yaml":                   {vsphere_problem_detector02_roleYaml, map[string]*bintree{}},
-		"03_rolebinding.yaml":            {vsphere_problem_detector03_rolebindingYaml, map[string]*bintree{}},
-		"04_clusterrole.yaml":            {vsphere_problem_detector04_clusterroleYaml, map[string]*bintree{}},
-		"05_clusterrolebinding.yaml":     {vsphere_problem_detector05_clusterrolebindingYaml, map[string]*bintree{}},
-		"06_deployment.yaml":             {vsphere_problem_detector06_deploymentYaml, map[string]*bintree{}},
-		"08_prometheus_role.yaml":        {vsphere_problem_detector08_prometheus_roleYaml, map[string]*bintree{}},
-		"09_prometheus_rolebinding.yaml": {vsphere_problem_detector09_prometheus_rolebindingYaml, map[string]*bintree{}},
-		"10_service.yaml":                {vsphere_problem_detector10_serviceYaml, map[string]*bintree{}},
-		"11_service_monitor.yaml":        {vsphere_problem_detector11_service_monitorYaml, map[string]*bintree{}},
+		"01_sa.yaml":                 {vsphere_problem_detector01_saYaml, map[string]*bintree{}},
+		"02_role.yaml":               {vsphere_problem_detector02_roleYaml, map[string]*bintree{}},
+		"03_rolebinding.yaml":        {vsphere_problem_detector03_rolebindingYaml, map[string]*bintree{}},
+		"04_clusterrole.yaml":        {vsphere_problem_detector04_clusterroleYaml, map[string]*bintree{}},
+		"05_clusterrolebinding.yaml": {vsphere_problem_detector05_clusterrolebindingYaml, map[string]*bintree{}},
+		"06_deployment.yaml":         {vsphere_problem_detector06_deploymentYaml, map[string]*bintree{}},
+		"10_service.yaml":            {vsphere_problem_detector10_serviceYaml, map[string]*bintree{}},
+		"11_service_monitor.yaml":    {vsphere_problem_detector11_service_monitorYaml, map[string]*bintree{}},
 	}},
 }}
 
