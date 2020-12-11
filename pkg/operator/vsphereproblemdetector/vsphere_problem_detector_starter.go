@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
 	"github.com/openshift/library-go/pkg/operator/status"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"
 )
 
@@ -58,6 +59,9 @@ func (c *VSphereProblemDetectorStarter) sync(ctx context.Context, syncCtx factor
 	defer klog.V(4).Infof("VSphereProblemDetectorStarter.Sync finished")
 
 	opSpec, _, _, err := c.operatorClient.GetOperatorState()
+	if apierrors.IsNotFound(err) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}

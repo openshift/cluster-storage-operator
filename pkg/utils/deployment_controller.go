@@ -8,6 +8,7 @@ import (
 	operatorapi "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/generated"
 	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/loglevel"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
@@ -105,24 +106,9 @@ func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpe
 	}
 
 	// Replace log level
-	logLevel := getLogLevel(spec.LogLevel)
+	logLevel := loglevel.LogLevelToVerbosity(spec.LogLevel)
 	deploymentString = strings.ReplaceAll(deploymentString, "${LOG_LEVEL}", strconv.Itoa(logLevel))
 
 	deployment := resourceread.ReadDeploymentV1OrDie([]byte(deploymentString))
 	return deployment
-}
-
-func getLogLevel(logLevel operatorapi.LogLevel) int {
-	switch logLevel {
-	case operatorapi.Normal, "":
-		return 2
-	case operatorapi.Debug:
-		return 4
-	case operatorapi.Trace:
-		return 6
-	case operatorapi.TraceAll:
-		return 100
-	default:
-		return 2
-	}
 }

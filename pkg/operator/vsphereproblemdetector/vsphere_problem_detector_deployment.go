@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 )
@@ -28,7 +29,6 @@ type VSphereProblemDetectorDeploymentController struct {
 	versionGetter  status.VersionGetter
 	targetVersion  string
 	eventRecorder  events.Recorder
-	factory        *factory.Factory
 }
 
 func NewVSphereProblemDetectorDeploymentController(
@@ -37,31 +37,31 @@ func NewVSphereProblemDetectorDeploymentController(
 	targetVersion string,
 	eventRecorder events.Recorder,
 	resyncInterval time.Duration) factory.Controller {
-	f := factory.New()
-	f = f.ResyncEvery(resyncInterval)
-	f = f.WithSyncDegradedOnError(clients.OperatorClient)
-	// Necessary to do initial Sync after the controller starts.
-	f = f.WithPostStartHooks(initalSync)
-	f = f.WithInformers(
-		clients.OperatorClient.Informer(),
-		clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Apps().V1().Deployments().Informer())
-
 	c := &VSphereProblemDetectorDeploymentController{
 		operatorClient: clients.OperatorClient,
 		kubeClient:     clients.KubeClient,
 		versionGetter:  versionGetter,
 		eventRecorder:  eventRecorder,
 		targetVersion:  targetVersion,
-		factory:        f,
 	}
-	return c
+	return factory.New().
+		WithSync(c.sync).
+		WithInformers(
+			c.operatorClient.Informer(),
+			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Apps().V1().Deployments().Informer()).
+		ResyncEvery(resyncInterval).
+		WithSyncDegradedOnError(clients.OperatorClient).
+		ToController(deploymentControllerName, eventRecorder.WithComponentSuffix("vsphere-problem-detector-deployment"))
 }
 
-func (c *VSphereProblemDetectorDeploymentController) Sync(ctx context.Context, syncCtx factory.SyncContext) error {
+func (c *VSphereProblemDetectorDeploymentController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
 	klog.V(4).Infof("VSphereProblemDetectorDeploymentController sync started")
 	defer klog.V(4).Infof("VSphereProblemDetectorDeploymentController sync finished")
 
 	opSpec, opStatus, _, err := c.operatorClient.GetOperatorState()
+	if apierrors.IsNotFound(err) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -87,23 +87,4 @@ func (c *VSphereProblemDetectorDeploymentController) Sync(ctx context.Context, s
 		VersionName:    deploymentControllerName,
 	})
 	return err
-}
-
-func (c *VSphereProblemDetectorDeploymentController) Name() string {
-	return deploymentControllerName
-}
-
-func (c *VSphereProblemDetectorDeploymentController) Run(ctx context.Context, workers int) {
-	// This adds event handlers to informers.
-	ctrl := c.factory.WithSync(c.Sync).ToController(deploymentControllerName, c.eventRecorder)
-	ctrl.Run(ctx, workers)
-}
-
-// factory.PostStartHook to poke newly started controller to resync.
-// This is useful if a controller is started later than at CSO startup
-// - CSO's CR may have been already processes and there may be no
-// event pending in its informers.
-func initalSync(ctx context.Context, syncContext factory.SyncContext) error {
-	syncContext.Queue().Add(factory.DefaultQueueKey)
-	return nil
 }
