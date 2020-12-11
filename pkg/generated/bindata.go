@@ -3137,25 +3137,6 @@ rules:
   verbs:
   - '*'
 - apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - clusterroles
-  - clusterrolebindings
-  - roles
-  - rolebindings
-  verbs:
-  - watch
-  - list
-  - get
-- apiGroups:
-  - ''
-  resources:
-  - serviceaccounts
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - authentication.k8s.io
   resources:
   - tokenreviews
@@ -3168,19 +3149,6 @@ rules:
   verbs:
   - '*'
 - apiGroups:
-  - apiextensions.k8s.io
-  resources:
-  - customresourcedefinitions
-  verbs:
-  - list
-  - watch
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - '*'
-- apiGroups:
   - ''
   resources:
   - nodes
@@ -3188,26 +3156,14 @@ rules:
   - get
   - list
   - watch
-  - create
-  - patch
-  - update
 - apiGroups:
   - ''
   resources:
   - secrets
   - services
   - endpoints
-  - events
   - configmaps
   - persistentvolumes
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ''
-  resources:
-  - namespaces
   verbs:
   - get
   - list
@@ -3220,24 +3176,6 @@ rules:
   - get
   - list
   - watch
-- apiGroups:
-  - '*'
-  resources:
-  - events
-  verbs:
-  - get
-  - patch
-  - create
-  - list
-  - watch
-  - update
-  - delete
-- apiGroups:
-  - cloudcredential.openshift.io
-  resources:
-  - credentialsrequests
-  verbs:
-  - '*'
 - apiGroups:
   - operator.openshift.io
   resources:
@@ -3372,8 +3310,6 @@ var _vsphere_problem_detector10_serviceYaml = []byte(`apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    include.release.openshift.io/ibm-cloud-managed: "true"
-    include.release.openshift.io/self-managed-high-availability: "true"
     service.alpha.openshift.io/serving-cert-secret-name: vsphere-problem-detector-serving-cert
   labels:
     app: vsphere-problem-detector-metrics
@@ -3411,9 +3347,6 @@ kind: ServiceMonitor
 metadata:
   name: vsphere-problem-detector
   namespace: openshift-cluster-storage-operator
-  annotations:
-    include.release.openshift.io/ibm-cloud-managed: "true"
-    include.release.openshift.io/self-managed-high-availability: "true"
 spec:
   endpoints:
   - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token

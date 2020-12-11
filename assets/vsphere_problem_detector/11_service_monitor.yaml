@@ -3,9 +3,6 @@ kind: ServiceMonitor
 metadata:
   name: vsphere-problem-detector
   namespace: openshift-cluster-storage-operator
-  annotations:
-    include.release.openshift.io/ibm-cloud-managed: "true"
-    include.release.openshift.io/self-managed-high-availability: "true"
 spec:
   endpoints:
   - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token

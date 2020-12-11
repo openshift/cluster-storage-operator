@@ -36,7 +36,7 @@ func newMonitoringController(
 		operatorClient: clients.OperatorClient,
 		kubeClient:     clients.KubeClient,
 		dynamicClient:  clients.DynamicClient,
-		eventRecorder:  eventRecorder,
+		eventRecorder:  eventRecorder.WithComponentSuffix("vsphere-monitoring-controller"),
 	}
 	return factory.New().
 		WithSync(c.sync).
@@ -45,7 +45,7 @@ func newMonitoringController(
 			clients.MonitoringInformer.Monitoring().V1().ServiceMonitors().Informer()).
 		ResyncEvery(resyncInterval).
 		WithSyncDegradedOnError(clients.OperatorClient).
-		ToController(monitoringControllerName, eventRecorder.WithComponentSuffix("vsphere-monitoring-controller"))
+		ToController(monitoringControllerName, c.eventRecorder)
 }
 
 func (c *monitoringController) sync(ctx context.Context, syncContext factory.SyncContext) error {

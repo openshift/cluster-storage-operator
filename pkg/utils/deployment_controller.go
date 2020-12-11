@@ -46,7 +46,7 @@ func CreateDeployment(depOpts DeploymentOptions) (*appsv1.Deployment, error) {
 		deploymentAvailable.Status = operatorapi.ConditionTrue
 	} else {
 		deploymentAvailable.Status = operatorapi.ConditionFalse
-		deploymentAvailable.Reason = "WaitDeployment"
+		deploymentAvailable.Reason = "Deploying"
 		deploymentAvailable.Message = "Waiting for a Deployment pod to start"
 	}
 
@@ -68,14 +68,11 @@ func CreateDeployment(depOpts DeploymentOptions) (*appsv1.Deployment, error) {
 			} else {
 				msg := fmt.Sprintf("%d out of %d pods running", deployment.Status.UpdatedReplicas, *deployment.Spec.Replicas)
 				deploymentProgressing.Status = operatorapi.ConditionTrue
-				deploymentProgressing.Reason = "WaitDeployment"
+				deploymentProgressing.Reason = "Deploying"
 				deploymentProgressing.Message = msg
 			}
 		}
 	}
-
-	depOpts.OpStatus.ReadyReplicas = deployment.Status.ReadyReplicas
-
 	updateGenerationFn := func(newStatus *operatorapi.OperatorStatus) error {
 		if deployment != nil {
 			resourcemerge.SetDeploymentGeneration(&newStatus.Generations, deployment)
