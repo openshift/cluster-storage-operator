@@ -3128,14 +3128,6 @@ metadata:
   name: vsphere-problem-detector-operator-clusterrole
 rules:
 - apiGroups:
-  - security.openshift.io
-  resourceNames:
-  - privileged
-  resources:
-  - securitycontextconstraints
-  verbs:
-  - use
-- apiGroups:
   - ''
   resourceNames:
   - extension-apiserver-authentication
@@ -3155,10 +3147,6 @@ rules:
   - watch
   - list
   - get
-  - create
-  - delete
-  - patch
-  - update
 - apiGroups:
   - ''
   resources:
@@ -3167,20 +3155,16 @@ rules:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
 - apiGroups:
   - authentication.k8s.io
   resources:
-  - '*'
+  - tokenreviews
   verbs:
   - '*'
 - apiGroups:
   - authorization.k8s.io
   resources:
-  - '*'
+  - subjectaccessreviews
   verbs:
   - '*'
 - apiGroups:
@@ -3189,9 +3173,7 @@ rules:
   - customresourcedefinitions
   verbs:
   - list
-  - create
   - watch
-  - delete
 - apiGroups:
   - coordination.k8s.io
   resources:
@@ -3203,7 +3185,12 @@ rules:
   resources:
   - nodes
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - update
 - apiGroups:
   - ''
   resources:
@@ -3225,22 +3212,14 @@ rules:
   - get
   - list
   - watch
-  - create
-  - patch
-  - delete
-  - update
 - apiGroups:
   - storage.k8s.io
   resources:
   - storageclasses
-  - csinodes
   verbs:
-  - create
   - get
   - list
   - watch
-  - update
-  - delete
 - apiGroups:
   - '*'
   resources:
