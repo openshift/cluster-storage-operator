@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vsphere-problem-detector
+  namespace: openshift-cluster-storage-operator
+spec:
+  endpoints:
+  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    interval: 30s
+    path: /metrics
+    port: vsphere-metrics
+    scheme: https
+    tlsConfig:
+      caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
+      serverName: vsphere-problem-detector-metrics.openshift-cluster-storage-operator.svc
+  jobLabel: component
+  selector:
+    matchLabels:
+      app: vsphere-problem-detector-metrics

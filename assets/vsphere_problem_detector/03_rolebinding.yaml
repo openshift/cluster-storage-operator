@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vsphere-problem-detector-operator-rolebinding
+  namespace: openshift-cluster-storage-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: vsphere-problem-detector-operator-role
+subjects:
+- kind: ServiceAccount
+  name: vsphere-problem-detector-operator
+  namespace: openshift-cluster-storage-operator

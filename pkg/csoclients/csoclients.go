@@ -10,6 +10,8 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
+	prominformer "github.com/prometheus-operator/prometheus-operator/pkg/client/informers/externalversions"
+	promclient "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned"
 	apiextclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	"k8s.io/client-go/dynamic"
@@ -38,6 +40,11 @@ type Clients struct {
 	ConfigClientSet cfgclientset.Interface
 	// config.openshift.io informers
 	ConfigInformers cfginformers.SharedInformerFactory
+
+	// Client for talking using prometheus-operator APIs (ServiceMonitor)
+	MonitoringClient promclient.Interface
+	// informer for prometheus-operator APIs
+	MonitoringInformer prominformer.SharedInformerFactory
 
 	// Dynamic client for OLM and old CSI operator APIs
 	DynamicClient dynamic.Interface
@@ -97,6 +104,12 @@ func NewClients(controllerConfig *controllercmd.ControllerContext, resync time.D
 	}
 	c.ExtensionInformer = apiextinformers.NewSharedInformerFactory(c.ExtensionClientSet, resync)
 
+	c.MonitoringClient, err = promclient.NewForConfig(controllerConfig.KubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	c.MonitoringInformer = prominformer.NewSharedInformerFactory(c.MonitoringClient, resync)
+
 	c.OperatorClient = &operatorclient.OperatorClient{
 		Informers: c.OperatorInformers,
 		Client:    c.OperatorClientSet,
@@ -112,6 +125,7 @@ func StartInformers(clients *Clients, stopCh <-chan struct{}) {
 		clients.OperatorInformers,
 		clients.ConfigInformers,
 		clients.ExtensionInformer,
+		clients.MonitoringInformer,
 	} {
 		informer.Start(stopCh)
 	}

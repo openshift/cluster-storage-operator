@@ -82,6 +82,8 @@ spec:
             value: quay.io/openshift/origin-csi-node-driver-registrar:latest
           - name: LIVENESS_PROBE_IMAGE
             value: quay.io/openshift/origin-csi-livenessprobe:latest
+          - name: VSPHERE_PROBLEM_DETECTOR_OPERATOR_IMAGE
+            value: quay.io/openshift/origin-vsphere-problem-detector:latest
           resources:
             requests:
               cpu: 10m
@@ -89,28 +91,8 @@ spec:
           volumeMounts:
             - mountPath: /var/run/secrets/serving-cert
               name: cluster-storage-operator-serving-cert
-        - name: vsphere-problem-detector
-          image: quay.io/openshift/origin-vsphere-problem-detector:latest
-          args:
-          - start
-          - --listen=0.0.0.0:8444
-          ports:
-          - containerPort: 8444
-            name: vsphere-metrics
-          imagePullPolicy: IfNotPresent
-          resources:
-            requests:
-              cpu: 10m
-              memory: 100Mi
-          volumeMounts:
-            - mountPath: /var/run/secrets/serving-cert
-              name: vsphere-problem-detector-serving-cert
       volumes:
         - name: cluster-storage-operator-serving-cert
           secret:
             secretName: cluster-storage-operator-serving-cert
-            optional: true
-        - name: vsphere-problem-detector-serving-cert
-          secret:
-            secretName: vsphere-problem-detector-serving-cert
             optional: true
