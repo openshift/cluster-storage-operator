@@ -6,8 +6,8 @@
 // assets/csidriveroperators/aws-ebs/04_rolebinding.yaml
 // assets/csidriveroperators/aws-ebs/05_clusterrole.yaml
 // assets/csidriveroperators/aws-ebs/06_clusterrolebinding.yaml
-// assets/csidriveroperators/aws-ebs/07_clusterrole_aws_config.yaml
-// assets/csidriveroperators/aws-ebs/08_clusterrolebinding_aws_config.yaml
+// assets/csidriveroperators/aws-ebs/07_role_aws_config.yaml
+// assets/csidriveroperators/aws-ebs/08_rolebinding_aws_config.yaml
 // assets/csidriveroperators/aws-ebs/09_deployment.yaml
 // assets/csidriveroperators/aws-ebs/10_cr.yaml
 // assets/csidriveroperators/gcp-pd/01_namespace.yaml
@@ -545,12 +545,12 @@ func csidriveroperatorsAwsEbs06_clusterrolebindingYaml() (*asset, error) {
 	return a, nil
 }
 
-var _csidriveroperatorsAwsEbs07_clusterrole_aws_configYaml = []byte(`# Allow reading openshift-config-managed/kube-cloud-config ConfigMap
-# with CA bundle.
+var _csidriveroperatorsAwsEbs07_role_aws_configYaml = []byte(`# Allow AWS EBS CSI driver operator to read CA bundle from openshift-config-managed/kube-cloud-config ConfigMap
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
-  name: aws-ebs-csi-driver-operator-aws-config-clusterrole
+  name: aws-ebs-csi-driver-operator-aws-config-role
+  namespace: openshift-config-managed
 rules:
 - apiGroups:
   - ''
@@ -562,46 +562,47 @@ rules:
   - watch
 `)
 
-func csidriveroperatorsAwsEbs07_clusterrole_aws_configYamlBytes() ([]byte, error) {
-	return _csidriveroperatorsAwsEbs07_clusterrole_aws_configYaml, nil
+func csidriveroperatorsAwsEbs07_role_aws_configYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsAwsEbs07_role_aws_configYaml, nil
 }
 
-func csidriveroperatorsAwsEbs07_clusterrole_aws_configYaml() (*asset, error) {
-	bytes, err := csidriveroperatorsAwsEbs07_clusterrole_aws_configYamlBytes()
+func csidriveroperatorsAwsEbs07_role_aws_configYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsAwsEbs07_role_aws_configYamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "csidriveroperators/aws-ebs/07_clusterrole_aws_config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "csidriveroperators/aws-ebs/07_role_aws_config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var _csidriveroperatorsAwsEbs08_clusterrolebinding_aws_configYaml = []byte(`kind: ClusterRoleBinding
+var _csidriveroperatorsAwsEbs08_rolebinding_aws_configYaml = []byte(`kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: aws-ebs-csi-driver-operator-aws-config-clusterrolebinding
+  namespace: openshift-config-managed
 subjects:
   - kind: ServiceAccount
     name: aws-ebs-csi-driver-operator
     namespace: openshift-cluster-csi-drivers
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: aws-ebs-csi-driver-operator-aws-config-clusterrole
+  kind: Role
+  name: aws-ebs-csi-driver-operator-aws-config-role
 `)
 
-func csidriveroperatorsAwsEbs08_clusterrolebinding_aws_configYamlBytes() ([]byte, error) {
-	return _csidriveroperatorsAwsEbs08_clusterrolebinding_aws_configYaml, nil
+func csidriveroperatorsAwsEbs08_rolebinding_aws_configYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsAwsEbs08_rolebinding_aws_configYaml, nil
 }
 
-func csidriveroperatorsAwsEbs08_clusterrolebinding_aws_configYaml() (*asset, error) {
-	bytes, err := csidriveroperatorsAwsEbs08_clusterrolebinding_aws_configYamlBytes()
+func csidriveroperatorsAwsEbs08_rolebinding_aws_configYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsAwsEbs08_rolebinding_aws_configYamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "csidriveroperators/aws-ebs/08_clusterrolebinding_aws_config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "csidriveroperators/aws-ebs/08_rolebinding_aws_config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -3485,61 +3486,61 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"csidriveroperators/aws-ebs/01_namespace.yaml":                     csidriveroperatorsAwsEbs01_namespaceYaml,
-	"csidriveroperators/aws-ebs/02_sa.yaml":                            csidriveroperatorsAwsEbs02_saYaml,
-	"csidriveroperators/aws-ebs/03_role.yaml":                          csidriveroperatorsAwsEbs03_roleYaml,
-	"csidriveroperators/aws-ebs/04_rolebinding.yaml":                   csidriveroperatorsAwsEbs04_rolebindingYaml,
-	"csidriveroperators/aws-ebs/05_clusterrole.yaml":                   csidriveroperatorsAwsEbs05_clusterroleYaml,
-	"csidriveroperators/aws-ebs/06_clusterrolebinding.yaml":            csidriveroperatorsAwsEbs06_clusterrolebindingYaml,
-	"csidriveroperators/aws-ebs/07_clusterrole_aws_config.yaml":        csidriveroperatorsAwsEbs07_clusterrole_aws_configYaml,
-	"csidriveroperators/aws-ebs/08_clusterrolebinding_aws_config.yaml": csidriveroperatorsAwsEbs08_clusterrolebinding_aws_configYaml,
-	"csidriveroperators/aws-ebs/09_deployment.yaml":                    csidriveroperatorsAwsEbs09_deploymentYaml,
-	"csidriveroperators/aws-ebs/10_cr.yaml":                            csidriveroperatorsAwsEbs10_crYaml,
-	"csidriveroperators/gcp-pd/01_namespace.yaml":                      csidriveroperatorsGcpPd01_namespaceYaml,
-	"csidriveroperators/gcp-pd/02_sa.yaml":                             csidriveroperatorsGcpPd02_saYaml,
-	"csidriveroperators/gcp-pd/03_role.yaml":                           csidriveroperatorsGcpPd03_roleYaml,
-	"csidriveroperators/gcp-pd/04_rolebinding.yaml":                    csidriveroperatorsGcpPd04_rolebindingYaml,
-	"csidriveroperators/gcp-pd/05_clusterrole.yaml":                    csidriveroperatorsGcpPd05_clusterroleYaml,
-	"csidriveroperators/gcp-pd/06_clusterrolebinding.yaml":             csidriveroperatorsGcpPd06_clusterrolebindingYaml,
-	"csidriveroperators/gcp-pd/07_deployment.yaml":                     csidriveroperatorsGcpPd07_deploymentYaml,
-	"csidriveroperators/gcp-pd/08_cr.yaml":                             csidriveroperatorsGcpPd08_crYaml,
-	"csidriveroperators/manila/01_namespace.yaml":                      csidriveroperatorsManila01_namespaceYaml,
-	"csidriveroperators/manila/02_sa.yaml":                             csidriveroperatorsManila02_saYaml,
-	"csidriveroperators/manila/03_role.yaml":                           csidriveroperatorsManila03_roleYaml,
-	"csidriveroperators/manila/04_rolebinding.yaml":                    csidriveroperatorsManila04_rolebindingYaml,
-	"csidriveroperators/manila/05_clusterrole.yaml":                    csidriveroperatorsManila05_clusterroleYaml,
-	"csidriveroperators/manila/06_clusterrolebinding.yaml":             csidriveroperatorsManila06_clusterrolebindingYaml,
-	"csidriveroperators/manila/07_deployment.yaml":                     csidriveroperatorsManila07_deploymentYaml,
-	"csidriveroperators/manila/08_cr.yaml":                             csidriveroperatorsManila08_crYaml,
-	"csidriveroperators/openstack-cinder/01_namespace.yaml":            csidriveroperatorsOpenstackCinder01_namespaceYaml,
-	"csidriveroperators/openstack-cinder/02_sa.yaml":                   csidriveroperatorsOpenstackCinder02_saYaml,
-	"csidriveroperators/openstack-cinder/03_role.yaml":                 csidriveroperatorsOpenstackCinder03_roleYaml,
-	"csidriveroperators/openstack-cinder/04_rolebinding.yaml":          csidriveroperatorsOpenstackCinder04_rolebindingYaml,
-	"csidriveroperators/openstack-cinder/05_clusterrole.yaml":          csidriveroperatorsOpenstackCinder05_clusterroleYaml,
-	"csidriveroperators/openstack-cinder/06_clusterrolebinding.yaml":   csidriveroperatorsOpenstackCinder06_clusterrolebindingYaml,
-	"csidriveroperators/openstack-cinder/07_deployment.yaml":           csidriveroperatorsOpenstackCinder07_deploymentYaml,
-	"csidriveroperators/openstack-cinder/08_cr.yaml":                   csidriveroperatorsOpenstackCinder08_crYaml,
-	"csidriveroperators/ovirt/01_namespace.yaml":                       csidriveroperatorsOvirt01_namespaceYaml,
-	"csidriveroperators/ovirt/02_sa.yaml":                              csidriveroperatorsOvirt02_saYaml,
-	"csidriveroperators/ovirt/03_role.yaml":                            csidriveroperatorsOvirt03_roleYaml,
-	"csidriveroperators/ovirt/04_rolebinding.yaml":                     csidriveroperatorsOvirt04_rolebindingYaml,
-	"csidriveroperators/ovirt/05_clusterrole.yaml":                     csidriveroperatorsOvirt05_clusterroleYaml,
-	"csidriveroperators/ovirt/06_clusterrolebinding.yaml":              csidriveroperatorsOvirt06_clusterrolebindingYaml,
-	"csidriveroperators/ovirt/07_deployment.yaml":                      csidriveroperatorsOvirt07_deploymentYaml,
-	"csidriveroperators/ovirt/08_cr.yaml":                              csidriveroperatorsOvirt08_crYaml,
-	"storageclasses/aws.yaml":                                          storageclassesAwsYaml,
-	"storageclasses/azure.yaml":                                        storageclassesAzureYaml,
-	"storageclasses/gcp.yaml":                                          storageclassesGcpYaml,
-	"storageclasses/openstack.yaml":                                    storageclassesOpenstackYaml,
-	"storageclasses/vsphere.yaml":                                      storageclassesVsphereYaml,
-	"vsphere_problem_detector/01_sa.yaml":                              vsphere_problem_detector01_saYaml,
-	"vsphere_problem_detector/02_role.yaml":                            vsphere_problem_detector02_roleYaml,
-	"vsphere_problem_detector/03_rolebinding.yaml":                     vsphere_problem_detector03_rolebindingYaml,
-	"vsphere_problem_detector/04_clusterrole.yaml":                     vsphere_problem_detector04_clusterroleYaml,
-	"vsphere_problem_detector/05_clusterrolebinding.yaml":              vsphere_problem_detector05_clusterrolebindingYaml,
-	"vsphere_problem_detector/06_deployment.yaml":                      vsphere_problem_detector06_deploymentYaml,
-	"vsphere_problem_detector/10_service.yaml":                         vsphere_problem_detector10_serviceYaml,
-	"vsphere_problem_detector/11_service_monitor.yaml":                 vsphere_problem_detector11_service_monitorYaml,
+	"csidriveroperators/aws-ebs/01_namespace.yaml":                   csidriveroperatorsAwsEbs01_namespaceYaml,
+	"csidriveroperators/aws-ebs/02_sa.yaml":                          csidriveroperatorsAwsEbs02_saYaml,
+	"csidriveroperators/aws-ebs/03_role.yaml":                        csidriveroperatorsAwsEbs03_roleYaml,
+	"csidriveroperators/aws-ebs/04_rolebinding.yaml":                 csidriveroperatorsAwsEbs04_rolebindingYaml,
+	"csidriveroperators/aws-ebs/05_clusterrole.yaml":                 csidriveroperatorsAwsEbs05_clusterroleYaml,
+	"csidriveroperators/aws-ebs/06_clusterrolebinding.yaml":          csidriveroperatorsAwsEbs06_clusterrolebindingYaml,
+	"csidriveroperators/aws-ebs/07_role_aws_config.yaml":             csidriveroperatorsAwsEbs07_role_aws_configYaml,
+	"csidriveroperators/aws-ebs/08_rolebinding_aws_config.yaml":      csidriveroperatorsAwsEbs08_rolebinding_aws_configYaml,
+	"csidriveroperators/aws-ebs/09_deployment.yaml":                  csidriveroperatorsAwsEbs09_deploymentYaml,
+	"csidriveroperators/aws-ebs/10_cr.yaml":                          csidriveroperatorsAwsEbs10_crYaml,
+	"csidriveroperators/gcp-pd/01_namespace.yaml":                    csidriveroperatorsGcpPd01_namespaceYaml,
+	"csidriveroperators/gcp-pd/02_sa.yaml":                           csidriveroperatorsGcpPd02_saYaml,
+	"csidriveroperators/gcp-pd/03_role.yaml":                         csidriveroperatorsGcpPd03_roleYaml,
+	"csidriveroperators/gcp-pd/04_rolebinding.yaml":                  csidriveroperatorsGcpPd04_rolebindingYaml,
+	"csidriveroperators/gcp-pd/05_clusterrole.yaml":                  csidriveroperatorsGcpPd05_clusterroleYaml,
+	"csidriveroperators/gcp-pd/06_clusterrolebinding.yaml":           csidriveroperatorsGcpPd06_clusterrolebindingYaml,
+	"csidriveroperators/gcp-pd/07_deployment.yaml":                   csidriveroperatorsGcpPd07_deploymentYaml,
+	"csidriveroperators/gcp-pd/08_cr.yaml":                           csidriveroperatorsGcpPd08_crYaml,
+	"csidriveroperators/manila/01_namespace.yaml":                    csidriveroperatorsManila01_namespaceYaml,
+	"csidriveroperators/manila/02_sa.yaml":                           csidriveroperatorsManila02_saYaml,
+	"csidriveroperators/manila/03_role.yaml":                         csidriveroperatorsManila03_roleYaml,
+	"csidriveroperators/manila/04_rolebinding.yaml":                  csidriveroperatorsManila04_rolebindingYaml,
+	"csidriveroperators/manila/05_clusterrole.yaml":                  csidriveroperatorsManila05_clusterroleYaml,
+	"csidriveroperators/manila/06_clusterrolebinding.yaml":           csidriveroperatorsManila06_clusterrolebindingYaml,
+	"csidriveroperators/manila/07_deployment.yaml":                   csidriveroperatorsManila07_deploymentYaml,
+	"csidriveroperators/manila/08_cr.yaml":                           csidriveroperatorsManila08_crYaml,
+	"csidriveroperators/openstack-cinder/01_namespace.yaml":          csidriveroperatorsOpenstackCinder01_namespaceYaml,
+	"csidriveroperators/openstack-cinder/02_sa.yaml":                 csidriveroperatorsOpenstackCinder02_saYaml,
+	"csidriveroperators/openstack-cinder/03_role.yaml":               csidriveroperatorsOpenstackCinder03_roleYaml,
+	"csidriveroperators/openstack-cinder/04_rolebinding.yaml":        csidriveroperatorsOpenstackCinder04_rolebindingYaml,
+	"csidriveroperators/openstack-cinder/05_clusterrole.yaml":        csidriveroperatorsOpenstackCinder05_clusterroleYaml,
+	"csidriveroperators/openstack-cinder/06_clusterrolebinding.yaml": csidriveroperatorsOpenstackCinder06_clusterrolebindingYaml,
+	"csidriveroperators/openstack-cinder/07_deployment.yaml":         csidriveroperatorsOpenstackCinder07_deploymentYaml,
+	"csidriveroperators/openstack-cinder/08_cr.yaml":                 csidriveroperatorsOpenstackCinder08_crYaml,
+	"csidriveroperators/ovirt/01_namespace.yaml":                     csidriveroperatorsOvirt01_namespaceYaml,
+	"csidriveroperators/ovirt/02_sa.yaml":                            csidriveroperatorsOvirt02_saYaml,
+	"csidriveroperators/ovirt/03_role.yaml":                          csidriveroperatorsOvirt03_roleYaml,
+	"csidriveroperators/ovirt/04_rolebinding.yaml":                   csidriveroperatorsOvirt04_rolebindingYaml,
+	"csidriveroperators/ovirt/05_clusterrole.yaml":                   csidriveroperatorsOvirt05_clusterroleYaml,
+	"csidriveroperators/ovirt/06_clusterrolebinding.yaml":            csidriveroperatorsOvirt06_clusterrolebindingYaml,
+	"csidriveroperators/ovirt/07_deployment.yaml":                    csidriveroperatorsOvirt07_deploymentYaml,
+	"csidriveroperators/ovirt/08_cr.yaml":                            csidriveroperatorsOvirt08_crYaml,
+	"storageclasses/aws.yaml":                                        storageclassesAwsYaml,
+	"storageclasses/azure.yaml":                                      storageclassesAzureYaml,
+	"storageclasses/gcp.yaml":                                        storageclassesGcpYaml,
+	"storageclasses/openstack.yaml":                                  storageclassesOpenstackYaml,
+	"storageclasses/vsphere.yaml":                                    storageclassesVsphereYaml,
+	"vsphere_problem_detector/01_sa.yaml":                            vsphere_problem_detector01_saYaml,
+	"vsphere_problem_detector/02_role.yaml":                          vsphere_problem_detector02_roleYaml,
+	"vsphere_problem_detector/03_rolebinding.yaml":                   vsphere_problem_detector03_rolebindingYaml,
+	"vsphere_problem_detector/04_clusterrole.yaml":                   vsphere_problem_detector04_clusterroleYaml,
+	"vsphere_problem_detector/05_clusterrolebinding.yaml":            vsphere_problem_detector05_clusterrolebindingYaml,
+	"vsphere_problem_detector/06_deployment.yaml":                    vsphere_problem_detector06_deploymentYaml,
+	"vsphere_problem_detector/10_service.yaml":                       vsphere_problem_detector10_serviceYaml,
+	"vsphere_problem_detector/11_service_monitor.yaml":               vsphere_problem_detector11_service_monitorYaml,
 }
 
 // AssetDir returns the file names below a certain
@@ -3585,16 +3586,16 @@ type bintree struct {
 var _bintree = &bintree{nil, map[string]*bintree{
 	"csidriveroperators": {nil, map[string]*bintree{
 		"aws-ebs": {nil, map[string]*bintree{
-			"01_namespace.yaml":                     {csidriveroperatorsAwsEbs01_namespaceYaml, map[string]*bintree{}},
-			"02_sa.yaml":                            {csidriveroperatorsAwsEbs02_saYaml, map[string]*bintree{}},
-			"03_role.yaml":                          {csidriveroperatorsAwsEbs03_roleYaml, map[string]*bintree{}},
-			"04_rolebinding.yaml":                   {csidriveroperatorsAwsEbs04_rolebindingYaml, map[string]*bintree{}},
-			"05_clusterrole.yaml":                   {csidriveroperatorsAwsEbs05_clusterroleYaml, map[string]*bintree{}},
-			"06_clusterrolebinding.yaml":            {csidriveroperatorsAwsEbs06_clusterrolebindingYaml, map[string]*bintree{}},
-			"07_clusterrole_aws_config.yaml":        {csidriveroperatorsAwsEbs07_clusterrole_aws_configYaml, map[string]*bintree{}},
-			"08_clusterrolebinding_aws_config.yaml": {csidriveroperatorsAwsEbs08_clusterrolebinding_aws_configYaml, map[string]*bintree{}},
-			"09_deployment.yaml":                    {csidriveroperatorsAwsEbs09_deploymentYaml, map[string]*bintree{}},
-			"10_cr.yaml":                            {csidriveroperatorsAwsEbs10_crYaml, map[string]*bintree{}},
+			"01_namespace.yaml":              {csidriveroperatorsAwsEbs01_namespaceYaml, map[string]*bintree{}},
+			"02_sa.yaml":                     {csidriveroperatorsAwsEbs02_saYaml, map[string]*bintree{}},
+			"03_role.yaml":                   {csidriveroperatorsAwsEbs03_roleYaml, map[string]*bintree{}},
+			"04_rolebinding.yaml":            {csidriveroperatorsAwsEbs04_rolebindingYaml, map[string]*bintree{}},
+			"05_clusterrole.yaml":            {csidriveroperatorsAwsEbs05_clusterroleYaml, map[string]*bintree{}},
+			"06_clusterrolebinding.yaml":     {csidriveroperatorsAwsEbs06_clusterrolebindingYaml, map[string]*bintree{}},
+			"07_role_aws_config.yaml":        {csidriveroperatorsAwsEbs07_role_aws_configYaml, map[string]*bintree{}},
+			"08_rolebinding_aws_config.yaml": {csidriveroperatorsAwsEbs08_rolebinding_aws_configYaml, map[string]*bintree{}},
+			"09_deployment.yaml":             {csidriveroperatorsAwsEbs09_deploymentYaml, map[string]*bintree{}},
+			"10_cr.yaml":                     {csidriveroperatorsAwsEbs10_crYaml, map[string]*bintree{}},
 		}},
 		"gcp-pd": {nil, map[string]*bintree{
 			"01_namespace.yaml":          {csidriveroperatorsGcpPd01_namespaceYaml, map[string]*bintree{}},
