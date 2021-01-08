@@ -3180,6 +3180,7 @@ rules:
   - operator.openshift.io
   resources:
   - 'storages'
+  - 'storages/status'
   verbs:
   - '*'
 - apiGroups:
