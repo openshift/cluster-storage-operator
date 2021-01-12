@@ -32,6 +32,10 @@ spec:
         tolerationSeconds: 120 # Evict pods within 2 mins.
       priorityClassName: system-cluster-critical
       serviceAccountName: cluster-storage-operator
+      securityContext:
+        fsGroup: 10400
+        runAsGroup: 10400
+        runAsUser: 10400
       containers:
         - name: cluster-storage-operator
           image: quay.io/openshift/origin-cluster-storage-operator:latest
