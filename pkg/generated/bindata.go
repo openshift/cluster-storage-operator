@@ -3250,6 +3250,7 @@ rules:
   - config.openshift.io
   resources:
   - infrastructures
+  - proxies
   verbs:
   - get
   - list
@@ -3305,6 +3306,8 @@ kind: Deployment
 metadata:
   name: vsphere-problem-detector-operator
   namespace: openshift-cluster-storage-operator
+  annotations:
+    config.openshift.io/inject-proxy: vsphere-problem-detector-operator
 spec:
   replicas: 1
   selector:

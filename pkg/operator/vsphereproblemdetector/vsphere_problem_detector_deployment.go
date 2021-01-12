@@ -2,12 +2,14 @@ package vsphereproblemdetector
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
 
 	operatorapi "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/util"
 	csoutils "github.com/openshift/cluster-storage-operator/pkg/utils"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -75,8 +77,14 @@ func (c *VSphereProblemDetectorDeploymentController) sync(ctx context.Context, s
 
 	replacer := strings.NewReplacer(pairs...)
 	required := csoutils.GetRequiredDeployment("vsphere_problem_detector/06_deployment.yaml", opSpec, replacer)
+
+	requiredCopy, err := util.InjectObservedProxyInDeploymentContainers(required, opSpec)
+	if err != nil {
+		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)
+	}
+
 	_, err = csoutils.CreateDeployment(csoutils.DeploymentOptions{
-		Required:       required,
+		Required:       requiredCopy,
 		ControllerName: deploymentControllerName,
 		OpStatus:       opStatus,
 		EventRecorder:  c.eventRecorder,
