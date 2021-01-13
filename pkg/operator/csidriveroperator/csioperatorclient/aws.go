@@ -30,9 +30,11 @@ func GetAWSEBSCSIOperatorConfig() CSIOperatorConfig {
 			"csidriveroperators/aws-ebs/04_rolebinding.yaml",
 			"csidriveroperators/aws-ebs/05_clusterrole.yaml",
 			"csidriveroperators/aws-ebs/06_clusterrolebinding.yaml",
+			"csidriveroperators/aws-ebs/07_role_aws_config.yaml",
+			"csidriveroperators/aws-ebs/08_rolebinding_aws_config.yaml",
 		},
-		CRAsset:         "csidriveroperators/aws-ebs/08_cr.yaml",
-		DeploymentAsset: "csidriveroperators/aws-ebs/07_deployment.yaml",
+		CRAsset:         "csidriveroperators/aws-ebs/10_cr.yaml",
+		DeploymentAsset: "csidriveroperators/aws-ebs/09_deployment.yaml",
 		ImageReplacer:   strings.NewReplacer(pairs...),
 		Optional:        false,
 		/* For reference / experiments only. OpenShift does not support

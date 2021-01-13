@@ -1,0 +1,13 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: aws-ebs-csi-driver-operator-aws-config-clusterrolebinding
+  namespace: openshift-config-managed
+subjects:
+  - kind: ServiceAccount
+    name: aws-ebs-csi-driver-operator
+    namespace: openshift-cluster-csi-drivers
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: aws-ebs-csi-driver-operator-aws-config-role

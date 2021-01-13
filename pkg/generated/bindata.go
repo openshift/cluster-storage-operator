@@ -6,8 +6,10 @@
 // assets/csidriveroperators/aws-ebs/04_rolebinding.yaml
 // assets/csidriveroperators/aws-ebs/05_clusterrole.yaml
 // assets/csidriveroperators/aws-ebs/06_clusterrolebinding.yaml
-// assets/csidriveroperators/aws-ebs/07_deployment.yaml
-// assets/csidriveroperators/aws-ebs/08_cr.yaml
+// assets/csidriveroperators/aws-ebs/07_role_aws_config.yaml
+// assets/csidriveroperators/aws-ebs/08_rolebinding_aws_config.yaml
+// assets/csidriveroperators/aws-ebs/09_deployment.yaml
+// assets/csidriveroperators/aws-ebs/10_cr.yaml
 // assets/csidriveroperators/gcp-pd/01_namespace.yaml
 // assets/csidriveroperators/gcp-pd/02_sa.yaml
 // assets/csidriveroperators/gcp-pd/03_role.yaml
@@ -330,14 +332,6 @@ rules:
 - apiGroups:
   - ''
   resources:
-  - configmaps
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ''
-  resources:
   - secrets
   verbs:
   - get
@@ -551,7 +545,69 @@ func csidriveroperatorsAwsEbs06_clusterrolebindingYaml() (*asset, error) {
 	return a, nil
 }
 
-var _csidriveroperatorsAwsEbs07_deploymentYaml = []byte(`apiVersion: apps/v1
+var _csidriveroperatorsAwsEbs07_role_aws_configYaml = []byte(`# Allow AWS EBS CSI driver operator to read CA bundle from openshift-config-managed/kube-cloud-config ConfigMap
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: aws-ebs-csi-driver-operator-aws-config-role
+  namespace: openshift-config-managed
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+`)
+
+func csidriveroperatorsAwsEbs07_role_aws_configYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsAwsEbs07_role_aws_configYaml, nil
+}
+
+func csidriveroperatorsAwsEbs07_role_aws_configYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsAwsEbs07_role_aws_configYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/aws-ebs/07_role_aws_config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsAwsEbs08_rolebinding_aws_configYaml = []byte(`kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: aws-ebs-csi-driver-operator-aws-config-clusterrolebinding
+  namespace: openshift-config-managed
+subjects:
+  - kind: ServiceAccount
+    name: aws-ebs-csi-driver-operator
+    namespace: openshift-cluster-csi-drivers
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: aws-ebs-csi-driver-operator-aws-config-role
+`)
+
+func csidriveroperatorsAwsEbs08_rolebinding_aws_configYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsAwsEbs08_rolebinding_aws_configYaml, nil
+}
+
+func csidriveroperatorsAwsEbs08_rolebinding_aws_configYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsAwsEbs08_rolebinding_aws_configYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/aws-ebs/08_rolebinding_aws_config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsAwsEbs09_deploymentYaml = []byte(`apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: aws-ebs-csi-driver-operator
@@ -609,22 +665,22 @@ spec:
         effect: "NoSchedule"
 `)
 
-func csidriveroperatorsAwsEbs07_deploymentYamlBytes() ([]byte, error) {
-	return _csidriveroperatorsAwsEbs07_deploymentYaml, nil
+func csidriveroperatorsAwsEbs09_deploymentYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsAwsEbs09_deploymentYaml, nil
 }
 
-func csidriveroperatorsAwsEbs07_deploymentYaml() (*asset, error) {
-	bytes, err := csidriveroperatorsAwsEbs07_deploymentYamlBytes()
+func csidriveroperatorsAwsEbs09_deploymentYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsAwsEbs09_deploymentYamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "csidriveroperators/aws-ebs/07_deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "csidriveroperators/aws-ebs/09_deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var _csidriveroperatorsAwsEbs08_crYaml = []byte(`apiVersion: operator.openshift.io/v1
+var _csidriveroperatorsAwsEbs10_crYaml = []byte(`apiVersion: operator.openshift.io/v1
 kind: "ClusterCSIDriver"
 metadata:
   name: "ebs.csi.aws.com"
@@ -634,17 +690,17 @@ spec:
   operatorLogLevel: Normal
 `)
 
-func csidriveroperatorsAwsEbs08_crYamlBytes() ([]byte, error) {
-	return _csidriveroperatorsAwsEbs08_crYaml, nil
+func csidriveroperatorsAwsEbs10_crYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsAwsEbs10_crYaml, nil
 }
 
-func csidriveroperatorsAwsEbs08_crYaml() (*asset, error) {
-	bytes, err := csidriveroperatorsAwsEbs08_crYamlBytes()
+func csidriveroperatorsAwsEbs10_crYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsAwsEbs10_crYamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "csidriveroperators/aws-ebs/08_cr.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "csidriveroperators/aws-ebs/10_cr.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -3437,8 +3493,10 @@ var _bindata = map[string]func() (*asset, error){
 	"csidriveroperators/aws-ebs/04_rolebinding.yaml":                 csidriveroperatorsAwsEbs04_rolebindingYaml,
 	"csidriveroperators/aws-ebs/05_clusterrole.yaml":                 csidriveroperatorsAwsEbs05_clusterroleYaml,
 	"csidriveroperators/aws-ebs/06_clusterrolebinding.yaml":          csidriveroperatorsAwsEbs06_clusterrolebindingYaml,
-	"csidriveroperators/aws-ebs/07_deployment.yaml":                  csidriveroperatorsAwsEbs07_deploymentYaml,
-	"csidriveroperators/aws-ebs/08_cr.yaml":                          csidriveroperatorsAwsEbs08_crYaml,
+	"csidriveroperators/aws-ebs/07_role_aws_config.yaml":             csidriveroperatorsAwsEbs07_role_aws_configYaml,
+	"csidriveroperators/aws-ebs/08_rolebinding_aws_config.yaml":      csidriveroperatorsAwsEbs08_rolebinding_aws_configYaml,
+	"csidriveroperators/aws-ebs/09_deployment.yaml":                  csidriveroperatorsAwsEbs09_deploymentYaml,
+	"csidriveroperators/aws-ebs/10_cr.yaml":                          csidriveroperatorsAwsEbs10_crYaml,
 	"csidriveroperators/gcp-pd/01_namespace.yaml":                    csidriveroperatorsGcpPd01_namespaceYaml,
 	"csidriveroperators/gcp-pd/02_sa.yaml":                           csidriveroperatorsGcpPd02_saYaml,
 	"csidriveroperators/gcp-pd/03_role.yaml":                         csidriveroperatorsGcpPd03_roleYaml,
@@ -3529,14 +3587,16 @@ type bintree struct {
 var _bintree = &bintree{nil, map[string]*bintree{
 	"csidriveroperators": {nil, map[string]*bintree{
 		"aws-ebs": {nil, map[string]*bintree{
-			"01_namespace.yaml":          {csidriveroperatorsAwsEbs01_namespaceYaml, map[string]*bintree{}},
-			"02_sa.yaml":                 {csidriveroperatorsAwsEbs02_saYaml, map[string]*bintree{}},
-			"03_role.yaml":               {csidriveroperatorsAwsEbs03_roleYaml, map[string]*bintree{}},
-			"04_rolebinding.yaml":        {csidriveroperatorsAwsEbs04_rolebindingYaml, map[string]*bintree{}},
-			"05_clusterrole.yaml":        {csidriveroperatorsAwsEbs05_clusterroleYaml, map[string]*bintree{}},
-			"06_clusterrolebinding.yaml": {csidriveroperatorsAwsEbs06_clusterrolebindingYaml, map[string]*bintree{}},
-			"07_deployment.yaml":         {csidriveroperatorsAwsEbs07_deploymentYaml, map[string]*bintree{}},
-			"08_cr.yaml":                 {csidriveroperatorsAwsEbs08_crYaml, map[string]*bintree{}},
+			"01_namespace.yaml":              {csidriveroperatorsAwsEbs01_namespaceYaml, map[string]*bintree{}},
+			"02_sa.yaml":                     {csidriveroperatorsAwsEbs02_saYaml, map[string]*bintree{}},
+			"03_role.yaml":                   {csidriveroperatorsAwsEbs03_roleYaml, map[string]*bintree{}},
+			"04_rolebinding.yaml":            {csidriveroperatorsAwsEbs04_rolebindingYaml, map[string]*bintree{}},
+			"05_clusterrole.yaml":            {csidriveroperatorsAwsEbs05_clusterroleYaml, map[string]*bintree{}},
+			"06_clusterrolebinding.yaml":     {csidriveroperatorsAwsEbs06_clusterrolebindingYaml, map[string]*bintree{}},
+			"07_role_aws_config.yaml":        {csidriveroperatorsAwsEbs07_role_aws_configYaml, map[string]*bintree{}},
+			"08_rolebinding_aws_config.yaml": {csidriveroperatorsAwsEbs08_rolebinding_aws_configYaml, map[string]*bintree{}},
+			"09_deployment.yaml":             {csidriveroperatorsAwsEbs09_deploymentYaml, map[string]*bintree{}},
+			"10_cr.yaml":                     {csidriveroperatorsAwsEbs10_crYaml, map[string]*bintree{}},
 		}},
 		"gcp-pd": {nil, map[string]*bintree{
 			"01_namespace.yaml":          {csidriveroperatorsGcpPd01_namespaceYaml, map[string]*bintree{}},
