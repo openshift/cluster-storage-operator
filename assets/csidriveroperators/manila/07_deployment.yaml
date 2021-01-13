@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: manila-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
+  annotations:
+    config.openshift.io/inject-proxy: manila-csi-driver-operator
 spec:
   replicas: 1
   selector:
