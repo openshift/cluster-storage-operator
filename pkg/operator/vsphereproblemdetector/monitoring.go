@@ -11,15 +11,19 @@ import (
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
+	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	promv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	promclient "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned"
+	promscheme "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned/scheme"
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 )
 
 type monitoringController struct {
@@ -41,16 +45,23 @@ var (
 	genericCodec  = genericCodecs.UniversalDeserializer()
 )
 
+func init() {
+	if err := promscheme.AddToScheme(genericScheme); err != nil {
+		panic(err)
+	}
+}
+
 func newMonitoringController(
 	clients *csoclients.Clients,
 	eventRecorder events.Recorder,
 	resyncInterval time.Duration) factory.Controller {
 
 	c := &monitoringController{
-		operatorClient: clients.OperatorClient,
-		kubeClient:     clients.KubeClient,
-		dynamicClient:  clients.DynamicClient,
-		eventRecorder:  eventRecorder.WithComponentSuffix("vsphere-monitoring-controller"),
+		operatorClient:   clients.OperatorClient,
+		kubeClient:       clients.KubeClient,
+		dynamicClient:    clients.DynamicClient,
+		eventRecorder:    eventRecorder.WithComponentSuffix("vsphere-monitoring-controller"),
+		monitoringClient: clients.MonitoringClient,
 	}
 
 	return factory.New().
@@ -86,16 +97,9 @@ func (c *monitoringController) sync(ctx context.Context, syncContext factory.Syn
 	}
 
 	prometheusRuleBytes := generated.MustAsset(prometheusRuleFile)
-	requiredObj, _, err := genericCodec.Decode(prometheusRuleBytes, nil, nil)
+	_, _, err = c.syncPrometheusRule(ctx, prometheusRuleBytes)
 	if err != nil {
-		return fmt.Errorf("cannot decode %q: %v", prometheusRuleFile, err)
-	}
-
-	prometheusRule, ok := requiredObj.(*promv1.PrometheusRule)
-	if ok {
-		_, err := c.monitoringClient.MonitoringV1().
-			PrometheusRules(prometheusRule.Namespace).Create(ctx, prometheusRule, metav1.CreateOptions{})
-		return fmt.Errorf("failed to create prometheus rule: %v", err)
+		return err
 	}
 
 	monitoringCondition := operatorapi.OperatorCondition{
@@ -108,4 +112,45 @@ func (c *monitoringController) sync(ctx context.Context, syncContext factory.Syn
 		return err
 	}
 	return nil
+}
+
+func (c *monitoringController) syncPrometheusRule(ctx context.Context, prometheusRuleBytes []byte) (*promv1.PrometheusRule, bool, error) {
+	requiredObj, _, err := genericCodec.Decode(prometheusRuleBytes, nil, nil)
+	if err != nil {
+		return nil, false, fmt.Errorf("cannot decode %q: %v", prometheusRuleFile, err)
+	}
+
+	prometheusRule, ok := requiredObj.(*promv1.PrometheusRule)
+	if !ok {
+		return nil, false, fmt.Errorf("invalid prometheusrule: %+v", requiredObj)
+	}
+
+	existingRule, err := c.monitoringClient.MonitoringV1().PrometheusRules(prometheusRule.Namespace).Get(ctx, prometheusRule.Name, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		existingRule, err = c.monitoringClient.MonitoringV1().
+			PrometheusRules(prometheusRule.Namespace).Create(ctx, prometheusRule, metav1.CreateOptions{})
+		if err != nil {
+			return nil, false, fmt.Errorf("failed to create prometheus rule: %v", err)
+		}
+		return existingRule, true, nil
+	}
+
+	existingRuleCopy := existingRule.DeepCopy()
+	existingSpec := existingRuleCopy.Spec
+
+	modified := resourcemerge.BoolPtr(false)
+
+	resourcemerge.EnsureObjectMeta(modified, &existingRuleCopy.ObjectMeta, prometheusRule.ObjectMeta)
+	contentSame := equality.Semantic.DeepEqual(existingSpec, prometheusRule.Spec)
+	// no modifications are necessary everything is same
+	if contentSame && !*modified {
+		return existingRule, false, nil
+	}
+
+	prometheusRule.ObjectMeta = *existingRuleCopy.ObjectMeta.DeepCopy()
+	prometheusRule.TypeMeta = existingRuleCopy.TypeMeta
+
+	klog.V(4).Infof("prometheus rule %s is modified outside of openshift - updating", prometheusRuleFile)
+	updatedRule, err := c.monitoringClient.MonitoringV1().PrometheusRules(prometheusRule.Namespace).Update(ctx, prometheusRule, metav1.UpdateOptions{})
+	return updatedRule, true, err
 }

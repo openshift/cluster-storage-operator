@@ -3453,14 +3453,14 @@ spec:
         labels:
           severity: warning
         annotations:
-          message: "Vsphere node health checks are failing on {{ $labels.node }} with {{ $labels.check }}"
+          message: "VSphere health check {{ $labels.check }} is failing on {{ $labels.node }}."
       - alert: VSphereOpenshiftClusterHealthFail
         expr: vsphere_cluster_check_errors == 1
         for: 10m
         labels:
-          severity: critical
+          severity: warning
         annotations:
-          message: "VSpehre cluster health checks are failing with {{ $labels.check }}"
+          message: "VSphere cluster health checks are failing with {{ $labels.check }}"
 `)
 
 func vsphere_problem_detector12_prometheusrulesYamlBytes() ([]byte, error) {
