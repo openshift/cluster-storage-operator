@@ -2775,6 +2775,8 @@ kind: Deployment
 metadata:
   name: ovirt-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
+  annotations:
+    config.openshift.io/inject-proxy: ovirt-csi-driver-operator
 spec:
   replicas: 1
   selector:
