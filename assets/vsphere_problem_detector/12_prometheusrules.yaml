@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vsphere-problem-detector
+  namespace: openshift-cluster-storage-operator
+  labels:
+    role: alert-rules
+spec:
+  groups:
+    - name: vsphere-problem-detector.rules
+      rules:
+      - alert: VSphereOpenshiftNodeHealthFail
+        expr:  vsphere_node_check_errors == 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          message: "Vsphere node health checks are failing on {{ $labels.node }} with {{ $labels.check }}"
+      - alert: VSphereOpenshiftClusterHealthFail
+        expr: vsphere_cluster_check_errors == 1
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          message: "VSpehre cluster health checks are failing with {{ $labels.check }}"

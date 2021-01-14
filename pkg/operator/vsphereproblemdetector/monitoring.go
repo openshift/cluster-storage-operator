@@ -2,6 +2,7 @@ package vsphereproblemdetector
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	operatorapi "github.com/openshift/api/operator/v1"
@@ -11,20 +12,33 @@ import (
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
+	promv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	promclient "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
 type monitoringController struct {
-	operatorClient v1helpers.OperatorClient
-	kubeClient     kubernetes.Interface
-	dynamicClient  dynamic.Interface
-	eventRecorder  events.Recorder
+	operatorClient   v1helpers.OperatorClient
+	kubeClient       kubernetes.Interface
+	dynamicClient    dynamic.Interface
+	monitoringClient promclient.Interface
+	eventRecorder    events.Recorder
 }
 
 const (
 	monitoringControllerName = "VSphereProblemDetectorMonitoringController"
+	prometheusRuleFile       = "vsphere_problem_detector/12_prometheusrules.yaml"
+)
+
+var (
+	genericScheme = runtime.NewScheme()
+	genericCodecs = serializer.NewCodecFactory(genericScheme)
+	genericCodec  = genericCodecs.UniversalDeserializer()
 )
 
 func newMonitoringController(
@@ -38,11 +52,13 @@ func newMonitoringController(
 		dynamicClient:  clients.DynamicClient,
 		eventRecorder:  eventRecorder.WithComponentSuffix("vsphere-monitoring-controller"),
 	}
+
 	return factory.New().
 		WithSync(c.sync).
 		WithInformers(
 			c.operatorClient.Informer(),
-			clients.MonitoringInformer.Monitoring().V1().ServiceMonitors().Informer()).
+			clients.MonitoringInformer.Monitoring().V1().ServiceMonitors().Informer(),
+			clients.MonitoringInformer.Monitoring().V1().PrometheusRules().Informer()).
 		ResyncEvery(resyncInterval).
 		WithSyncDegradedOnError(clients.OperatorClient).
 		ToController(monitoringControllerName, c.eventRecorder)
@@ -69,12 +85,25 @@ func (c *monitoringController) sync(ctx context.Context, syncContext factory.Syn
 		return err
 	}
 
-	serviceMonitorAvailable := operatorapi.OperatorCondition{
+	prometheusRuleBytes := generated.MustAsset(prometheusRuleFile)
+	requiredObj, _, err := genericCodec.Decode(prometheusRuleBytes, nil, nil)
+	if err != nil {
+		return fmt.Errorf("cannot decode %q: %v", prometheusRuleFile, err)
+	}
+
+	prometheusRule, ok := requiredObj.(*promv1.PrometheusRule)
+	if ok {
+		_, err := c.monitoringClient.MonitoringV1().
+			PrometheusRules(prometheusRule.Namespace).Create(ctx, prometheusRule, metav1.CreateOptions{})
+		return fmt.Errorf("failed to create prometheus rule: %v", err)
+	}
+
+	monitoringCondition := operatorapi.OperatorCondition{
 		Type:   monitoringControllerName + operatorapi.OperatorStatusTypeAvailable,
 		Status: operatorapi.ConditionTrue,
 	}
 	if _, _, err := v1helpers.UpdateStatus(c.operatorClient,
-		v1helpers.UpdateConditionFn(serviceMonitorAvailable),
+		v1helpers.UpdateConditionFn(monitoringCondition),
 	); err != nil {
 		return err
 	}
