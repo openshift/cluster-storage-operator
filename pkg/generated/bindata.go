@@ -495,6 +495,7 @@ rules:
   - config.openshift.io
   resources:
   - infrastructures
+  - proxies
   verbs:
   - get
   - list
@@ -1092,6 +1093,7 @@ rules:
   - config.openshift.io
   resources:
   - infrastructures
+  - proxies
   verbs:
   - get
   - list
@@ -1611,6 +1613,7 @@ rules:
   - config.openshift.io
   resources:
   - infrastructures
+  - proxies
   verbs:
   - get
   - list
@@ -2174,6 +2177,7 @@ rules:
   - config.openshift.io
   resources:
   - infrastructures
+  - proxies
   verbs:
   - get
   - list
@@ -2701,6 +2705,7 @@ rules:
   - config.openshift.io
   resources:
   - infrastructures
+  - proxies
   verbs:
   - get
   - list
