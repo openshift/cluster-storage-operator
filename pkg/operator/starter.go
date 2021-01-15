@@ -8,6 +8,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/configobservercontroller"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
@@ -98,6 +99,9 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	// This controller syncs the operator log level with the value set in the CR.Spec.OperatorLogLevel
 	logLevelController := loglevel.NewClusterOperatorLoggingController(clients.OperatorClient, controllerConfig.EventRecorder)
 
+	// This controller observes a config (proxy for now) and writes it to CR.Spec.ObservedConfig for later use by the operator
+	configObserverController := configobservercontroller.NewConfigObserverController(clients, controllerConfig.EventRecorder)
+
 	klog.Info("Starting the Informers.")
 
 	csoclients.StartInformers(clients, ctx.Done())
@@ -109,6 +113,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		logLevelController,
 		clusterOperatorStatus,
 		managementStateController,
+		configObserverController,
 		storageClassController,
 		snapshotCRDController,
 		csiDriverController,

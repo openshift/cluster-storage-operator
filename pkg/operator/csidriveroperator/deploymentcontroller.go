@@ -2,19 +2,23 @@ package csidriveroperator
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
+
 	operatorapi "github.com/openshift/api/operator/v1"
-	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
-	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
-	csoutils "github.com/openshift/cluster-storage-operator/pkg/utils"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/klog/v2"
+
+	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/util"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
+	csoutils "github.com/openshift/cluster-storage-operator/pkg/utils"
 )
 
 // This CSIDriverStarterController installs and syncs CSI driver operator Deployment.
@@ -104,8 +108,13 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 	}
 
 	required := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, replacers...)
+	requiredCopy, err := util.InjectObservedProxyInDeploymentContainers(required, opSpec)
+	if err != nil {
+		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)
+	}
+
 	_, err = csoutils.CreateDeployment(csoutils.DeploymentOptions{
-		Required:       required,
+		Required:       requiredCopy,
 		ControllerName: c.Name(),
 		OpStatus:       opStatus,
 		EventRecorder:  c.eventRecorder,

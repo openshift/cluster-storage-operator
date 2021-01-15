@@ -1676,6 +1676,8 @@ kind: Deployment
 metadata:
   name: manila-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
+  annotations:
+    config.openshift.io/inject-proxy: manila-csi-driver-operator
 spec:
   replicas: 1
   selector:
@@ -2773,6 +2775,8 @@ kind: Deployment
 metadata:
   name: ovirt-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
+  annotations:
+    config.openshift.io/inject-proxy: ovirt-csi-driver-operator
 spec:
   replicas: 1
   selector:
@@ -3248,6 +3252,7 @@ rules:
   - config.openshift.io
   resources:
   - infrastructures
+  - proxies
   verbs:
   - get
   - list
@@ -3303,6 +3308,8 @@ kind: Deployment
 metadata:
   name: vsphere-problem-detector-operator
   namespace: openshift-cluster-storage-operator
+  annotations:
+    config.openshift.io/inject-proxy: vsphere-problem-detector-operator
 spec:
   replicas: 1
   selector:
