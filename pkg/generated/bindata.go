@@ -263,6 +263,9 @@ rules:
   - get
   - list
   - watch
+  # The Config Observer controller updates the CR's spec
+  - update
+  - patch
 - apiGroups:
   - operator.openshift.io
   resources:
@@ -861,6 +864,9 @@ rules:
   - get
   - list
   - watch
+  # The Config Observer controller updates the CR's spec
+  - update
+  - patch
 - apiGroups:
   - operator.openshift.io
   resources:
@@ -2722,7 +2728,9 @@ rules:
   - get
   - list
   - watch
+  # The Config Observer controller updates the CR's spec
   - update
+  - patch
 `)
 
 func csidriveroperatorsOvirt05_clusterroleYamlBytes() ([]byte, error) {

@@ -247,4 +247,6 @@ rules:
   - get
   - list
   - watch
+  # The Config Observer controller updates the CR's spec
   - update
+  - patch
