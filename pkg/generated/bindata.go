@@ -55,6 +55,7 @@
 // assets/vsphere_problem_detector/06_deployment.yaml
 // assets/vsphere_problem_detector/10_service.yaml
 // assets/vsphere_problem_detector/11_service_monitor.yaml
+// assets/vsphere_problem_detector/12_prometheusrules.yaml
 package generated
 
 import (
@@ -3447,6 +3448,48 @@ func vsphere_problem_detector11_service_monitorYaml() (*asset, error) {
 	return a, nil
 }
 
+var _vsphere_problem_detector12_prometheusrulesYaml = []byte(`apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vsphere-problem-detector
+  namespace: openshift-cluster-storage-operator
+  labels:
+    role: alert-rules
+spec:
+  groups:
+    - name: vsphere-problem-detector.rules
+      rules:
+      - alert: VSphereOpenshiftNodeHealthFail
+        expr:  vsphere_node_check_errors == 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          message: "VSphere health check {{ $labels.check }} is failing on {{ $labels.node }}."
+      - alert: VSphereOpenshiftClusterHealthFail
+        expr: vsphere_cluster_check_errors == 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          message: "VSphere cluster health checks are failing with {{ $labels.check }}"
+`)
+
+func vsphere_problem_detector12_prometheusrulesYamlBytes() ([]byte, error) {
+	return _vsphere_problem_detector12_prometheusrulesYaml, nil
+}
+
+func vsphere_problem_detector12_prometheusrulesYaml() (*asset, error) {
+	bytes, err := vsphere_problem_detector12_prometheusrulesYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "vsphere_problem_detector/12_prometheusrules.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -3554,6 +3597,7 @@ var _bindata = map[string]func() (*asset, error){
 	"vsphere_problem_detector/06_deployment.yaml":                    vsphere_problem_detector06_deploymentYaml,
 	"vsphere_problem_detector/10_service.yaml":                       vsphere_problem_detector10_serviceYaml,
 	"vsphere_problem_detector/11_service_monitor.yaml":               vsphere_problem_detector11_service_monitorYaml,
+	"vsphere_problem_detector/12_prometheusrules.yaml":               vsphere_problem_detector12_prometheusrulesYaml,
 }
 
 // AssetDir returns the file names below a certain
@@ -3667,6 +3711,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"06_deployment.yaml":         {vsphere_problem_detector06_deploymentYaml, map[string]*bintree{}},
 		"10_service.yaml":            {vsphere_problem_detector10_serviceYaml, map[string]*bintree{}},
 		"11_service_monitor.yaml":    {vsphere_problem_detector11_service_monitorYaml, map[string]*bintree{}},
+		"12_prometheusrules.yaml":    {vsphere_problem_detector12_prometheusrulesYaml, map[string]*bintree{}},
 	}},
 }}
 
