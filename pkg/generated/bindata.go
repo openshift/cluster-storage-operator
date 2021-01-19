@@ -3073,6 +3073,7 @@ provisioner: kubernetes.io/vsphere-volume
 parameters:
   diskformat: thin
 reclaimPolicy: Delete
+volumeBindingMode: Immediate
 `)
 
 func storageclassesVsphereYamlBytes() ([]byte, error) {
