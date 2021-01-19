@@ -3468,14 +3468,14 @@ spec:
     - name: vsphere-problem-detector.rules
       rules:
       - alert: VSphereOpenshiftNodeHealthFail
-        expr:  vsphere_node_check_errors == 1
+        expr:  min_over_time(vsphere_node_check_errors[5m]) == 1
         for: 10m
         labels:
           severity: warning
         annotations:
           message: "VSphere health check {{ $labels.check }} is failing on {{ $labels.node }}."
       - alert: VSphereOpenshiftClusterHealthFail
-        expr: vsphere_cluster_check_errors == 1
+        expr: min_over_time(vsphere_cluster_check_errors[5m]) == 1
         for: 10m
         labels:
           severity: warning
