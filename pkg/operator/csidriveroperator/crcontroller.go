@@ -14,14 +14,12 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
-	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/kubernetes"
@@ -120,17 +118,7 @@ func (c *CSIDriverOperatorCRController) Sync(ctx context.Context, syncCtx factor
 
 	// Sync CSIDriver CR
 	requiredCR := c.getRequestedClusterCSIDriver(opSpec.LogLevel)
-	var lastGeneration int64
-	lastGenerationStatus := resourcemerge.GenerationFor(
-		opStatus.Generations,
-		schema.GroupResource{Group: operatorapi.GroupName, Resource: "clustercsidrivers"},
-		"",
-		requiredCR.Name)
-	if lastGenerationStatus != nil {
-		lastGeneration = lastGenerationStatus.LastGeneration
-	}
-
-	cr, _, err := c.applyClusterCSIDriver(requiredCR, lastGeneration)
+	cr, _, err := c.applyClusterCSIDriver(requiredCR)
 	if err != nil {
 		// This will set Degraded condition
 		return err
@@ -179,17 +167,7 @@ func (c *CSIDriverOperatorCRController) crConditionName(cndType string) string {
 	return c.name + csiDriverControllerConditionPrefix + cndType
 }
 
-func (c *CSIDriverOperatorCRController) applyClusterCSIDriver(requiredOriginal *operatorapi.ClusterCSIDriver, expectedGeneration int64) (*operatorapi.ClusterCSIDriver, bool, error) {
-	err := resourceapply.SetSpecHashAnnotation(&requiredOriginal.ObjectMeta, requiredOriginal.Spec)
-	if err != nil {
-		return nil, false, err
-	}
-
-	required := requiredOriginal.DeepCopy()
-	if required.Annotations == nil {
-		required.Annotations = map[string]string{}
-	}
-
+func (c *CSIDriverOperatorCRController) applyClusterCSIDriver(required *operatorapi.ClusterCSIDriver) (*operatorapi.ClusterCSIDriver, bool, error) {
 	existing, err := c.operatorClientSet.OperatorV1().ClusterCSIDrivers().Get(context.TODO(), required.Name, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		actual, err := c.operatorClientSet.OperatorV1().ClusterCSIDrivers().Create(context.TODO(), required, metav1.CreateOptions{})
@@ -200,25 +178,7 @@ func (c *CSIDriverOperatorCRController) applyClusterCSIDriver(requiredOriginal *
 		return nil, false, err
 	}
 
-	modified := resourcemerge.BoolPtr(false)
-	existingCopy := existing.DeepCopy()
-
-	resourcemerge.EnsureObjectMeta(modified, &existingCopy.ObjectMeta, required.ObjectMeta)
-	// there was no change to metadata, the generation was right, and we weren't asked for force the deployment
-	if !*modified && existingCopy.ObjectMeta.Generation == expectedGeneration {
-		return existingCopy, false, nil
-	}
-
-	// at this point we know that we're going to perform a write.  We're just trying to get the object correct
-	toWrite := existingCopy // shallow copy so the code reads easier
-	toWrite.Spec = *required.Spec.DeepCopy()
-	if klog.V(4).Enabled() {
-		klog.Infof("ClusterCSIDriver %q changes: %v", required.Name, resourceapply.JSONPatchNoError(existing, toWrite))
-	}
-
-	actual, err := c.operatorClientSet.OperatorV1().ClusterCSIDrivers().Update(context.TODO(), toWrite, metav1.UpdateOptions{})
-	reportUpdateEvent(c.eventRecorder, required, err)
-	return actual, true, err
+	return existing.DeepCopy(), false, nil
 }
 
 func (c *CSIDriverOperatorCRController) syncConditions(conditions []operatorapi.OperatorCondition, updatefn v1helpers.UpdateStatusFunc) error {
