@@ -18,6 +18,14 @@
 // assets/csidriveroperators/gcp-pd/06_clusterrolebinding.yaml
 // assets/csidriveroperators/gcp-pd/07_deployment.yaml
 // assets/csidriveroperators/gcp-pd/08_cr.yaml
+// assets/csidriveroperators/kubevirt/01_namespace.yaml
+// assets/csidriveroperators/kubevirt/02_sa.yaml
+// assets/csidriveroperators/kubevirt/03_role.yaml
+// assets/csidriveroperators/kubevirt/04_rolebinding.yaml
+// assets/csidriveroperators/kubevirt/05_clusterrole.yaml
+// assets/csidriveroperators/kubevirt/06_clusterrolebinding.yaml
+// assets/csidriveroperators/kubevirt/07_deployment.yaml
+// assets/csidriveroperators/kubevirt/08_cr.yaml
 // assets/csidriveroperators/manila/01_namespace.yaml
 // assets/csidriveroperators/manila/02_sa.yaml
 // assets/csidriveroperators/manila/03_role.yaml
@@ -1243,6 +1251,542 @@ func csidriveroperatorsGcpPd08_crYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "csidriveroperators/gcp-pd/08_cr.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsKubevirt01_namespaceYaml = []byte(`apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsKubevirt01_namespaceYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsKubevirt01_namespaceYaml, nil
+}
+
+func csidriveroperatorsKubevirt01_namespaceYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsKubevirt01_namespaceYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/kubevirt/01_namespace.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsKubevirt02_saYaml = []byte(`apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubevirt-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsKubevirt02_saYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsKubevirt02_saYaml, nil
+}
+
+func csidriveroperatorsKubevirt02_saYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsKubevirt02_saYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/kubevirt/02_sa.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsKubevirt03_roleYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kubevirt-csi-driver-operator-role
+  namespace: openshift-cluster-csi-drivers
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - pods
+      - services
+      - endpoints
+      - persistentvolumeclaims
+      - events
+      - configmaps
+      - secrets
+    verbs:
+      - '*'
+  - apiGroups:
+      - ''
+    resources:
+      - namespaces
+    verbs:
+      - get
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - daemonsets
+      - replicasets
+      - statefulsets
+    verbs:
+      - '*'
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - servicemonitors
+    verbs:
+      - get
+      - create
+`)
+
+func csidriveroperatorsKubevirt03_roleYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsKubevirt03_roleYaml, nil
+}
+
+func csidriveroperatorsKubevirt03_roleYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsKubevirt03_roleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/kubevirt/03_role.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsKubevirt04_rolebindingYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kubevirt-csi-driver-operator-rolebinding
+  namespace: openshift-cluster-csi-drivers
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubevirt-csi-driver-operator-role
+subjects:
+  - kind: ServiceAccount
+    name: kubevirt-csi-driver-operator
+    namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsKubevirt04_rolebindingYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsKubevirt04_rolebindingYaml, nil
+}
+
+func csidriveroperatorsKubevirt04_rolebindingYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsKubevirt04_rolebindingYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/kubevirt/04_rolebinding.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsKubevirt05_clusterroleYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubevirt-csi-driver-operator-clusterrole
+rules:
+- apiGroups:
+  - security.openshift.io
+  resourceNames:
+  - privileged
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - use
+- apiGroups:
+  - ''
+  resourceNames:
+  - extension-apiserver-authentication
+  - kubevirt-csi-driver-operator-lock
+  resources:
+  - configmaps
+  verbs:
+  - '*'
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterroles
+  - clusterrolebindings
+  - roles
+  - rolebindings
+  verbs:
+  - watch
+  - list
+  - get
+  - create
+  - delete
+  - patch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - list
+  - create
+  - watch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - nodes
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - delete
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumes
+  verbs:
+  - create
+  - delete
+  - list
+  - get
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims/status
+  verbs:
+  - patch
+  - update
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattachments
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - delete
+  - create
+  - patch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattachments/status
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotcontents/status
+  - volumesnapshots/status
+  verbs:
+  - update
+  - patch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  - csinodes
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - '*'
+  resources:
+  - events
+  verbs:
+  - get
+  - patch
+  - create
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotclasses
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotcontents
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshots
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - csidrivers
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - csi.openshift.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - cloudcredential.openshift.io
+  resources:
+  - credentialsrequests
+  verbs:
+  - '*'
+- apiGroups:
+  - config.openshift.io
+  resources:
+  - infrastructures
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - operator.openshift.io
+  resources:
+  - clustercsidrivers
+  - clustercsidrivers/status
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - csi.storage.k8s.io
+  resources:
+    - csinodeinfos
+  verbs:
+    - get
+    - list
+    - watch
+- apiGroups:
+  - csi.storage.k8s.io
+  resources:
+    - csidrivers
+  verbs:
+    - get
+    - list
+    - watch
+    - update
+    - create
+- apiGroups: [""]
+  resources: ["configmaps", "endpoints"]
+  verbs: ["get", "list", "watch", "update", "create", "delete"]`)
+
+func csidriveroperatorsKubevirt05_clusterroleYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsKubevirt05_clusterroleYaml, nil
+}
+
+func csidriveroperatorsKubevirt05_clusterroleYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsKubevirt05_clusterroleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/kubevirt/05_clusterrole.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsKubevirt06_clusterrolebindingYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubevirt-csi-driver-operator-clusterrolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubevirt-csi-driver-operator-clusterrole
+subjects:
+- kind: ServiceAccount
+  name: kubevirt-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsKubevirt06_clusterrolebindingYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsKubevirt06_clusterrolebindingYaml, nil
+}
+
+func csidriveroperatorsKubevirt06_clusterrolebindingYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsKubevirt06_clusterrolebindingYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/kubevirt/06_clusterrolebinding.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsKubevirt07_deploymentYaml = []byte(`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubevirt-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: kubevirt-csi-driver-operator
+  template:
+    metadata:
+      labels:
+        name: kubevirt-csi-driver-operator
+    spec:
+      serviceAccountName: kubevirt-csi-driver-operator
+      priorityClassName: system-cluster-critical
+      containers:
+        - name: kubevirt-csi-driver-operator
+          imagePullPolicy: Always
+          image: ${OPERATOR_IMAGE}
+          tolerations:
+            - key: CriticalAddonsOnly
+              operator: Exists
+          args:
+            - start
+          env:
+            - name: OPERATOR_NAME
+              value: kubevirt-csi-driver-operator
+            - name: DRIVER_IMAGE
+              value: ${DRIVER_IMAGE}
+            - name: PROVISIONER_IMAGE
+              value: ${PROVISIONER_IMAGE}
+            - name: ATTACHER_IMAGE
+              value: ${ATTACHER_IMAGE}
+            - name: NODE_DRIVER_REGISTRAR_IMAGE
+              value: ${NODE_DRIVER_REGISTRAR_IMAGE}
+            - name: LIVENESS_PROBE_IMAGE
+              value: ${LIVENESS_PROBE_IMAGE}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+`)
+
+func csidriveroperatorsKubevirt07_deploymentYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsKubevirt07_deploymentYaml, nil
+}
+
+func csidriveroperatorsKubevirt07_deploymentYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsKubevirt07_deploymentYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/kubevirt/07_deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsKubevirt08_crYaml = []byte(`apiVersion: operator.openshift.io/v1
+kind: ClusterCSIDriver
+metadata:
+  name: csi.kubevirt.io
+spec:
+  driverConfig:
+    driverName: csi.kubevirt.io
+  logLevel: Normal
+  managementState: Managed
+  operatorLogLevel: Normal
+`)
+
+func csidriveroperatorsKubevirt08_crYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsKubevirt08_crYaml, nil
+}
+
+func csidriveroperatorsKubevirt08_crYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsKubevirt08_crYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/kubevirt/08_cr.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -3570,6 +4114,14 @@ var _bindata = map[string]func() (*asset, error){
 	"csidriveroperators/gcp-pd/06_clusterrolebinding.yaml":           csidriveroperatorsGcpPd06_clusterrolebindingYaml,
 	"csidriveroperators/gcp-pd/07_deployment.yaml":                   csidriveroperatorsGcpPd07_deploymentYaml,
 	"csidriveroperators/gcp-pd/08_cr.yaml":                           csidriveroperatorsGcpPd08_crYaml,
+	"csidriveroperators/kubevirt/01_namespace.yaml":                  csidriveroperatorsKubevirt01_namespaceYaml,
+	"csidriveroperators/kubevirt/02_sa.yaml":                         csidriveroperatorsKubevirt02_saYaml,
+	"csidriveroperators/kubevirt/03_role.yaml":                       csidriveroperatorsKubevirt03_roleYaml,
+	"csidriveroperators/kubevirt/04_rolebinding.yaml":                csidriveroperatorsKubevirt04_rolebindingYaml,
+	"csidriveroperators/kubevirt/05_clusterrole.yaml":                csidriveroperatorsKubevirt05_clusterroleYaml,
+	"csidriveroperators/kubevirt/06_clusterrolebinding.yaml":         csidriveroperatorsKubevirt06_clusterrolebindingYaml,
+	"csidriveroperators/kubevirt/07_deployment.yaml":                 csidriveroperatorsKubevirt07_deploymentYaml,
+	"csidriveroperators/kubevirt/08_cr.yaml":                         csidriveroperatorsKubevirt08_crYaml,
 	"csidriveroperators/manila/01_namespace.yaml":                    csidriveroperatorsManila01_namespaceYaml,
 	"csidriveroperators/manila/02_sa.yaml":                           csidriveroperatorsManila02_saYaml,
 	"csidriveroperators/manila/03_role.yaml":                         csidriveroperatorsManila03_roleYaml,
@@ -3673,6 +4225,16 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"06_clusterrolebinding.yaml": {csidriveroperatorsGcpPd06_clusterrolebindingYaml, map[string]*bintree{}},
 			"07_deployment.yaml":         {csidriveroperatorsGcpPd07_deploymentYaml, map[string]*bintree{}},
 			"08_cr.yaml":                 {csidriveroperatorsGcpPd08_crYaml, map[string]*bintree{}},
+		}},
+		"kubevirt": {nil, map[string]*bintree{
+			"01_namespace.yaml":          {csidriveroperatorsKubevirt01_namespaceYaml, map[string]*bintree{}},
+			"02_sa.yaml":                 {csidriveroperatorsKubevirt02_saYaml, map[string]*bintree{}},
+			"03_role.yaml":               {csidriveroperatorsKubevirt03_roleYaml, map[string]*bintree{}},
+			"04_rolebinding.yaml":        {csidriveroperatorsKubevirt04_rolebindingYaml, map[string]*bintree{}},
+			"05_clusterrole.yaml":        {csidriveroperatorsKubevirt05_clusterroleYaml, map[string]*bintree{}},
+			"06_clusterrolebinding.yaml": {csidriveroperatorsKubevirt06_clusterrolebindingYaml, map[string]*bintree{}},
+			"07_deployment.yaml":         {csidriveroperatorsKubevirt07_deploymentYaml, map[string]*bintree{}},
+			"08_cr.yaml":                 {csidriveroperatorsKubevirt08_crYaml, map[string]*bintree{}},
 		}},
 		"manila": {nil, map[string]*bintree{
 			"01_namespace.yaml":          {csidriveroperatorsManila01_namespaceYaml, map[string]*bintree{}},

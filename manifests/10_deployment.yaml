@@ -75,6 +75,10 @@ spec:
             value: quay.io/openshift/origin-csi-driver-manila:latest
           - name: MANILA_NFS_DRIVER_IMAGE
             value: quay.io/openshift/origin-csi-driver-nfs:latest
+          - name: KUBEVIRT_DRIVER_OPERATOR_IMAGE
+            value: quay.io/openshift/origin-kubevirt-csi-driver-operator:latest
+          - name: KUBEVIRT_DRIVER_IMAGE
+            value: quay.io/openshift/origin-kubevirt-csi-driver:latest
           - name: PROVISIONER_IMAGE
             value: quay.io/openshift/origin-csi-external-provisioner:latest
           - name: ATTACHER_IMAGE

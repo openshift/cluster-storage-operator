@@ -38,6 +38,14 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-ovirt-csi-driver:latest
+  - name: kubevirt-csi-driver-operator
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-kubevirt-csi-driver-operator:latest
+  - name: kubevirt-csi-driver
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-kubevirt-csi-driver:latest
   - name: csi-driver-manila-operator
     from:
       kind: DockerImage
