@@ -86,6 +86,8 @@ var _csidriveroperatorsAwsEbs01_namespaceYaml = []byte(`apiVersion: v1
 kind: Namespace
 metadata:
   name: openshift-cluster-csi-drivers
+  annotations:
+    openshift.io/node-selector: ""
 `)
 
 func csidriveroperatorsAwsEbs01_namespaceYamlBytes() ([]byte, error) {
@@ -618,6 +620,8 @@ var _csidriveroperatorsManila01_namespaceYaml = []byte(`apiVersion: v1
 kind: Namespace
 metadata:
   name: openshift-cluster-csi-drivers
+  annotations:
+    openshift.io/node-selector: ""
 `)
 
 func csidriveroperatorsManila01_namespaceYamlBytes() ([]byte, error) {
@@ -1163,11 +1167,12 @@ func csidriveroperatorsManila08_crYaml() (*asset, error) {
 	return a, nil
 }
 
-var _csidriveroperatorsOvirt01_namespaceYaml = []byte(`---
-apiVersion: v1
+var _csidriveroperatorsOvirt01_namespaceYaml = []byte(`apiVersion: v1
 kind: Namespace
 metadata:
   name: openshift-cluster-csi-drivers
+  annotations:
+    openshift.io/node-selector: ""
 `)
 
 func csidriveroperatorsOvirt01_namespaceYamlBytes() ([]byte, error) {
