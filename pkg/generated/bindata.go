@@ -3140,6 +3140,7 @@ rules:
   - apps
   resources:
   - deployments
+  - replicasets
   verbs:
   - '*'
 - apiGroups:
