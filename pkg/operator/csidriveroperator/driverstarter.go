@@ -24,6 +24,10 @@ const (
 	infraConfigName = "cluster"
 )
 
+var (
+	relatedObjects []configv1.ObjectReference
+)
+
 // This CSIDriverStarterController starts CSI driver controllers based on the
 // underlying cloud and removes it from OLM. It does not install anything by
 // itself, only monitors Infrastructure instance and starts individual
@@ -35,8 +39,7 @@ type CSIDriverStarterController struct {
 	versionGetter  status.VersionGetter
 	targetVersion  string
 	eventRecorder  events.Recorder
-
-	controllers []csiDriverControllerManager
+	controllers    []csiDriverControllerManager
 }
 
 type csiDriverControllerManager struct {
@@ -61,6 +64,7 @@ func NewCSIDriverStarterController(
 		targetVersion:  targetVersion,
 		eventRecorder:  eventRecorder.WithComponentSuffix("CSIDriverStarter"),
 	}
+	relatedObjects = []configv1.ObjectReference{}
 
 	// Populating all CSI driver operator ControllerManagers here simplifies
 	// the startup a lot
@@ -112,6 +116,11 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 			continue
 		}
 		if !ctrl.running {
+			relatedObjects = append(relatedObjects, configv1.ObjectReference{
+				Group:    operatorapi.GroupName,
+				Resource: "clustercsidrivers",
+				Name:     ctrl.operatorConfig.CSIDriverName,
+			})
 			klog.V(2).Infof("Starting ControllerManager for %s", ctrl.operatorConfig.ConditionPrefix)
 			go ctrl.mgr.Start(ctx)
 			ctrl.running = true
@@ -162,4 +171,13 @@ func (c *CSIDriverStarterController) createCSIControllerManager(
 	}
 
 	return manager
+}
+
+func RelatedObjectFunc() func() (isset bool, objs []configv1.ObjectReference) {
+	return func() (isset bool, objs []configv1.ObjectReference) {
+		if len(relatedObjects) == 0 {
+			return false, relatedObjects
+		}
+		return true, relatedObjects
+	}
 }

@@ -55,15 +55,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	relatedObjects := []configv1.ObjectReference{
 		{Resource: "namespaces", Name: operatorNamespace},
 		{Resource: "namespaces", Name: csoclients.CSIOperatorNamespace},
-		// Manila is in its own namespace due to migration from OLM.
-		{Resource: "namespaces", Name: "openshift-manila-csi-driver"},
 		{Group: operatorv1.GroupName, Resource: "storages", Name: operatorclient.GlobalConfigName},
-		// Sync with operatorv1.CSIDriverName consts!
-		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.AWSEBSCSIDriver)},
-		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.CinderCSIDriver)},
-		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.GCPPDCSIDriver)},
-		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.OvirtCSIDriver)},
-		{Group: operatorv1.GroupName, Resource: "clustercsidrivers", Name: string(operatorv1.ManilaCSIDriver)},
 	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
 		clusterOperatorName,
@@ -83,6 +75,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		status.VersionForOperandFromEnv(),
 		controllerConfig.EventRecorder,
 		csiDriverConfigs)
+	clusterOperatorStatus.WithRelatedObjectsFunc(csidriveroperator.RelatedObjectFunc())
 
 	vsphereProblemDetector := vsphereproblemdetector.NewVSphereProblemDetectorStarter(
 		clients,
