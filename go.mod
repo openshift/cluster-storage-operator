@@ -27,4 +27,5 @@ require (
 replace (
 	google.golang.org/grpc => google.golang.org/grpc v1.27.0
 	k8s.io/client-go => k8s.io/client-go v0.20.0
+	github.com/openshift/api => github.com/ydayagi/api v0.0.0-20210124070023-c5b16841689e
 )

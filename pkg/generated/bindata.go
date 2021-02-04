@@ -1658,7 +1658,10 @@ rules:
     - create
 - apiGroups: [""]
   resources: ["configmaps", "endpoints"]
-  verbs: ["get", "list", "watch", "update", "create", "delete"]`)
+  verbs: ["get", "list", "watch", "update", "create", "delete"]
+- apiGroups: ["machine.openshift.io"]
+  resources: ["machinesets"]
+  verbs: ["list"]`)
 
 func csidriveroperatorsKubevirt05_clusterroleYamlBytes() ([]byte, error) {
 	return _csidriveroperatorsKubevirt05_clusterroleYaml, nil
