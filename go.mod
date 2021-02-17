@@ -6,7 +6,7 @@ require (
 	github.com/go-bindata/go-bindata v3.1.2+incompatible
 	github.com/google/go-cmp v0.5.2
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/openshift/api v0.0.0-20201214114959-164a2fb63b5f
+	github.com/openshift/api v0.0.0-20210216132326-c101762f8e75
 	github.com/openshift/build-machinery-go v0.0.0-20200917070002-f171684f77ab
 	github.com/openshift/client-go v0.0.0-20201214125552-e615e336eb49
 	github.com/openshift/library-go v0.0.0-20210113192829-cfbb3f4c80c2
@@ -27,5 +27,4 @@ require (
 replace (
 	google.golang.org/grpc => google.golang.org/grpc v1.27.0
 	k8s.io/client-go => k8s.io/client-go v0.20.0
-	github.com/openshift/api => github.com/ydayagi/api v0.0.0-20210124070023-c5b16841689e
 )

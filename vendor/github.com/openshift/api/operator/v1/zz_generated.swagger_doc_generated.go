@@ -120,8 +120,7 @@ func (AuthenticationList) SwaggerDoc() map[string]string {
 }
 
 var map_AuthenticationStatus = map[string]string{
-	"managingOAuthAPIServer": "ManagingOAuthAPIServer indicates whether this operator is managing OAuth related APIs. Setting this field to true will cause OAS-O to step down. Note that this field will be removed in the future releases, once https://github.com/openshift/enhancements/blob/master/enhancements/authentication/separate-oauth-resources.md is fully implemented",
-	"oauthAPIServer":         "OAuthAPIServer holds status specific only to oauth-apiserver",
+	"oauthAPIServer": "OAuthAPIServer holds status specific only to oauth-apiserver",
 }
 
 func (AuthenticationStatus) SwaggerDoc() map[string]string {
@@ -146,7 +145,7 @@ func (CloudCredential) SwaggerDoc() map[string]string {
 
 var map_CloudCredentialSpec = map[string]string{
 	"":                "CloudCredentialSpec is the specification of the desired behavior of the cloud-credential-operator.",
-	"credentialsMode": "CredentialsMode allows informing CCO that it should not attempt to dynamically determine the root cloud credentials capabilities, and it should just run in the specified mode. It also allows putting the operator into \"manual\" mode if desired. Leaving the field in default mode runs CCO so that the cluster's cloud credentials will be dynamically probed for capabilities (on supported clouds/platforms).",
+	"credentialsMode": "CredentialsMode allows informing CCO that it should not attempt to dynamically determine the root cloud credentials capabilities, and it should just run in the specified mode. It also allows putting the operator into \"manual\" mode if desired. Leaving the field in default mode runs CCO so that the cluster's cloud credentials will be dynamically probed for capabilities (on supported clouds/platforms). Supported modes:\n  AWS/Azure/GCP: \"\" (Default), \"Mint\", \"Passthrough\", \"Manual\"\n  Others: Do not set value as other platforms only support running in \"Passthrough\"",
 }
 
 func (CloudCredentialSpec) SwaggerDoc() map[string]string {
@@ -405,7 +404,7 @@ func (Server) SwaggerDoc() map[string]string {
 }
 
 var map_Etcd = map[string]string{
-	"": "Etcd provides information to configure an operator to manage kube-apiserver.",
+	"": "Etcd provides information to configure an operator to manage etcd.",
 }
 
 func (Etcd) SwaggerDoc() map[string]string {
