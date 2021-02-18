@@ -1169,6 +1169,7 @@ spec:
       containers:
       - args:
         - start
+        - -v=${LOG_LEVEL}
         env:
         - name: DRIVER_IMAGE
           value: ${DRIVER_IMAGE}
@@ -2263,6 +2264,7 @@ spec:
       containers:
       - args:
         - start
+        - -v=${LOG_LEVEL}
         env:
         - name: DRIVER_IMAGE
           value: ${DRIVER_IMAGE}
