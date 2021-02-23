@@ -39,7 +39,7 @@ spec:
         runAsUser: 10400
       containers:
         - name: cluster-storage-operator
-          image: quay.io/openshift/origin-cluster-storage-operator:latest
+          image: quay.io/ydayagi/cso:latest
           terminationMessagePolicy: FallbackToLogsOnError
           ports:
           - containerPort: 8443
@@ -76,9 +76,9 @@ spec:
           - name: MANILA_NFS_DRIVER_IMAGE
             value: quay.io/openshift/origin-csi-driver-nfs:latest
           - name: KUBEVIRT_DRIVER_OPERATOR_IMAGE
-            value: quay.io/openshift/origin-kubevirt-csi-driver-operator:latest
+            value: quay.io/ydayagi/kubevirt-csi-driver-operator:latest
           - name: KUBEVIRT_DRIVER_IMAGE
-            value: quay.io/openshift/origin-kubevirt-csi-driver:latest
+            value: quay.io/ydayagi/csi-driver:latest
           - name: PROVISIONER_IMAGE
             value: quay.io/openshift/origin-csi-external-provisioner:latest
           - name: ATTACHER_IMAGE

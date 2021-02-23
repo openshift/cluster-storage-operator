@@ -1259,6 +1259,9 @@ var _csidriveroperatorsKubevirt01_namespaceYaml = []byte(`apiVersion: v1
 kind: Namespace
 metadata:
   name: openshift-cluster-csi-drivers
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    openshift.io/node-selector: ""
 `)
 
 func csidriveroperatorsKubevirt01_namespaceYamlBytes() ([]byte, error) {
@@ -1656,9 +1659,11 @@ rules:
     - watch
     - update
     - create
+# Operator creates a StorageClass based on ConfigMap kube-system/cluster-config-v1 or MachineSet in openshift-machine-api
+# See https://github.com/openshift/kubevirt-csi-driver-operator
 - apiGroups: [""]
-  resources: ["configmaps", "endpoints"]
-  verbs: ["get", "list", "watch", "update", "create", "delete"]
+  resources: ["configmaps"] 
+  verbs: ["get"]
 - apiGroups: ["machine.openshift.io"]
   resources: ["machinesets"]
   verbs: ["list"]`)
@@ -1724,13 +1729,22 @@ spec:
     spec:
       serviceAccountName: kubevirt-csi-driver-operator
       priorityClassName: system-cluster-critical
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: "NoSchedule"
       containers:
         - name: kubevirt-csi-driver-operator
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           image: ${OPERATOR_IMAGE}
-          tolerations:
-            - key: CriticalAddonsOnly
-              operator: Exists
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 10m
           args:
             - start
           env:

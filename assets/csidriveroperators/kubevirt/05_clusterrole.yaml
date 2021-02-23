@@ -269,9 +269,11 @@ rules:
     - watch
     - update
     - create
+# Operator creates a StorageClass based on ConfigMap kube-system/cluster-config-v1 or MachineSet in openshift-machine-api
+# See https://github.com/openshift/kubevirt-csi-driver-operator
 - apiGroups: [""]
-  resources: ["configmaps", "endpoints"]
-  verbs: ["get", "list", "watch", "update", "create", "delete"]
+  resources: ["configmaps"] 
+  verbs: ["get"]
 - apiGroups: ["machine.openshift.io"]
   resources: ["machinesets"]
   verbs: ["list"]
