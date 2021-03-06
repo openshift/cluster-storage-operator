@@ -15,16 +15,16 @@ require (
 	github.com/prometheus/client_golang v1.8.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
-	k8s.io/api v0.20.0
-	k8s.io/apiextensions-apiserver v0.20.0
-	k8s.io/apimachinery v0.20.0
+	k8s.io/api v0.20.4
+	k8s.io/apiextensions-apiserver v0.20.4
+	k8s.io/apimachinery v0.20.4
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/code-generator v0.20.0
-	k8s.io/component-base v0.20.0
+	k8s.io/code-generator v0.20.4
+	k8s.io/component-base v0.20.4
 	k8s.io/klog/v2 v2.4.0
 )
 
 replace (
 	google.golang.org/grpc => google.golang.org/grpc v1.27.0
-	k8s.io/client-go => k8s.io/client-go v0.20.0
+	k8s.io/client-go => k8s.io/client-go v0.20.4
 )
