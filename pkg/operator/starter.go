@@ -123,6 +123,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 func populateConfigs(clients *csoclients.Clients, recorder events.Recorder) []csioperatorclient.CSIOperatorConfig {
 	return []csioperatorclient.CSIOperatorConfig{
 		csioperatorclient.GetAWSEBSCSIOperatorConfig(),
+		csioperatorclient.GetAzureDiskCSIOperatorConfig(),
 		csioperatorclient.GetGCPPDCSIOperatorConfig(),
 		csioperatorclient.GetOpenStackCinderCSIOperatorConfig(clients, recorder),
 		csioperatorclient.GetOVirtCSIOperatorConfig(clients, recorder),

@@ -10,6 +10,14 @@
 // assets/csidriveroperators/aws-ebs/08_rolebinding_aws_config.yaml
 // assets/csidriveroperators/aws-ebs/09_deployment.yaml
 // assets/csidriveroperators/aws-ebs/10_cr.yaml
+// assets/csidriveroperators/azure-disk/01_namespace.yaml
+// assets/csidriveroperators/azure-disk/02_sa.yaml
+// assets/csidriveroperators/azure-disk/03_role.yaml
+// assets/csidriveroperators/azure-disk/04_rolebinding.yaml
+// assets/csidriveroperators/azure-disk/05_clusterrole.yaml
+// assets/csidriveroperators/azure-disk/06_clusterrolebinding.yaml
+// assets/csidriveroperators/azure-disk/07_deployment.yaml
+// assets/csidriveroperators/azure-disk/08_cr.yaml
 // assets/csidriveroperators/gcp-pd/01_namespace.yaml
 // assets/csidriveroperators/gcp-pd/02_sa.yaml
 // assets/csidriveroperators/gcp-pd/03_role.yaml
@@ -706,6 +714,545 @@ func csidriveroperatorsAwsEbs10_crYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "csidriveroperators/aws-ebs/10_cr.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsAzureDisk01_namespaceYaml = []byte(`apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-cluster-csi-drivers
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    openshift.io/node-selector: ""
+`)
+
+func csidriveroperatorsAzureDisk01_namespaceYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsAzureDisk01_namespaceYaml, nil
+}
+
+func csidriveroperatorsAzureDisk01_namespaceYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsAzureDisk01_namespaceYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/azure-disk/01_namespace.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsAzureDisk02_saYaml = []byte(`apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: azure-disk-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsAzureDisk02_saYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsAzureDisk02_saYaml, nil
+}
+
+func csidriveroperatorsAzureDisk02_saYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsAzureDisk02_saYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/azure-disk/02_sa.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsAzureDisk03_roleYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: azure-disk-csi-driver-operator-role
+  namespace: openshift-cluster-csi-drivers
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  - services
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - namespaces
+  verbs:
+  - get
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
+  - create
+`)
+
+func csidriveroperatorsAzureDisk03_roleYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsAzureDisk03_roleYaml, nil
+}
+
+func csidriveroperatorsAzureDisk03_roleYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsAzureDisk03_roleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/azure-disk/03_role.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsAzureDisk04_rolebindingYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: azure-disk-csi-driver-operator-rolebinding
+  namespace: openshift-cluster-csi-drivers
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: azure-disk-csi-driver-operator-role
+subjects:
+- kind: ServiceAccount
+  name: azure-disk-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsAzureDisk04_rolebindingYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsAzureDisk04_rolebindingYaml, nil
+}
+
+func csidriveroperatorsAzureDisk04_rolebindingYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsAzureDisk04_rolebindingYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/azure-disk/04_rolebinding.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsAzureDisk05_clusterroleYaml = []byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: azure-disk-csi-driver-operator-clusterrole
+rules:
+- apiGroups:
+  - security.openshift.io
+  resourceNames:
+  - privileged
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - use
+- apiGroups:
+  - operator.openshift.io
+  resources:
+  - clustercsidrivers
+  verbs:
+  - get
+  - list
+  - watch
+  # The Config Observer controller updates the CR's spec
+  - update
+  - patch
+- apiGroups:
+  - operator.openshift.io
+  resources:
+  - clustercsidrivers/status
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - ''
+  resourceNames:
+  - extension-apiserver-authentication
+  - azure-disk-csi-driver-operator-lock
+  resources:
+  - configmaps
+  verbs:
+  - '*'
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterroles
+  - clusterrolebindings
+  - roles
+  - rolebindings
+  verbs:
+  - watch
+  - list
+  - get
+  - create
+  - delete
+  - patch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - list
+  - create
+  - watch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - nodes
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - delete
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumes
+  verbs:
+  - create
+  - delete
+  - list
+  - get
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims/status
+  verbs:
+  - patch
+  - update
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattachments
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - delete
+  - create
+  - patch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattachments/status
+  verbs:
+  - patch
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotcontents/status
+  verbs:
+  - update
+  - patch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  - csinodes
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - '*'
+  resources:
+  - events
+  verbs:
+  - get
+  - patch
+  - create
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotclasses
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotcontents
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshots
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - csidrivers
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - cloudcredential.openshift.io
+  resources:
+  - credentialsrequests
+  verbs:
+  - '*'
+- apiGroups:
+  - config.openshift.io
+  resources:
+  - infrastructures
+  - proxies
+  verbs:
+  - get
+  - list
+  - watch
+`)
+
+func csidriveroperatorsAzureDisk05_clusterroleYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsAzureDisk05_clusterroleYaml, nil
+}
+
+func csidriveroperatorsAzureDisk05_clusterroleYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsAzureDisk05_clusterroleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/azure-disk/05_clusterrole.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsAzureDisk06_clusterrolebindingYaml = []byte(`kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: azure-disk-csi-driver-operator-clusterrolebinding
+subjects:
+  - kind: ServiceAccount
+    name: azure-disk-csi-driver-operator
+    namespace: openshift-cluster-csi-drivers
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: azure-disk-csi-driver-operator-clusterrole
+`)
+
+func csidriveroperatorsAzureDisk06_clusterrolebindingYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsAzureDisk06_clusterrolebindingYaml, nil
+}
+
+func csidriveroperatorsAzureDisk06_clusterrolebindingYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsAzureDisk06_clusterrolebindingYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/azure-disk/06_clusterrolebinding.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsAzureDisk07_deploymentYaml = []byte(`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azure-disk-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: azure-disk-csi-driver-operator
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        name: azure-disk-csi-driver-operator
+    spec:
+      containers:
+      - args:
+        - start
+        - -v=${LOG_LEVEL}
+        env:
+        - name: DRIVER_IMAGE
+          value: ${DRIVER_IMAGE}
+        - name: PROVISIONER_IMAGE
+          value: ${PROVISIONER_IMAGE}
+        - name: ATTACHER_IMAGE
+          value: ${ATTACHER_IMAGE}
+        - name: RESIZER_IMAGE
+          value: ${RESIZER_IMAGE}
+        - name: SNAPSHOTTER_IMAGE
+          value: ${SNAPSHOTTER_IMAGE}
+        - name: NODE_DRIVER_REGISTRAR_IMAGE
+          value: ${NODE_DRIVER_REGISTRAR_IMAGE}
+        - name: LIVENESS_PROBE_IMAGE
+          value: ${LIVENESS_PROBE_IMAGE}
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        image: ${OPERATOR_IMAGE}
+        imagePullPolicy: IfNotPresent
+        name: azure-disk-csi-driver-operator
+        resources:
+          requests:
+            memory: 50Mi
+            cpu: 10m
+      priorityClassName: system-cluster-critical
+      serviceAccountName: azure-disk-csi-driver-operator
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: "NoSchedule"
+`)
+
+func csidriveroperatorsAzureDisk07_deploymentYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsAzureDisk07_deploymentYaml, nil
+}
+
+func csidriveroperatorsAzureDisk07_deploymentYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsAzureDisk07_deploymentYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/azure-disk/07_deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _csidriveroperatorsAzureDisk08_crYaml = []byte(`apiVersion: operator.openshift.io/v1
+kind: "ClusterCSIDriver"
+metadata:
+  name: "disk.csi.azure.com"
+spec:
+  logLevel: Normal
+  managementState: Managed
+  operatorLogLevel: Normal
+`)
+
+func csidriveroperatorsAzureDisk08_crYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsAzureDisk08_crYaml, nil
+}
+
+func csidriveroperatorsAzureDisk08_crYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsAzureDisk08_crYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/azure-disk/08_cr.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -3564,6 +4111,14 @@ var _bindata = map[string]func() (*asset, error){
 	"csidriveroperators/aws-ebs/08_rolebinding_aws_config.yaml":      csidriveroperatorsAwsEbs08_rolebinding_aws_configYaml,
 	"csidriveroperators/aws-ebs/09_deployment.yaml":                  csidriveroperatorsAwsEbs09_deploymentYaml,
 	"csidriveroperators/aws-ebs/10_cr.yaml":                          csidriveroperatorsAwsEbs10_crYaml,
+	"csidriveroperators/azure-disk/01_namespace.yaml":                csidriveroperatorsAzureDisk01_namespaceYaml,
+	"csidriveroperators/azure-disk/02_sa.yaml":                       csidriveroperatorsAzureDisk02_saYaml,
+	"csidriveroperators/azure-disk/03_role.yaml":                     csidriveroperatorsAzureDisk03_roleYaml,
+	"csidriveroperators/azure-disk/04_rolebinding.yaml":              csidriveroperatorsAzureDisk04_rolebindingYaml,
+	"csidriveroperators/azure-disk/05_clusterrole.yaml":              csidriveroperatorsAzureDisk05_clusterroleYaml,
+	"csidriveroperators/azure-disk/06_clusterrolebinding.yaml":       csidriveroperatorsAzureDisk06_clusterrolebindingYaml,
+	"csidriveroperators/azure-disk/07_deployment.yaml":               csidriveroperatorsAzureDisk07_deploymentYaml,
+	"csidriveroperators/azure-disk/08_cr.yaml":                       csidriveroperatorsAzureDisk08_crYaml,
 	"csidriveroperators/gcp-pd/01_namespace.yaml":                    csidriveroperatorsGcpPd01_namespaceYaml,
 	"csidriveroperators/gcp-pd/02_sa.yaml":                           csidriveroperatorsGcpPd02_saYaml,
 	"csidriveroperators/gcp-pd/03_role.yaml":                         csidriveroperatorsGcpPd03_roleYaml,
@@ -3665,6 +4220,16 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"08_rolebinding_aws_config.yaml": {csidriveroperatorsAwsEbs08_rolebinding_aws_configYaml, map[string]*bintree{}},
 			"09_deployment.yaml":             {csidriveroperatorsAwsEbs09_deploymentYaml, map[string]*bintree{}},
 			"10_cr.yaml":                     {csidriveroperatorsAwsEbs10_crYaml, map[string]*bintree{}},
+		}},
+		"azure-disk": {nil, map[string]*bintree{
+			"01_namespace.yaml":          {csidriveroperatorsAzureDisk01_namespaceYaml, map[string]*bintree{}},
+			"02_sa.yaml":                 {csidriveroperatorsAzureDisk02_saYaml, map[string]*bintree{}},
+			"03_role.yaml":               {csidriveroperatorsAzureDisk03_roleYaml, map[string]*bintree{}},
+			"04_rolebinding.yaml":        {csidriveroperatorsAzureDisk04_rolebindingYaml, map[string]*bintree{}},
+			"05_clusterrole.yaml":        {csidriveroperatorsAzureDisk05_clusterroleYaml, map[string]*bintree{}},
+			"06_clusterrolebinding.yaml": {csidriveroperatorsAzureDisk06_clusterrolebindingYaml, map[string]*bintree{}},
+			"07_deployment.yaml":         {csidriveroperatorsAzureDisk07_deploymentYaml, map[string]*bintree{}},
+			"08_cr.yaml":                 {csidriveroperatorsAzureDisk08_crYaml, map[string]*bintree{}},
 		}},
 		"gcp-pd": {nil, map[string]*bintree{
 			"01_namespace.yaml":          {csidriveroperatorsGcpPd01_namespaceYaml, map[string]*bintree{}},
