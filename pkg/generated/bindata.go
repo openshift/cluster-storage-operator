@@ -2790,6 +2790,12 @@ spec:
               fieldPath: metadata.name
         image: ${OPERATOR_IMAGE}
         imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: secret-cinderplugin
+          mountPath: /etc/openstack
+          readOnly: true
+        - name: cacert
+          mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
         name: openstack-cinder-csi-driver-operator
         resources:
           requests:
@@ -2805,6 +2811,25 @@ spec:
       - key: node-role.kubernetes.io/master
         operator: Exists
         effect: "NoSchedule"
+      volumes:
+      - name: secret-cinderplugin
+        secret:
+          secretName: openstack-cloud-credentials
+          items:
+            - key: clouds.yaml
+              path: clouds.yaml
+      - name: cacert
+        # If present, extract ca-bundle.pem to
+        # /etc/kubernetes/static-pod-resources/configmaps/cloud-config
+        # Let the pod start when the ConfigMap does not exist or the certificate
+        # is not preset there. The certificate file will be created once the
+        # ConfigMap is created / the cerificate is added to it.
+        configMap:
+          name: cloud-provider-config
+          items:
+          - key: ca-bundle.pem
+            path: ca-bundle.pem
+          optional: true
 `)
 
 func csidriveroperatorsOpenstackCinder07_deploymentYamlBytes() ([]byte, error) {
