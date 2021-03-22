@@ -3338,6 +3338,7 @@ spec:
       - args:
         - start
         - --listen=0.0.0.0:8444
+        - --v=${LOG_LEVEL}
         env:
         - name: POD_NAME
           valueFrom:
