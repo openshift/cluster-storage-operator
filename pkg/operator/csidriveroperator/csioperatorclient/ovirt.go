@@ -36,6 +36,6 @@ func GetOVirtCSIOperatorConfig(clients *csoclients.Clients, recorder events.Reco
 		CRAsset:         "csidriveroperators/ovirt/08_cr.yaml",
 		DeploymentAsset: "csidriveroperators/ovirt/07_deployment.yaml",
 		ImageReplacer:   strings.NewReplacer(pairs...),
-		Optional:        false,
+		AllowDisabled:   false,
 	}
 }

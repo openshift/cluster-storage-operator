@@ -36,6 +36,6 @@ func GetOpenStackCinderCSIOperatorConfig(clients *csoclients.Clients, recorder e
 		CRAsset:         "csidriveroperators/openstack-cinder/08_cr.yaml",
 		DeploymentAsset: "csidriveroperators/openstack-cinder/07_deployment.yaml",
 		ImageReplacer:   strings.NewReplacer(pairs...),
-		Optional:        false,
+		AllowDisabled:   false,
 	}
 }

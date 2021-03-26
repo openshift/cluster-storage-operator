@@ -34,6 +34,6 @@ func GetGCPPDCSIOperatorConfig() CSIOperatorConfig {
 		CRAsset:         "csidriveroperators/gcp-pd/08_cr.yaml",
 		DeploymentAsset: "csidriveroperators/gcp-pd/07_deployment.yaml",
 		ImageReplacer:   strings.NewReplacer(pairs...),
-		Optional:        false,
+		AllowDisabled:   false,
 	}
 }
