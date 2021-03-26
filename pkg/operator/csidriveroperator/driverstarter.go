@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	infraConfigName = "cluster"
+	infraConfigName       = "cluster"
+	featureGateConfigName = "cluster"
 )
 
 var (
@@ -34,12 +35,13 @@ var (
 // ControllerManagers for the particular cloud. It produces following Conditions:
 // CSIDriverStarterDegraded - error checking the Infrastructure
 type CSIDriverStarterController struct {
-	operatorClient *operatorclient.OperatorClient
-	infraLister    openshiftv1.InfrastructureLister
-	versionGetter  status.VersionGetter
-	targetVersion  string
-	eventRecorder  events.Recorder
-	controllers    []csiDriverControllerManager
+	operatorClient    *operatorclient.OperatorClient
+	infraLister       openshiftv1.InfrastructureLister
+	featureGateLister openshiftv1.FeatureGateLister
+	versionGetter     status.VersionGetter
+	targetVersion     string
+	eventRecorder     events.Recorder
+	controllers       []csiDriverControllerManager
 }
 
 type csiDriverControllerManager struct {
@@ -58,11 +60,12 @@ func NewCSIDriverStarterController(
 	eventRecorder events.Recorder,
 	driverConfigs []csioperatorclient.CSIOperatorConfig) factory.Controller {
 	c := &CSIDriverStarterController{
-		operatorClient: clients.OperatorClient,
-		infraLister:    clients.ConfigInformers.Config().V1().Infrastructures().Lister(),
-		versionGetter:  versionGetter,
-		targetVersion:  targetVersion,
-		eventRecorder:  eventRecorder.WithComponentSuffix("CSIDriverStarter"),
+		operatorClient:    clients.OperatorClient,
+		infraLister:       clients.ConfigInformers.Config().V1().Infrastructures().Lister(),
+		featureGateLister: clients.ConfigInformers.Config().V1().FeatureGates().Lister(),
+		versionGetter:     versionGetter,
+		targetVersion:     targetVersion,
+		eventRecorder:     eventRecorder.WithComponentSuffix("CSIDriverStarter"),
 	}
 	relatedObjects = []configv1.ObjectReference{}
 
@@ -84,6 +87,7 @@ func NewCSIDriverStarterController(
 	return factory.New().WithSync(c.sync).WithSyncDegradedOnError(clients.OperatorClient).WithInformers(
 		clients.OperatorClient.Informer(),
 		clients.ConfigInformers.Config().V1().Infrastructures().Informer(),
+		clients.ConfigInformers.Config().V1().FeatureGates().Informer(),
 	).ToController("CSIDriverStarter", eventRecorder)
 }
 
@@ -103,19 +107,19 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 	if err != nil {
 		return err
 	}
-
-	// Start controller managers for this platform
-	var platform configv1.PlatformType
-	if infrastructure.Status.PlatformStatus != nil {
-		platform = infrastructure.Status.PlatformStatus.Type
+	featureGate, err := c.featureGateLister.Get(featureGateConfigName)
+	if err != nil {
+		return err
 	}
 
+	// Start controller managers for this platform
 	for i := range c.controllers {
 		ctrl := &c.controllers[i]
-		if ctrl.operatorConfig.Platform != platform {
-			continue
-		}
 		if !ctrl.running {
+			shouldRun := shouldRunController(ctrl.operatorConfig, infrastructure, featureGate)
+			if !shouldRun {
+				continue
+			}
 			relatedObjects = append(relatedObjects, configv1.ObjectReference{
 				Group:    operatorapi.GroupName,
 				Resource: "clustercsidrivers",
@@ -180,4 +184,57 @@ func RelatedObjectFunc() func() (isset bool, objs []configv1.ObjectReference) {
 		}
 		return true, relatedObjects
 	}
+}
+
+// shouldRunController returns true, if given CSI driver controller should run.
+func shouldRunController(cfg csioperatorclient.CSIOperatorConfig, infrastructure *configv1.Infrastructure, fg *configv1.FeatureGate) bool {
+	// Check the correct platform first, it will filter out most CSI driver operators
+	var platform configv1.PlatformType
+	if infrastructure.Status.PlatformStatus != nil {
+		platform = infrastructure.Status.PlatformStatus.Type
+	}
+	if cfg.Platform != platform {
+		klog.V(5).Infof("Not starting %s: wrong platform %s", cfg.CSIDriverName, platform)
+		return false
+	}
+
+	if cfg.RequireFeatureGate == "" {
+		// This is GA / always enabled operator, always run
+		klog.V(5).Infof("Starting %s: it's GA", cfg.CSIDriverName)
+		return true
+	}
+
+	if featureGateEnabled(fg, cfg.RequireFeatureGate) {
+		// Tech preview operator and tech preview is enabled
+		klog.V(5).Infof("Starting %s: feature %s is enabled", cfg.CSIDriverName, cfg.RequireFeatureGate)
+		return true
+	}
+	klog.V(4).Infof("Not starting %s: feature %s is not enabled", cfg.CSIDriverName, cfg.RequireFeatureGate)
+	return false
+}
+
+// Get list of enabled feature fates from FeatureGate CR.
+func getEnabledFeatures(fg *configv1.FeatureGate) []string {
+	if fg.Spec.FeatureSet == "" {
+		return nil
+	}
+	if fg.Spec.FeatureSet == configv1.CustomNoUpgrade {
+		return fg.Spec.CustomNoUpgrade.Enabled
+	}
+	gates := configv1.FeatureSets[fg.Spec.FeatureSet]
+	if gates == nil {
+		return nil
+	}
+	return gates.Enabled
+}
+
+// featureGateEnabled returns true if a given feature is enabled in FeatureGate CR.
+func featureGateEnabled(fg *configv1.FeatureGate, feature string) bool {
+	enabledFeatures := getEnabledFeatures(fg)
+	for _, f := range enabledFeatures {
+		if f == feature {
+			return true
+		}
+	}
+	return false
 }

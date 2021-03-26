@@ -37,8 +37,10 @@ type CSIOperatorConfig struct {
 	AllowDisabled bool
 	// Extra controllers to start with the CSI driver operator
 	ExtraControllers []factory.Controller
-	// AllowDisabled configuration of migration from OLM to CSO
+	// OLMOptions configuration of migration from OLM to CSO
 	OLMOptions *OLMOptions
+	// Run the CSI driver operator only when given FeatureGate is enabled
+	RequireFeatureGate string
 }
 
 // OLMOptions contains information that is necessary to remove old CSI driver
