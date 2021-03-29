@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubevirt-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: kubevirt-csi-driver-operator
+  template:
+    metadata:
+      labels:
+        name: kubevirt-csi-driver-operator
+    spec:
+      serviceAccountName: kubevirt-csi-driver-operator
+      priorityClassName: system-cluster-critical
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: "NoSchedule"
+      containers:
+        - name: kubevirt-csi-driver-operator
+          imagePullPolicy: IfNotPresent
+          image: ${OPERATOR_IMAGE}
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 10m
+          args:
+            - start
+          env:
+            - name: OPERATOR_NAME
+              value: kubevirt-csi-driver-operator
+            - name: DRIVER_IMAGE
+              value: ${DRIVER_IMAGE}
+            - name: PROVISIONER_IMAGE
+              value: ${PROVISIONER_IMAGE}
+            - name: ATTACHER_IMAGE
+              value: ${ATTACHER_IMAGE}
+            - name: NODE_DRIVER_REGISTRAR_IMAGE
+              value: ${NODE_DRIVER_REGISTRAR_IMAGE}
+            - name: LIVENESS_PROBE_IMAGE
+              value: ${LIVENESS_PROBE_IMAGE}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
