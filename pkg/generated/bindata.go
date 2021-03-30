@@ -116,6 +116,8 @@ metadata:
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
     openshift.io/node-selector: ""
+  labels:
+    openshift.io/cluster-monitoring: "true"
 `)
 
 func csidriveroperatorsAwsEbs01_namespaceYamlBytes() ([]byte, error) {
@@ -717,6 +719,8 @@ metadata:
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
     openshift.io/node-selector: ""
+  labels:
+    openshift.io/cluster-monitoring: "true"
 `)
 
 func csidriveroperatorsGcpPd01_namespaceYamlBytes() ([]byte, error) {
@@ -1255,6 +1259,8 @@ metadata:
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
     openshift.io/node-selector: ""
+  labels:
+    openshift.io/cluster-monitoring: "true"
 `)
 
 func csidriveroperatorsManila01_namespaceYamlBytes() ([]byte, error) {
@@ -1807,6 +1813,8 @@ var _csidriveroperatorsOpenstackCinder01_namespaceYaml = []byte(`apiVersion: v1
 kind: Namespace
 metadata:
   name: openshift-cluster-csi-drivers
+  labels:
+    openshift.io/cluster-monitoring: "true"
 `)
 
 func csidriveroperatorsOpenstackCinder01_namespaceYamlBytes() ([]byte, error) {
@@ -2352,6 +2360,8 @@ metadata:
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
     openshift.io/node-selector: ""
+  labels:
+    openshift.io/cluster-monitoring: "true"
 `)
 
 func csidriveroperatorsOvirt01_namespaceYamlBytes() ([]byte, error) {
