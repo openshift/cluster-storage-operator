@@ -506,6 +506,13 @@ rules:
   - get
   - list
   - watch
+# Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
+- apiGroups:
+  - "authentication.k8s.io"
+  resources:
+  - "tokenreviews"
+  verbs:
+  - "create"
 `)
 
 func csidriveroperatorsAwsEbs05_clusterroleYamlBytes() ([]byte, error) {
@@ -1109,6 +1116,13 @@ rules:
   - get
   - list
   - watch
+# Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
+- apiGroups:
+  - "authentication.k8s.io"
+  resources:
+  - "tokenreviews"
+  verbs:
+  - "create"
 `)
 
 func csidriveroperatorsGcpPd05_clusterroleYamlBytes() ([]byte, error) {
@@ -1639,6 +1653,13 @@ rules:
   - 'clustercsidrivers/status'
   verbs:
   - '*'
+# Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
+- apiGroups:
+  - "authentication.k8s.io"
+  resources:
+  - "tokenreviews"
+  verbs:
+  - "create"
 `)
 
 func csidriveroperatorsManila05_clusterroleYamlBytes() ([]byte, error) {
@@ -2207,6 +2228,13 @@ rules:
   - 'clustercsidrivers/status'
   verbs:
   - '*'
+# Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
+- apiGroups:
+  - "authentication.k8s.io"
+  resources:
+  - "tokenreviews"
+  verbs:
+  - "create"
 `)
 
 func csidriveroperatorsOpenstackCinder05_clusterroleYamlBytes() ([]byte, error) {
@@ -2743,6 +2771,13 @@ rules:
   # The Config Observer controller updates the CR's spec
   - update
   - patch
+# Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
+- apiGroups:
+  - "authentication.k8s.io"
+  resources:
+  - "tokenreviews"
+  verbs:
+  - "create"
 `)
 
 func csidriveroperatorsOvirt05_clusterroleYamlBytes() ([]byte, error) {
