@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: openshift-cluster-csi-drivers
-  annotations:
-    include.release.openshift.io/self-managed-high-availability: "true"
-    openshift.io/node-selector: ""
-  labels:
-    openshift.io/cluster-monitoring: "true"
