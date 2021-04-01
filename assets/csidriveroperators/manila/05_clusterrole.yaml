@@ -250,3 +250,10 @@ rules:
   - 'clustercsidrivers/status'
   verbs:
   - '*'
+# Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
+- apiGroups:
+  - "authentication.k8s.io"
+  resources:
+  - "tokenreviews"
+  verbs:
+  - "create"

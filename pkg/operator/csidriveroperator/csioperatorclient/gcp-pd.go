@@ -24,7 +24,6 @@ func GetGCPPDCSIOperatorConfig() CSIOperatorConfig {
 		ConditionPrefix: "GCPPD",
 		Platform:        configv1.GCPPlatformType,
 		StaticAssets: []string{
-			"csidriveroperators/gcp-pd/01_namespace.yaml",
 			"csidriveroperators/gcp-pd/02_sa.yaml",
 			"csidriveroperators/gcp-pd/03_role.yaml",
 			"csidriveroperators/gcp-pd/04_rolebinding.yaml",

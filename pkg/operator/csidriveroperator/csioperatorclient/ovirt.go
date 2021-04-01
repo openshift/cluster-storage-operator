@@ -26,7 +26,6 @@ func GetOVirtCSIOperatorConfig(clients *csoclients.Clients, recorder events.Reco
 		ConditionPrefix: "OVirt",
 		Platform:        configv1.OvirtPlatformType,
 		StaticAssets: []string{
-			"csidriveroperators/ovirt/01_namespace.yaml",
 			"csidriveroperators/ovirt/02_sa.yaml",
 			"csidriveroperators/ovirt/03_role.yaml",
 			"csidriveroperators/ovirt/04_rolebinding.yaml",

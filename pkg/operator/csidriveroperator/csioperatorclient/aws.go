@@ -24,7 +24,6 @@ func GetAWSEBSCSIOperatorConfig() CSIOperatorConfig {
 		ConditionPrefix: "AWSEBS",
 		Platform:        configv1.AWSPlatformType,
 		StaticAssets: []string{
-			"csidriveroperators/aws-ebs/01_namespace.yaml",
 			"csidriveroperators/aws-ebs/02_sa.yaml",
 			"csidriveroperators/aws-ebs/03_role.yaml",
 			"csidriveroperators/aws-ebs/04_rolebinding.yaml",

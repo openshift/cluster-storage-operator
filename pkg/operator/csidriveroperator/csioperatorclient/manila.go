@@ -33,7 +33,6 @@ func GetManilaOperatorConfig(clients *csoclients.Clients, recorder events.Record
 		ConditionPrefix: "Manila",
 		Platform:        v1.OpenStackPlatformType,
 		StaticAssets: []string{
-			"csidriveroperators/manila/01_namespace.yaml",
 			"csidriveroperators/manila/02_sa.yaml",
 			"csidriveroperators/manila/03_role.yaml",
 			"csidriveroperators/manila/04_rolebinding.yaml",

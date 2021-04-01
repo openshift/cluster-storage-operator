@@ -26,7 +26,6 @@ func GetOpenStackCinderCSIOperatorConfig(clients *csoclients.Clients, recorder e
 		ConditionPrefix: "OpenStackCinder",
 		Platform:        configv1.OpenStackPlatformType,
 		StaticAssets: []string{
-			"csidriveroperators/openstack-cinder/01_namespace.yaml",
 			"csidriveroperators/openstack-cinder/02_sa.yaml",
 			"csidriveroperators/openstack-cinder/03_role.yaml",
 			"csidriveroperators/openstack-cinder/04_rolebinding.yaml",
