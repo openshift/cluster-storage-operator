@@ -35,7 +35,7 @@ func GetAWSEBSCSIOperatorConfig() CSIOperatorConfig {
 		CRAsset:         "csidriveroperators/aws-ebs/10_cr.yaml",
 		DeploymentAsset: "csidriveroperators/aws-ebs/09_deployment.yaml",
 		ImageReplacer:   strings.NewReplacer(pairs...),
-		Optional:        false,
+		AllowDisabled:   false,
 		/* For reference / experiments only. OpenShift does not support
 		   update from OLM-based AWS EBS operator to CVO/CSO one.
 		OLMOptions: &OLMOptions{

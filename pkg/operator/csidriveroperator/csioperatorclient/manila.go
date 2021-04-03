@@ -45,7 +45,7 @@ func GetManilaOperatorConfig(clients *csoclients.Clients, recorder events.Record
 		ExtraControllers: []factory.Controller{
 			newCertificateSyncerOrDie(clients, recorder),
 		},
-		Optional: true,
+		AllowDisabled: true,
 		OLMOptions: &OLMOptions{
 			OLMOperatorDeploymentName: "csi-driver-manila-operator",
 

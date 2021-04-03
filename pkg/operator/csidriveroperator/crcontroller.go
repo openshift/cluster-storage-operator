@@ -43,7 +43,7 @@ type CSIDriverOperatorCRController struct {
 	factory                *factory.Factory
 	csiDriverName          string
 	csiDriverAsset         string
-	optional               bool
+	allowDisabled          bool
 }
 
 var _ factory.Controller = &CSIDriverOperatorCRController{}
@@ -98,7 +98,7 @@ func NewCSIDriverOperatorCRController(
 		factory:                f,
 		csiDriverName:          csiOperatorConfig.CSIDriverName,
 		csiDriverAsset:         csiOperatorConfig.CRAsset,
-		optional:               csiOperatorConfig.Optional,
+		allowDisabled:          csiOperatorConfig.AllowDisabled,
 	}
 	return c
 }
@@ -184,7 +184,7 @@ func (c *CSIDriverOperatorCRController) applyClusterCSIDriver(required *operator
 func (c *CSIDriverOperatorCRController) syncConditions(conditions []operatorapi.OperatorCondition, updatefn v1helpers.UpdateStatusFunc) error {
 	var availableCnd operatorapi.OperatorCondition
 	disabled, msg := c.hasDisabledCondition(conditions)
-	if disabled && c.optional {
+	if disabled && c.allowDisabled {
 		// The driver can't be running. Mark the operator as Available, but with an extra message.
 		availableCnd.Status = operatorapi.ConditionTrue
 		availableCnd.Reason = "DriverDisabled"
@@ -203,7 +203,7 @@ func (c *CSIDriverOperatorCRController) syncConditions(conditions []operatorapi.
 	progressingCnd := status.UnionCondition(operatorapi.OperatorStatusTypeProgressing, operatorapi.ConditionFalse, nil, conditions...)
 	progressingCnd.Type = c.crConditionName(operatorapi.OperatorStatusTypeProgressing)
 	if progressingCnd.Status == operatorapi.ConditionUnknown {
-		if disabled && c.optional {
+		if disabled && c.allowDisabled {
 			progressingCnd.Status = operatorapi.ConditionFalse
 		} else {
 			progressingCnd.Status = operatorapi.ConditionTrue

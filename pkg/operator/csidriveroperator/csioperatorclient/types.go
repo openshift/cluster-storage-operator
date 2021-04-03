@@ -31,12 +31,16 @@ type CSIOperatorConfig struct {
 	// ImageReplacer is a replacer that's replaces CSI driver + operator image
 	// names in the Deployment.
 	ImageReplacer *strings.Replacer
-	// Whether the CSI driver is optional (i.e. CSO is Available / not Degraded).
-	Optional bool
+	// Whether the CSI driver can set Disabled condition (i.e. the cloud may not support it) and it's OK.
+	// In this case, the CSO's overall Available / Progressing conditions will not be affected by Disabled
+	// ClusterCSIDriver.
+	AllowDisabled bool
 	// Extra controllers to start with the CSI driver operator
 	ExtraControllers []factory.Controller
-	// Optional configuration of migration from OLM to CSO
+	// OLMOptions configuration of migration from OLM to CSO
 	OLMOptions *OLMOptions
+	// Run the CSI driver operator only when given FeatureGate is enabled
+	RequireFeatureGate string
 }
 
 // OLMOptions contains information that is necessary to remove old CSI driver
