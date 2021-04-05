@@ -127,6 +127,5 @@ func populateConfigs(clients *csoclients.Clients, recorder events.Recorder) []cs
 		csioperatorclient.GetOpenStackCinderCSIOperatorConfig(clients, recorder),
 		csioperatorclient.GetOVirtCSIOperatorConfig(clients, recorder),
 		csioperatorclient.GetManilaOperatorConfig(clients, recorder),
-		csioperatorclient.GetVMwareVSphereCSIOperatorConfig(),
 	}
 }

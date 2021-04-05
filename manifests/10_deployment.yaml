@@ -89,12 +89,6 @@ spec:
             value: quay.io/openshift/origin-csi-livenessprobe:latest
           - name: VSPHERE_PROBLEM_DETECTOR_OPERATOR_IMAGE
             value: quay.io/openshift/origin-vsphere-problem-detector:latest
-          - name: VMWARE_VSPHERE_DRIVER_OPERATOR_IMAGE
-            # TODO: replace with quay.io when the image is mirrored
-            value: registry.ci.openshift.org/origin/4.8:vmware-vsphere-csi-driver-operator
-          - name: VMWARE_VSPHERE_DRIVER_IMAGE
-            # TODO: replace with quay.io when the image is mirrored
-            value: registry.ci.openshift.org/origin/4.8:vmware-vsphere-csi-driver
           resources:
             requests:
               cpu: 10m

@@ -1,5 +1,0 @@
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: vmware-vsphere-csi-driver-operator
-  namespace: openshift-cluster-csi-drivers

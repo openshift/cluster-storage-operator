@@ -78,11 +78,3 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-vsphere-problem-detector:latest
-  - name: vmware-vsphere-csi-driver-operator
-    from:
-      kind: DockerImage
-      name: registry.ci.openshift.org/origin/4.8:vmware-vsphere-csi-driver-operator
-  - name: vmware-vsphere-csi-driver
-    from:
-      kind: DockerImage
-      name: registry.ci.openshift.org/origin/4.8:vmware-vsphere-csi-driver
