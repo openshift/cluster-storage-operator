@@ -86,3 +86,11 @@ spec:
     from:
       kind: DockerImage
       name: registry.ci.openshift.org/origin/4.8:vmware-vsphere-csi-driver
+  - name: azure-disk-csi-driver-operator
+    from:
+      kind: DockerImage
+      name: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver-operator
+  - name: azure-disk-csi-driver
+    from:
+      kind: DockerImage
+      name: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver
