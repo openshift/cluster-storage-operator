@@ -13,6 +13,8 @@ spec:
       name: ovirt-csi-driver-operator
   template:
     metadata:
+      annotations:
+        workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         name: ovirt-csi-driver-operator
     spec:
