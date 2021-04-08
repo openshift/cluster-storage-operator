@@ -101,6 +101,8 @@ spec:
           - name: AZURE_DISK_DRIVER_IMAGE
             # TODO: replace with quay.io when the image is mirrored
             value: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver
+          - name: KUBE_RBAC_PROXY_IMAGE
+            value: quay.io/openshift/origin-kube-rbac-proxy:latest
           resources:
             requests:
               cpu: 10m
