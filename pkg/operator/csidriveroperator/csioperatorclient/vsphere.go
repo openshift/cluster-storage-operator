@@ -11,12 +11,14 @@ const (
 	VMwareVSphereDriverName             = "csi.vsphere.vmware.com"
 	envVMwareVSphereDriverOperatorImage = "VMWARE_VSPHERE_DRIVER_OPERATOR_IMAGE"
 	envVMwareVSphereDriverImage         = "VMWARE_VSPHERE_DRIVER_IMAGE"
+	envVMWareVsphereDriverSyncerImage   = "VMWARE_VSPHERE_SYNCER_IMAGE"
 )
 
 func GetVMwareVSphereCSIOperatorConfig() CSIOperatorConfig {
 	pairs := []string{
 		"${OPERATOR_IMAGE}", os.Getenv(envVMwareVSphereDriverOperatorImage),
 		"${DRIVER_IMAGE}", os.Getenv(envVMwareVSphereDriverImage),
+		"${VMWARE_VSPHERE_SYNCER_IMAGE}", os.Getenv(envVMWareVsphereDriverSyncerImage),
 	}
 
 	return CSIOperatorConfig{

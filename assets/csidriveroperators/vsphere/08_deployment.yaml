@@ -32,6 +32,8 @@ spec:
           value: ${NODE_DRIVER_REGISTRAR_IMAGE}
         - name: LIVENESS_PROBE_IMAGE
           value: ${LIVENESS_PROBE_IMAGE}
+        - name: VMWARE_VSPHERE_SYNCER_IMAGE
+          value: ${VMWARE_VSPHERE_SYNCER_IMAGE}
         - name: POD_NAME
           valueFrom:
             fieldRef:

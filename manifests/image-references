@@ -98,3 +98,7 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-kube-rbac-proxy:latest
+  - name: vsphere-csi-driver-syncer
+    from:
+      kind: DockerImage
+      name: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-syncer
