@@ -95,6 +95,12 @@ spec:
           - name: VMWARE_VSPHERE_DRIVER_IMAGE
             # TODO: replace with quay.io when the image is mirrored
             value: registry.ci.openshift.org/origin/4.8:vmware-vsphere-csi-driver
+          - name: AZURE_DISK_DRIVER_OPERATOR_IMAGE
+            # TODO: replace with quay.io when the image is mirrored
+            value: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver-operator
+          - name: AZURE_DISK_DRIVER_IMAGE
+            # TODO: replace with quay.io when the image is mirrored
+            value: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver
           resources:
             requests:
               cpu: 10m
