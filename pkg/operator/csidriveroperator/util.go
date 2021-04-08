@@ -19,6 +19,7 @@ const (
 	envSnapshotterImage         = "SNAPSHOTTER_IMAGE"
 	envNodeDriverRegistrarImage = "NODE_DRIVER_REGISTRAR_IMAGE"
 	envLivenessProbeImage       = "LIVENESS_PROBE_IMAGE"
+	envKubeRBACProxyImage       = "KUBE_RBAC_PROXY_IMAGE"
 )
 
 var (
@@ -29,6 +30,7 @@ var (
 		"${SNAPSHOTTER_IMAGE}", os.Getenv(envSnapshotterImage),
 		"${NODE_DRIVER_REGISTRAR_IMAGE}", os.Getenv(envNodeDriverRegistrarImage),
 		"${LIVENESS_PROBE_IMAGE}", os.Getenv(envLivenessProbeImage),
+		"${KUBE_RBAC_PROXY_IMAGE}", os.Getenv(envKubeRBACProxyImage),
 	)
 )
 

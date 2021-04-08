@@ -94,3 +94,7 @@ spec:
     from:
       kind: DockerImage
       name: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver
+  - name: kube-rbac-proxy
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-kube-rbac-proxy:latest

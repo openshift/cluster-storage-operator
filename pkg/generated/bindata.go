@@ -639,6 +639,8 @@ spec:
           value: ${NODE_DRIVER_REGISTRAR_IMAGE}
         - name: LIVENESS_PROBE_IMAGE
           value: ${LIVENESS_PROBE_IMAGE}
+        - name: KUBE_RBAC_PROXY_IMAGE
+          value: ${KUBE_RBAC_PROXY_IMAGE}
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -1153,6 +1155,8 @@ spec:
           value: ${NODE_DRIVER_REGISTRAR_IMAGE}
         - name: LIVENESS_PROBE_IMAGE
           value: ${LIVENESS_PROBE_IMAGE}
+        - name: KUBE_RBAC_PROXY_IMAGE
+          value: ${KUBE_RBAC_PROXY_IMAGE}
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -1674,6 +1678,8 @@ spec:
           value: ${NODE_DRIVER_REGISTRAR_IMAGE}
         - name: LIVENESS_PROBE_IMAGE
           value: ${LIVENESS_PROBE_IMAGE}
+        - name: KUBE_RBAC_PROXY_IMAGE
+          value: ${KUBE_RBAC_PROXY_IMAGE}
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -2190,6 +2196,8 @@ spec:
           value: ${NODE_DRIVER_REGISTRAR_IMAGE}
         - name: LIVENESS_PROBE_IMAGE
           value: ${LIVENESS_PROBE_IMAGE}
+        - name: KUBE_RBAC_PROXY_IMAGE
+          value: ${KUBE_RBAC_PROXY_IMAGE}
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -2738,6 +2746,8 @@ spec:
           value: ${NODE_DRIVER_REGISTRAR_IMAGE}
         - name: LIVENESS_PROBE_IMAGE
           value: ${LIVENESS_PROBE_IMAGE}
+        - name: KUBE_RBAC_PROXY_IMAGE
+          value: ${KUBE_RBAC_PROXY_IMAGE}
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -3330,6 +3340,8 @@ spec:
               value: ${NODE_DRIVER_REGISTRAR_IMAGE}
             - name: LIVENESS_PROBE_IMAGE
               value: ${LIVENESS_PROBE_IMAGE}
+            - name: KUBE_RBAC_PROXY_IMAGE
+              value: ${KUBE_RBAC_PROXY_IMAGE}
             - name: POD_NAME
               valueFrom:
                 fieldRef:
