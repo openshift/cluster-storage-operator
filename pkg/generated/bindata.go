@@ -1075,6 +1075,13 @@ rules:
   - get
   - list
   - watch
+# Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
+- apiGroups:
+  - "authentication.k8s.io"
+  resources:
+  - "tokenreviews"
+  verbs:
+  - "create"
 `)
 
 func csidriveroperatorsAzureDisk06_clusterroleYamlBytes() ([]byte, error) {
@@ -3797,6 +3804,13 @@ rules:
   - watch
   - update
   - delete
+# Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
+- apiGroups:
+  - "authentication.k8s.io"
+  resources:
+  - "tokenreviews"
+  verbs:
+  - "create"
 `)
 
 func csidriveroperatorsVsphere06_clusterroleYamlBytes() ([]byte, error) {
