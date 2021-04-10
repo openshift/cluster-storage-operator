@@ -11,6 +11,8 @@ spec:
   strategy: {}
   template:
     metadata:
+      annotations:
+        workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         name: gcp-pd-csi-driver-operator
     spec:

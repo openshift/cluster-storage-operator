@@ -13,6 +13,8 @@ spec:
   strategy: {}
   template:
     metadata:
+      annotations:
+        workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         name: manila-csi-driver-operator
     spec:
