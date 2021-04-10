@@ -2,6 +2,7 @@ package csidriveroperator
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -17,12 +18,18 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
 	"github.com/openshift/library-go/pkg/operator/status"
+	storagev1 "k8s.io/api/storage/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	storagelister "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/klog/v2"
 )
 
 const (
 	infraConfigName       = "cluster"
 	featureGateConfigName = "cluster"
+
+	annOpenShiftManaged = "csi.openshift.io/managed"
 )
 
 var (
@@ -38,6 +45,7 @@ type CSIDriverStarterController struct {
 	operatorClient    *operatorclient.OperatorClient
 	infraLister       openshiftv1.InfrastructureLister
 	featureGateLister openshiftv1.FeatureGateLister
+	csiDriverLister   storagelister.CSIDriverLister
 	versionGetter     status.VersionGetter
 	targetVersion     string
 	eventRecorder     events.Recorder
@@ -63,6 +71,7 @@ func NewCSIDriverStarterController(
 		operatorClient:    clients.OperatorClient,
 		infraLister:       clients.ConfigInformers.Config().V1().Infrastructures().Lister(),
 		featureGateLister: clients.ConfigInformers.Config().V1().FeatureGates().Lister(),
+		csiDriverLister:   clients.KubeInformers.InformersFor("").Storage().V1().CSIDrivers().Lister(),
 		versionGetter:     versionGetter,
 		targetVersion:     targetVersion,
 		eventRecorder:     eventRecorder.WithComponentSuffix("CSIDriverStarter"),
@@ -88,6 +97,7 @@ func NewCSIDriverStarterController(
 		clients.OperatorClient.Informer(),
 		clients.ConfigInformers.Config().V1().Infrastructures().Informer(),
 		clients.ConfigInformers.Config().V1().FeatureGates().Informer(),
+		clients.KubeInformers.InformersFor("").Storage().V1().CSIDrivers().Informer(),
 	).ToController("CSIDriverStarter", eventRecorder)
 }
 
@@ -115,8 +125,21 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 	// Start controller managers for this platform
 	for i := range c.controllers {
 		ctrl := &c.controllers[i]
+
+		csiDriver, err := c.csiDriverLister.Get(ctrl.operatorConfig.CSIDriverName)
+		if errors.IsNotFound(err) {
+			err = nil
+			csiDriver = nil
+		}
+		if err != nil {
+			return err
+		}
+
 		if !ctrl.running {
-			shouldRun := shouldRunController(ctrl.operatorConfig, infrastructure, featureGate)
+			shouldRun, err := shouldRunController(ctrl.operatorConfig, infrastructure, featureGate, csiDriver)
+			if err != nil {
+				return err
+			}
 			if !shouldRun {
 				continue
 			}
@@ -187,7 +210,7 @@ func RelatedObjectFunc() func() (isset bool, objs []configv1.ObjectReference) {
 }
 
 // shouldRunController returns true, if given CSI driver controller should run.
-func shouldRunController(cfg csioperatorclient.CSIOperatorConfig, infrastructure *configv1.Infrastructure, fg *configv1.FeatureGate) bool {
+func shouldRunController(cfg csioperatorclient.CSIOperatorConfig, infrastructure *configv1.Infrastructure, fg *configv1.FeatureGate, csiDriver *storagev1.CSIDriver) (bool, error) {
 	// Check the correct platform first, it will filter out most CSI driver operators
 	var platform configv1.PlatformType
 	if infrastructure.Status.PlatformStatus != nil {
@@ -195,22 +218,28 @@ func shouldRunController(cfg csioperatorclient.CSIOperatorConfig, infrastructure
 	}
 	if cfg.Platform != platform {
 		klog.V(5).Infof("Not starting %s: wrong platform %s", cfg.CSIDriverName, platform)
-		return false
+		return false, nil
 	}
 
 	if cfg.RequireFeatureGate == "" {
 		// This is GA / always enabled operator, always run
 		klog.V(5).Infof("Starting %s: it's GA", cfg.CSIDriverName)
-		return true
+		return true, nil
 	}
 
-	if featureGateEnabled(fg, cfg.RequireFeatureGate) {
-		// Tech preview operator and tech preview is enabled
-		klog.V(5).Infof("Starting %s: feature %s is enabled", cfg.CSIDriverName, cfg.RequireFeatureGate)
-		return true
+	if !featureGateEnabled(fg, cfg.RequireFeatureGate) {
+		klog.V(4).Infof("Not starting %s: feature %s is not enabled", cfg.CSIDriverName, cfg.RequireFeatureGate)
+		return false, nil
 	}
-	klog.V(4).Infof("Not starting %s: feature %s is not enabled", cfg.CSIDriverName, cfg.RequireFeatureGate)
-	return false
+
+	if isUnsupportedCSIDriverRunning(cfg, csiDriver) {
+		// Some other version of the CSI driver is running, degrade the whole cluster
+		return false, fmt.Errorf("detected CSI driver %s that is not provided by OpenShift - please remove it before enabling the OpenShift one", cfg.CSIDriverName)
+	}
+
+	// Tech preview operator and tech preview is enabled
+	klog.V(5).Infof("Starting %s: feature %s is enabled", cfg.CSIDriverName, cfg.RequireFeatureGate)
+	return true, nil
 }
 
 // Get list of enabled feature fates from FeatureGate CR.
@@ -237,4 +266,16 @@ func featureGateEnabled(fg *configv1.FeatureGate, feature string) bool {
 		}
 	}
 	return false
+}
+
+func isUnsupportedCSIDriverRunning(cfg csioperatorclient.CSIOperatorConfig, csiDriver *storagev1.CSIDriver) bool {
+	if csiDriver == nil {
+		return false
+	}
+
+	if metav1.HasAnnotation(csiDriver.ObjectMeta, annOpenShiftManaged) {
+		return false
+	}
+
+	return true
 }
