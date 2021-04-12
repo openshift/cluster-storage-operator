@@ -101,10 +101,10 @@ spec:
             value: quay.io/openshift/origin-kube-rbac-proxy:latest
           - name: VMWARE_VSPHERE_DRIVER_OPERATOR_IMAGE
             # TODO: replace with quay.io when the image is mirrored
-            value: registry.ci.openshift.org/origin/4.8:vmware-vsphere-csi-driver-operator
+            value: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-operator
           - name: VMWARE_VSPHERE_DRIVER_IMAGE
             # TODO: replace with quay.io when the image is mirrored
-            value: registry.ci.openshift.org/origin/4.8:vmware-vsphere-csi-driver
+            value: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver
           - name: VMWARE_VSPHERE_SYNCER_IMAGE
             # TODO: replace with quay.io value
             value: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-syncer

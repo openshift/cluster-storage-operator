@@ -81,11 +81,11 @@ spec:
   - name: vmware-vsphere-csi-driver-operator
     from:
       kind: DockerImage
-      name: registry.ci.openshift.org/origin/4.8:vmware-vsphere-csi-driver-operator
+      name: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-operator
   - name: vmware-vsphere-csi-driver
     from:
       kind: DockerImage
-      name: registry.ci.openshift.org/origin/4.8:vmware-vsphere-csi-driver
+      name: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver
   - name: azure-disk-csi-driver-operator
     from:
       kind: DockerImage
