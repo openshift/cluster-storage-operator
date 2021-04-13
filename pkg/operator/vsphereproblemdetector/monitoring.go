@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
+	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	promv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	promclient "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned"
@@ -88,9 +89,8 @@ func (c *monitoringController) sync(ctx context.Context, syncContext factory.Syn
 		return nil
 	}
 
-	serviceMonitorBytes := generated.MustAsset("vsphere_problem_detector/11_service_monitor.yaml")
-
-	_, err = resourceapply.ApplyServiceMonitor(c.dynamicClient, c.eventRecorder, serviceMonitorBytes)
+	serviceMonitor := resourceread.ReadUnstructuredOrDie(generated.MustAsset("vsphere_problem_detector/11_service_monitor.yaml"))
+	_, _, err = resourceapply.ApplyServiceMonitor(c.dynamicClient, c.eventRecorder, serviceMonitor)
 
 	if err != nil {
 		return err
