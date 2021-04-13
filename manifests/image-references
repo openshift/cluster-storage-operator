@@ -78,14 +78,18 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-vsphere-problem-detector:latest
-  - name: vmware-vsphere-csi-driver-operator
+  - name: vsphere-csi-driver-operator
     from:
       kind: DockerImage
       name: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-operator
-  - name: vmware-vsphere-csi-driver
+  - name: vsphere-csi-driver
     from:
       kind: DockerImage
       name: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver
+  - name: vsphere-csi-driver-syncer
+    from:
+      kind: DockerImage
+      name: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-syncer
   - name: azure-disk-csi-driver-operator
     from:
       kind: DockerImage
@@ -98,7 +102,3 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-kube-rbac-proxy:latest
-  - name: vsphere-csi-driver-syncer
-    from:
-      kind: DockerImage
-      name: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-syncer
