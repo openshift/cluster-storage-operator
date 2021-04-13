@@ -3549,6 +3549,9 @@ rules:
   - get
   - list
   - watch
+  # The Config Observer controller updates the CR's spec
+  - update
+  - patch
 - apiGroups:
   - operator.openshift.io
   resources:
@@ -3782,6 +3785,7 @@ rules:
   - config.openshift.io
   resources:
   - infrastructures
+  - proxies
   verbs:
   - get
   - list
