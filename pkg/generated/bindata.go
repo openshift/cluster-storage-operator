@@ -3905,6 +3905,8 @@ spec:
           value: ${LIVENESS_PROBE_IMAGE}
         - name: VMWARE_VSPHERE_SYNCER_IMAGE
           value: ${VMWARE_VSPHERE_SYNCER_IMAGE}
+        - name: KUBE_RBAC_PROXY_IMAGE
+          value: ${KUBE_RBAC_PROXY_IMAGE}
         - name: POD_NAME
           valueFrom:
             fieldRef:
