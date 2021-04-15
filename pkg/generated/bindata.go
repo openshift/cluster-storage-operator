@@ -1810,13 +1810,6 @@ rules:
   - statefulsets
   verbs:
   - '*'
-- apiGroups:
-  - monitoring.coreos.com
-  resources:
-  - servicemonitors
-  verbs:
-  - get
-  - create
 `)
 
 func csidriveroperatorsManila03_roleYamlBytes() ([]byte, error) {
@@ -2123,6 +2116,14 @@ rules:
   - "tokenreviews"
   verbs:
   - "create"
+# Allow the operator to create ServiceMonitor in the driver namespace
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
+  - create
 `)
 
 func csidriveroperatorsManila05_clusterroleYamlBytes() ([]byte, error) {
