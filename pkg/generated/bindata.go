@@ -3917,6 +3917,10 @@ spec:
         image: ${OPERATOR_IMAGE}
         imagePullPolicy: IfNotPresent
         name: vmware-vsphere-csi-driver-operator
+        resources:
+          requests:
+            memory: 50Mi
+            cpu: 10m
       priorityClassName: system-cluster-critical
       serviceAccountName: vmware-vsphere-csi-driver-operator
       nodeSelector:
