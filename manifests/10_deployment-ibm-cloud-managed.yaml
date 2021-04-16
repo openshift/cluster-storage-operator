@@ -1,0 +1,114 @@
+# *** AUTOMATICALLY GENERATED FILE - DO NOT EDIT ***
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+  name: cluster-storage-operator
+  namespace: openshift-cluster-storage-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: cluster-storage-operator
+  template:
+    metadata:
+      annotations:
+        workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+      labels:
+        name: cluster-storage-operator
+    spec:
+      containers:
+      - command:
+        - cluster-storage-operator
+        - start
+        env:
+        - name: OPERATOR_IMAGE_VERSION
+          value: 0.0.1-snapshot
+        - name: OPERAND_IMAGE_VERSION
+          value: 0.0.1-snapshot
+        - name: AWS_EBS_DRIVER_OPERATOR_IMAGE
+          value: quay.io/openshift/origin-aws-ebs-csi-driver-operator:latest
+        - name: AWS_EBS_DRIVER_IMAGE
+          value: quay.io/openshift/origin-aws-ebs-csi-driver:latest
+        - name: GCP_PD_DRIVER_OPERATOR_IMAGE
+          value: quay.io/openshift/origin-gcp-pd-csi-driver-operator:latest
+        - name: GCP_PD_DRIVER_IMAGE
+          value: quay.io/openshift/origin-gcp-pd-csi-driver:latest
+        - name: OPENSTACK_CINDER_DRIVER_OPERATOR_IMAGE
+          value: quay.io/openshift/origin-openstack-cinder-csi-driver-operator:latest
+        - name: OPENSTACK_CINDER_DRIVER_IMAGE
+          value: quay.io/openshift/origin-openstack-cinder-csi-driver:latest
+        - name: OVIRT_DRIVER_OPERATOR_IMAGE
+          value: quay.io/openshift/origin-ovirt-csi-driver-operator:latest
+        - name: OVIRT_DRIVER_IMAGE
+          value: quay.io/openshift/origin-ovirt-csi-driver:latest
+        - name: MANILA_DRIVER_OPERATOR_IMAGE
+          value: quay.io/openshift/origin-csi-driver-manila-operator:latest
+        - name: MANILA_DRIVER_IMAGE
+          value: quay.io/openshift/origin-csi-driver-manila:latest
+        - name: MANILA_NFS_DRIVER_IMAGE
+          value: quay.io/openshift/origin-csi-driver-nfs:latest
+        - name: PROVISIONER_IMAGE
+          value: quay.io/openshift/origin-csi-external-provisioner:latest
+        - name: ATTACHER_IMAGE
+          value: quay.io/openshift/origin-csi-external-attacher:latest
+        - name: RESIZER_IMAGE
+          value: quay.io/openshift/origin-csi-external-resizer:latest
+        - name: SNAPSHOTTER_IMAGE
+          value: quay.io/openshift/origin-csi-external-snapshotter:latest
+        - name: NODE_DRIVER_REGISTRAR_IMAGE
+          value: quay.io/openshift/origin-csi-node-driver-registrar:latest
+        - name: LIVENESS_PROBE_IMAGE
+          value: quay.io/openshift/origin-csi-livenessprobe:latest
+        - name: VSPHERE_PROBLEM_DETECTOR_OPERATOR_IMAGE
+          value: quay.io/openshift/origin-vsphere-problem-detector:latest
+        - name: AZURE_DISK_DRIVER_OPERATOR_IMAGE
+          value: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver-operator
+        - name: AZURE_DISK_DRIVER_IMAGE
+          value: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver
+        - name: KUBE_RBAC_PROXY_IMAGE
+          value: quay.io/openshift/origin-kube-rbac-proxy:latest
+        - name: VMWARE_VSPHERE_DRIVER_OPERATOR_IMAGE
+          value: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-operator
+        - name: VMWARE_VSPHERE_DRIVER_IMAGE
+          value: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver
+        - name: VMWARE_VSPHERE_SYNCER_IMAGE
+          value: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-syncer
+        image: quay.io/openshift/origin-cluster-storage-operator:latest
+        imagePullPolicy: IfNotPresent
+        name: cluster-storage-operator
+        ports:
+        - containerPort: 8443
+          name: metrics
+        resources:
+          requests:
+            cpu: 10m
+            memory: 20Mi
+        terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/run/secrets/serving-cert
+          name: cluster-storage-operator-serving-cert
+      priorityClassName: system-cluster-critical
+      securityContext:
+        fsGroup: 10400
+        runAsGroup: 10400
+        runAsUser: 10400
+      serviceAccountName: cluster-storage-operator
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoExecute
+        key: node.kubernetes.io/unreachable
+        operator: Exists
+        tolerationSeconds: 120
+      - effect: NoExecute
+        key: node.kubernetes.io/not-ready
+        operator: Exists
+        tolerationSeconds: 120
+      volumes:
+      - name: cluster-storage-operator-serving-cert
+        secret:
+          optional: true
+          secretName: cluster-storage-operator-serving-cert

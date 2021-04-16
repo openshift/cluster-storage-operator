@@ -7,6 +7,7 @@ include $(addprefix ./vendor/github.com/openshift/build-machinery-go/make/, \
 	targets/openshift/deps-gomod.mk \
 	targets/openshift/images.mk \
 	targets/openshift/bindata.mk \
+	targets/openshift/operator/profile-manifests.mk \
 )
 
 # Run core verification and all self contained tests.
@@ -35,6 +36,13 @@ $(call build-image,cluster-storage-operator,$(IMAGE_REGISTRY)/ocp/4.6:cluster-st
 # $4 - pkg
 # $5 - output
 $(call add-bindata,generated,./assets/...,assets,generated,pkg/generated/bindata.go)
+
+# add targets to manage profile patches
+# $0 - macro name
+# $1 - target name
+# $2 - patches directory
+# $3 - manifests directory
+$(call add-profile-manifests,manifests,./profile-patches,./manifests)
 
 clean:
 	$(RM) cluster-storage-operator
