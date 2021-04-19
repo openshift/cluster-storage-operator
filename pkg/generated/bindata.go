@@ -2124,6 +2124,23 @@ rules:
   verbs:
   - get
   - create
+# Allow the operator to create Service in the driver namespace
+- apiGroups:
+  - ''
+  resources:
+  - services
+  verbs:
+  - '*'
+# Grant these permissions in the driver namespace to Prometheus
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  - endpoints
+  verbs:
+  - 'get'
+  - 'list'
+  - 'watch'
 `)
 
 func csidriveroperatorsManila05_clusterroleYamlBytes() ([]byte, error) {
