@@ -618,7 +618,7 @@ spec:
   template:
     metadata:
       annotations:
-        workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         name: aws-ebs-csi-driver-operator
     spec:
@@ -1143,6 +1143,8 @@ spec:
   strategy: {}
   template:
     metadata:
+      annotations:
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         name: azure-disk-csi-driver-operator
     spec:
@@ -1667,7 +1669,7 @@ spec:
   template:
     metadata:
       annotations:
-        workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         name: gcp-pd-csi-driver-operator
     spec:
@@ -2203,7 +2205,7 @@ spec:
   template:
     metadata:
       annotations:
-        workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         name: manila-csi-driver-operator
     spec:
@@ -2757,7 +2759,7 @@ spec:
   template:
     metadata:
       annotations:
-        workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         name: openstack-cinder-csi-driver-operator
     spec:
@@ -3281,7 +3283,7 @@ spec:
   template:
     metadata:
       annotations:
-        workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         name: ovirt-csi-driver-operator
     spec:
@@ -3904,7 +3906,7 @@ spec:
   template:
     metadata:
       annotations:
-        workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         name: vmware-vsphere-csi-driver-operator
     spec:
