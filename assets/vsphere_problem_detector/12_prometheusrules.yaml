@@ -10,6 +10,8 @@ spec:
     - name: vsphere-problem-detector.rules
       rules:
       - alert: VSphereOpenshiftNodeHealthFail
+        # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
+        # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
         expr:  min_over_time(vsphere_node_check_errors[5m]) == 1
         for: 10m
         labels:
@@ -17,9 +19,27 @@ spec:
         annotations:
           message: "VSphere health check {{ $labels.check }} is failing on {{ $labels.node }}."
       - alert: VSphereOpenshiftClusterHealthFail
+        # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
+        # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
         expr: min_over_time(vsphere_cluster_check_errors[5m]) == 1
         for: 10m
         labels:
           severity: warning
         annotations:
           message: "VSphere cluster health checks are failing with {{ $labels.check }}"
+      - alert: VSphereOpenshiftConnectionFailure
+        # Using min_over_time to make sure the metric is `1` for whole 15 minutes.
+        # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
+        expr: min_over_time(vsphere_sync_errors[15m]) == 1
+        for: 60m
+        labels:
+          severity: warning
+        annotations:
+          summary: "vsphere-problem-detector is unable to connect to vSphere vCenter."
+          description: |
+            vsphere-problem-detector cannot access vCenter. As consequence, other OCP components,
+            such as storage or machine API, may not be able to access vCenter too and provide
+            their services. Detailed error message can be found in Available condition of
+            ClusterOperator "storage", either in console
+            (Administration -> Cluster settings -> Cluster operators tab -> storage) or on
+            command line: oc get clusteroperator storage -o jsonpath='{.status.conditions[?(@.type=="Available")].message}'
