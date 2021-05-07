@@ -583,7 +583,7 @@ k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/apiserver v0.21.0
+# k8s.io/apiserver v0.21.0 => github.com/openshift/kubernetes-apiserver v0.0.0-20210419140141-620426e63a99
 k8s.io/apiserver/pkg/admission
 k8s.io/apiserver/pkg/admission/configuration
 k8s.io/apiserver/pkg/admission/initializer
@@ -1071,3 +1071,4 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 # google.golang.org/grpc => google.golang.org/grpc v1.27.0
 # k8s.io/client-go => k8s.io/client-go v0.21.0
+# k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20210419140141-620426e63a99
