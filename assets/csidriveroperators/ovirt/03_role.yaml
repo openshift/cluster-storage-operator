@@ -39,3 +39,6 @@ rules:
     verbs:
       - get
       - create
+      - update
+      - patch
+      - delete

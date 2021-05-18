@@ -180,6 +180,9 @@ rules:
   verbs:
   - get
   - create
+  - update
+  - patch
+  - delete
 `)
 
 func csidriveroperatorsAwsEbs03_roleYamlBytes() ([]byte, error) {
@@ -768,6 +771,9 @@ rules:
   verbs:
   - get
   - create
+  - update
+  - patch
+  - delete
 `)
 
 func csidriveroperatorsAzureDisk04_roleYamlBytes() ([]byte, error) {
@@ -1294,6 +1300,9 @@ rules:
   verbs:
   - get
   - create
+  - update
+  - patch
+  - delete
 `)
 
 func csidriveroperatorsGcpPd03_roleYamlBytes() ([]byte, error) {
@@ -2126,6 +2135,9 @@ rules:
   verbs:
   - get
   - create
+  - update
+  - patch
+  - delete
 # Allow the operator to create Service in the driver namespace
 - apiGroups:
   - ''
@@ -2379,6 +2391,9 @@ rules:
   verbs:
   - get
   - create
+  - update
+  - patch
+  - delete
 `)
 
 func csidriveroperatorsOpenstackCinder03_roleYamlBytes() ([]byte, error) {
@@ -2913,6 +2928,9 @@ rules:
     verbs:
       - get
       - create
+      - update
+      - patch
+      - delete
 `)
 
 func csidriveroperatorsOvirt03_roleYamlBytes() ([]byte, error) {
@@ -3502,6 +3520,9 @@ rules:
   verbs:
   - get
   - create
+  - update
+  - patch
+  - delete
 `)
 
 func csidriveroperatorsVsphere04_roleYamlBytes() ([]byte, error) {
@@ -4200,6 +4221,9 @@ rules:
   verbs:
   - get
   - create
+  - update
+  - patch
+  - delete
 `)
 
 func vsphere_problem_detector02_roleYamlBytes() ([]byte, error) {
