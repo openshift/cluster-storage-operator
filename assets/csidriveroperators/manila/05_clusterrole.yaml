@@ -265,6 +265,9 @@ rules:
   verbs:
   - get
   - create
+  - update
+  - patch
+  - delete
 # Allow the operator to create Service in the driver namespace
 - apiGroups:
   - ''
