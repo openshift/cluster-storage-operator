@@ -162,13 +162,21 @@ func (c *CSIDriverStarterController) createCSIControllerManager(
 	resyncInterval time.Duration) manager.ControllerManager {
 
 	manager := manager.NewControllerManager()
-	manager = manager.WithController(staticresourcecontroller.NewStaticResourceController(
+	// TODO : get RelatedObjects() within sync() above, type casting is an option
+	src := staticresourcecontroller.NewStaticResourceController(
 		cfg.ConditionPrefix+"CSIDriverOperatorStaticController",
-		generated.Asset,
-		cfg.StaticAssets,
-		resourceapply.NewKubeClientHolder(clients.KubeClient),
-		c.operatorClient,
-		c.eventRecorder).AddKubeInformers(clients.KubeInformers), 1)
+		generated.Asset, cfg.StaticAssets, resourceapply.NewKubeClientHolder(clients.KubeClient), c.operatorClient, c.eventRecorder).
+		AddKubeInformers(clients.KubeInformers).
+		AddRelatedObjects(clients.RestMapper)
+
+	manager = manager.WithController(src, 1)
+	objs, err := src.RelatedObjects()
+	if err != nil {
+		klog.Errorf("Can not find RelatedObjects, got %v", err)
+	} else {
+		relatedObjects = append(relatedObjects, objs...)
+	}
+	// TODO : end
 
 	crController := NewCSIDriverOperatorCRController(
 		cfg.ConditionPrefix,

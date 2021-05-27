@@ -3,6 +3,7 @@ package staticresourcecontroller
 import (
 	"context"
 	"fmt"
+	configv1 "github.com/openshift/api/config/v1"
 	"strings"
 	"time"
 
@@ -47,6 +48,7 @@ type StaticResourceController struct {
 	name                   string
 	manifests              resourceapply.AssetFunc
 	files                  []string
+	relatedObjects         []configv1.ObjectReference
 	ignoreNotFoundOnCreate bool
 
 	operatorClient v1helpers.OperatorClient
@@ -170,6 +172,25 @@ func (c *StaticResourceController) AddKubeInformers(kubeInformersByNamespace v1h
 	return ret
 }
 
+func (c *StaticResourceController) AddRelatedObjects(mapper meta.RESTMapper) *StaticResourceController {
+	directResourceResults := resourceapply.ApplyDirectly(c.clients, nil, c.manifests, c.files...)
+	for _, currResult := range directResourceResults {
+		gvk := currResult.Result.GetObjectKind().GroupVersionKind()
+		mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+		if err != nil {
+			klog.Errorf("StaticResourceController.AddRelatedObjects() failed mapping GVK: %v to GVR", gvk)
+			continue
+		}
+		gvr := mapping.Resource
+		c.relatedObjects = append(c.relatedObjects, configv1.ObjectReference{
+			Group:    gvk.Group,
+			Resource: gvr.Resource,
+			Name:     gvk.Kind,
+		})
+	}
+	return c
+}
+
 func (c *StaticResourceController) AddInformer(informer cache.SharedIndexInformer) *StaticResourceController {
 	c.factory.WithInformers(informer)
 	return c
@@ -233,6 +254,13 @@ func (c StaticResourceController) Sync(ctx context.Context, syncContext factory.
 
 func (c *StaticResourceController) Name() string {
 	return "StaticResourceController"
+}
+
+func (c *StaticResourceController) RelatedObjects() ([]configv1.ObjectReference, error) {
+	if c.relatedObjects == nil || len(c.relatedObjects) == 0 {
+		return nil, fmt.Errorf("RelatedObjects for this StaticResourceController is empty")
+	}
+	return c.relatedObjects, nil
 }
 
 func (c *StaticResourceController) Run(ctx context.Context, workers int) {
