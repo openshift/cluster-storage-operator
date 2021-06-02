@@ -8,12 +8,8 @@ github.com/PuerkitoBio/urlesc
 github.com/beorn7/perks/quantile
 # github.com/blang/semver v3.5.1+incompatible
 github.com/blang/semver
-# github.com/certifi/gocertifi v0.0.0-20180905225744-ee1a9a0726d2
-## explicit
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
-# github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6
-## explicit
 # github.com/coreos/go-semver v0.3.0
 github.com/coreos/go-semver/semver
 # github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
@@ -23,17 +19,11 @@ github.com/coreos/go-systemd/journal
 github.com/coreos/pkg/capnslog
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/docker/libnetwork v0.0.0-20190731215715-7f13a5c99f4b
-## explicit
 # github.com/emicklei/go-restful v2.9.5+incompatible
 github.com/emicklei/go-restful
 github.com/emicklei/go-restful/log
 # github.com/evanphx/json-patch v4.9.0+incompatible
 github.com/evanphx/json-patch
-# github.com/fsouza/go-dockerclient v0.0.0-20171004212419-da3951ba2e9e
-## explicit
-# github.com/getsentry/raven-go v0.0.0-20190513200303-c977f96e1095
-## explicit
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
 # github.com/go-bindata/go-bindata v3.1.2+incompatible
@@ -103,8 +93,6 @@ github.com/modern-go/concurrent
 github.com/modern-go/reflect2
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 github.com/munnerz/goautoneg
-# github.com/opencontainers/runc v0.0.0-20191031171055-b133feaeeb2e
-## explicit
 # github.com/openshift/api v0.0.0-20210412212256-79bd8cfbbd59
 ## explicit
 github.com/openshift/api
@@ -281,10 +269,6 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit
 github.com/spf13/pflag
-# github.com/vishvananda/netlink v1.0.0
-## explicit
-# github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df
-## explicit
 # go.etcd.io/etcd v0.5.0-alpha.5.0.20200910180754-dd1b699fc489
 go.etcd.io/etcd/auth/authpb
 go.etcd.io/etcd/clientv3
@@ -1070,5 +1054,5 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml
 # google.golang.org/grpc => google.golang.org/grpc v1.27.0
-# k8s.io/client-go => k8s.io/client-go v0.21.0
 # k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20210419140141-620426e63a99
+# k8s.io/client-go => k8s.io/client-go v0.21.0
