@@ -2,7 +2,6 @@ package snapshotcrd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -24,8 +23,6 @@ const (
 	snapshotClassCRDName   = "volumesnapshotclasses.snapshot.storage.k8s.io"
 	snapshotContentCRDName = "volumesnapshotcontents.snapshot.storage.k8s.io"
 )
-
-var unsupportedPlatformError = errors.New("unsupported platform")
 
 // This Controller checks for presence of v1alpha1 VolumeSnapshot CRDs
 // and marks the cluster Upgradeable=false when they're found.
