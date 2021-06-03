@@ -6,12 +6,15 @@ import (
 	"strings"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 
-	operatorapi "github.com/openshift/api/operator/v1"
+	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
+	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 
@@ -25,9 +28,12 @@ import (
 // It replace ${LOG_LEVEL} in the Deployment with current log level.
 // It replaces images in the Deployment using  CSIOperatorConfig.ImageReplacer.
 // It produces following Conditions:
-// <CSI driver name>CSIDriverOperatorDeploymentAvailable
 // <CSI driver name>CSIDriverOperatorDeploymentProgressing
 // <CSI driver name>CSIDriverOperatorDeploymentDegraded
+// This controller doesn't set the Available condition to avoid prematurely cascading
+// up to the clusteroperator CR a potential Available=false. On the other hand it
+// does a better in making sure the Degraded condition is properly set if the
+// Deployment isn't healthy.
 type CSIDriverOperatorDeploymentController struct {
 	name              string
 	operatorClient    v1helpers.OperatorClient
@@ -89,7 +95,7 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 	if err != nil {
 		return err
 	}
-	if opSpec.ManagementState != operatorapi.Managed {
+	if opSpec.ManagementState != operatorv1.Managed {
 		return nil
 	}
 
@@ -110,26 +116,45 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 	if err != nil {
 		return fmt.Errorf("failed to generate required Deployment: %s", err)
 	}
+
 	requiredCopy, err := util.InjectObservedProxyInDeploymentContainers(required, opSpec)
 	if err != nil {
 		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)
 	}
+
 	if c.csiOperatorConfig.ScheduleOnWorkers {
 		requiredCopy.Spec.Template.Spec.NodeSelector = map[string]string{}
 	}
 
-	_, err = csoutils.CreateDeployment(ctx, csoutils.DeploymentOptions{
-		Required:       requiredCopy,
-		ControllerName: c.Name(),
-		OpStatus:       opStatus,
-		EventRecorder:  c.eventRecorder,
-		KubeClient:     c.kubeClient,
-		OperatorClient: c.operatorClient,
-		TargetVersion:  c.targetVersion,
-		VersionGetter:  c.versionGetter,
-		VersionName:    c.name + versionName,
-	})
-	return err
+	lastGeneration := resourcemerge.ExpectedDeploymentGeneration(requiredCopy, opStatus.Generations)
+	deployment, _, err := resourceapply.ApplyDeployment(ctx, c.kubeClient.AppsV1(), c.eventRecorder, requiredCopy, lastGeneration)
+	if err != nil {
+		return err
+	}
+
+	progressingCondition := operatorv1.OperatorCondition{
+		Type:   c.name + operatorv1.OperatorStatusTypeProgressing,
+		Status: operatorv1.ConditionFalse,
+	}
+
+	if ok, msg := isProgressing(deployment); ok {
+		progressingCondition.Status = operatorv1.ConditionTrue
+		progressingCondition.Message = msg
+		progressingCondition.Reason = "Deploying"
+	}
+
+	updateStatusFn := func(newStatus *operatorv1.OperatorStatus) error {
+		resourcemerge.SetDeploymentGeneration(&newStatus.Generations, deployment)
+		return nil
+	}
+
+	_, _, err = v1helpers.UpdateStatus(
+		c.operatorClient,
+		updateStatusFn,
+		v1helpers.UpdateConditionFn(progressingCondition),
+	)
+
+	return checkDeploymentHealth(ctx, c.kubeClient.AppsV1(), deployment)
 }
 
 func (c *CSIDriverOperatorDeploymentController) Run(ctx context.Context, workers int) {
@@ -140,4 +165,24 @@ func (c *CSIDriverOperatorDeploymentController) Run(ctx context.Context, workers
 
 func (c *CSIDriverOperatorDeploymentController) Name() string {
 	return c.name + deploymentControllerName
+}
+
+// TODO: create a common function in library-go
+func isProgressing(deployment *appsv1.Deployment) (bool, string) {
+	var deploymentExpectedReplicas int32
+	if deployment.Spec.Replicas != nil {
+		deploymentExpectedReplicas = *deployment.Spec.Replicas
+	}
+
+	switch {
+	case deployment.Generation != deployment.Status.ObservedGeneration:
+		return true, "Waiting for Deployment to act on changes"
+	case deployment.Status.UnavailableReplicas > 0:
+		return true, "Waiting for Deployment to deploy pods"
+	case deployment.Status.UpdatedReplicas < deploymentExpectedReplicas:
+		return true, "Waiting for Deployment to update pods"
+	case deployment.Status.AvailableReplicas < deploymentExpectedReplicas:
+		return true, "Waiting for Deployment to deploy pods"
+	}
+	return false, ""
 }
