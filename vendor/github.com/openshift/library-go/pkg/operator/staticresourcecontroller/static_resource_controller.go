@@ -48,7 +48,6 @@ type StaticResourceController struct {
 	name                   string
 	manifests              resourceapply.AssetFunc
 	files                  []string
-	relatedObjects         []configv1.ObjectReference
 	ignoreNotFoundOnCreate bool
 
 	operatorClient v1helpers.OperatorClient
@@ -56,7 +55,8 @@ type StaticResourceController struct {
 
 	eventRecorder events.Recorder
 
-	factory *factory.Factory
+	factory    *factory.Factory
+	restMapper meta.RESTMapper
 }
 
 // NewStaticResourceController returns a controller that maintains certain static manifests. Most "normal" types are supported,
@@ -172,22 +172,8 @@ func (c *StaticResourceController) AddKubeInformers(kubeInformersByNamespace v1h
 	return ret
 }
 
-func (c *StaticResourceController) AddRelatedObjects(mapper meta.RESTMapper) *StaticResourceController {
-	directResourceResults := resourceapply.ApplyDirectly(c.clients, nil, c.manifests, c.files...)
-	for _, currResult := range directResourceResults {
-		gvk := currResult.Result.GetObjectKind().GroupVersionKind()
-		mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
-		if err != nil {
-			klog.Errorf("StaticResourceController.AddRelatedObjects() failed mapping GVK: %v to GVR", gvk)
-			continue
-		}
-		gvr := mapping.Resource
-		c.relatedObjects = append(c.relatedObjects, configv1.ObjectReference{
-			Group:    gvk.Group,
-			Resource: gvr.Resource,
-			Name:     gvk.Kind,
-		})
-	}
+func (c *StaticResourceController) AddRESTMapper(mapper meta.RESTMapper) *StaticResourceController {
+	c.restMapper = mapper
 	return c
 }
 
@@ -257,10 +243,46 @@ func (c *StaticResourceController) Name() string {
 }
 
 func (c *StaticResourceController) RelatedObjects() ([]configv1.ObjectReference, error) {
-	if c.relatedObjects == nil || len(c.relatedObjects) == 0 {
-		return nil, fmt.Errorf("RelatedObjects for this StaticResourceController is empty")
+	acc := make([]configv1.ObjectReference, 0)
+	errors := []error{}
+
+	for _, file := range c.files {
+		// parse static asset
+		objBytes, err := c.manifests(file)
+		if err != nil {
+			utilruntime.HandleError(fmt.Errorf("missing %q: %v", file, err))
+			continue
+		}
+		requiredObj, _, err := genericCodec.Decode(objBytes, nil, nil)
+		if err != nil {
+			utilruntime.HandleError(fmt.Errorf("cannot decode %q: %v", file, err))
+			continue
+		}
+		metadata, err := meta.Accessor(requiredObj)
+		if err != nil {
+			utilruntime.HandleError(fmt.Errorf("cannot get metadata %q: %v", file, err))
+			continue
+		}
+		// map gvk from static asset to gvr
+		gvk := requiredObj.GetObjectKind().GroupVersionKind()
+		mapping, err := c.restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		gvr := mapping.Resource
+		acc = append(acc, configv1.ObjectReference{
+			Group:     gvk.Group,
+			Resource:  gvr.Resource,
+			Namespace: metadata.GetNamespace(),
+			Name:      metadata.GetName(),
+		})
 	}
-	return c.relatedObjects, nil
+
+	if len(errors) > 0 {
+		return nil, utilerrors.NewAggregate(errors)
+	}
+	return acc, nil
 }
 
 func (c *StaticResourceController) Run(ctx context.Context, workers int) {

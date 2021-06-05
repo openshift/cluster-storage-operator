@@ -56,8 +56,9 @@ type csiDriverControllerManager struct {
 	operatorConfig csioperatorclient.CSIOperatorConfig
 	// ControllerManager that installs the CSI driver operator and all its
 	// objects.
-	mgr     manager.ControllerManager
-	running bool
+	mgr                manager.ControllerManager
+	running            bool
+	ctrlRelatedObjects func() []configv1.ObjectReference
 }
 
 func NewCSIDriverStarterController(
@@ -86,10 +87,12 @@ func NewCSIDriverStarterController(
 	// started in sync() when their platform is detected.
 	c.controllers = []csiDriverControllerManager{}
 	for _, cfg := range driverConfigs {
+		mgr, ctrlRelatedObjects := c.createCSIControllerManager(cfg, clients, resyncInterval)
 		c.controllers = append(c.controllers, csiDriverControllerManager{
-			operatorConfig: cfg,
-			mgr:            c.createCSIControllerManager(cfg, clients, resyncInterval),
-			running:        false,
+			operatorConfig:     cfg,
+			mgr:                mgr,
+			running:            false,
+			ctrlRelatedObjects: ctrlRelatedObjects,
 		})
 	}
 
@@ -148,6 +151,7 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 				Resource: "clustercsidrivers",
 				Name:     ctrl.operatorConfig.CSIDriverName,
 			})
+			relatedObjects = append(relatedObjects, ctrl.ctrlRelatedObjects()...)
 			klog.V(2).Infof("Starting ControllerManager for %s", ctrl.operatorConfig.ConditionPrefix)
 			go ctrl.mgr.Start(ctx)
 			ctrl.running = true
@@ -159,24 +163,26 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 func (c *CSIDriverStarterController) createCSIControllerManager(
 	cfg csioperatorclient.CSIOperatorConfig,
 	clients *csoclients.Clients,
-	resyncInterval time.Duration) manager.ControllerManager {
+	resyncInterval time.Duration) (manager.ControllerManager, func() []configv1.ObjectReference) {
 
 	manager := manager.NewControllerManager()
-	// TODO : get RelatedObjects() within sync() above, type casting is an option
+	var ctrlRelatedObjects func() []configv1.ObjectReference
+
 	src := staticresourcecontroller.NewStaticResourceController(
 		cfg.ConditionPrefix+"CSIDriverOperatorStaticController",
 		generated.Asset, cfg.StaticAssets, resourceapply.NewKubeClientHolder(clients.KubeClient), c.operatorClient, c.eventRecorder).
 		AddKubeInformers(clients.KubeInformers).
-		AddRelatedObjects(clients.RestMapper)
+		AddRESTMapper(clients.RestMapper)
 
 	manager = manager.WithController(src, 1)
 	objs, err := src.RelatedObjects()
 	if err != nil {
 		klog.Errorf("Can not find RelatedObjects, got %v", err)
 	} else {
-		relatedObjects = append(relatedObjects, objs...)
+		ctrlRelatedObjects = func() []configv1.ObjectReference {
+			return objs
+		}
 	}
-	// TODO : end
 
 	crController := NewCSIDriverOperatorCRController(
 		cfg.ConditionPrefix,
@@ -205,7 +211,7 @@ func (c *CSIDriverStarterController) createCSIControllerManager(
 		manager = manager.WithController(cfg.ExtraControllers[i], 1)
 	}
 
-	return manager
+	return manager, ctrlRelatedObjects
 }
 
 func RelatedObjectFunc() func() (isset bool, objs []configv1.ObjectReference) {
