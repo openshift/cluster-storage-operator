@@ -1,6 +1,10 @@
 package csoclients
 
 import (
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
+	"k8s.io/client-go/restmapper"
 	"time"
 
 	cfgclientset "github.com/openshift/client-go/config/clientset/versioned"
@@ -48,6 +52,10 @@ type Clients struct {
 
 	// Dynamic client for OLM and old CSI operator APIs
 	DynamicClient dynamic.Interface
+
+	// Rest Mapper for mapping GVK to GVR
+	RestMapper       meta.RESTMapper
+	CategoryExpander restmapper.CategoryExpander
 }
 
 const (
@@ -116,6 +124,14 @@ func NewClients(controllerConfig *controllercmd.ControllerContext, resync time.D
 		Informers: c.OperatorInformers,
 		Client:    c.OperatorClientSet,
 	}
+
+	dc, err := discovery.NewDiscoveryClientForConfig(controllerConfig.KubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	c.RestMapper = restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+	c.CategoryExpander = restmapper.NewDiscoveryCategoryExpander(dc)
+
 	return c, nil
 }
 
