@@ -30,7 +30,6 @@ import (
 // <CSI driver name>CSIDriverOperatorDeploymentDegraded
 type CSIDriverOperatorDeploymentController struct {
 	name              string
-	deploymentAsset   string
 	operatorClient    v1helpers.OperatorClient
 	csiOperatorConfig csioperatorclient.CSIOperatorConfig
 	kubeClient        kubernetes.Interface
