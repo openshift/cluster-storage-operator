@@ -52,13 +52,17 @@ type CSIDriverStarterController struct {
 	controllers       []csiDriverControllerManager
 }
 
+type RelatedObjectGetter interface {
+	RelatedObjects() ([]configv1.ObjectReference, error)
+}
+
 type csiDriverControllerManager struct {
 	operatorConfig csioperatorclient.CSIOperatorConfig
 	// ControllerManager that installs the CSI driver operator and all its
 	// objects.
 	mgr                manager.ControllerManager
 	running            bool
-	ctrlRelatedObjects func() ([]configv1.ObjectReference, error)
+	ctrlRelatedObjects RelatedObjectGetter
 }
 
 func NewCSIDriverStarterController(
@@ -152,7 +156,7 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 				Name:     ctrl.operatorConfig.CSIDriverName,
 			})
 			// add static assets
-			objs, err := ctrl.ctrlRelatedObjects()
+			objs, err := ctrl.ctrlRelatedObjects.RelatedObjects()
 			if err != nil {
 				return err
 			}
@@ -168,7 +172,7 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 func (c *CSIDriverStarterController) createCSIControllerManager(
 	cfg csioperatorclient.CSIOperatorConfig,
 	clients *csoclients.Clients,
-	resyncInterval time.Duration) (manager.ControllerManager, func() ([]configv1.ObjectReference, error)) {
+	resyncInterval time.Duration) (manager.ControllerManager, RelatedObjectGetter) {
 
 	manager := manager.NewControllerManager()
 
@@ -180,9 +184,7 @@ func (c *CSIDriverStarterController) createCSIControllerManager(
 		AddCategoryExpander(clients.CategoryExpander)
 
 	manager = manager.WithController(src, 1)
-	ctrlRelatedObjects := func() ([]configv1.ObjectReference, error) {
-		return src.RelatedObjects()
-	}
+	ctrlRelatedObjects := src
 
 	crController := NewCSIDriverOperatorCRController(
 		cfg.ConditionPrefix,
