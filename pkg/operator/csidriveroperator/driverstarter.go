@@ -52,12 +52,17 @@ type CSIDriverStarterController struct {
 	controllers       []csiDriverControllerManager
 }
 
+type RelatedObjectGetter interface {
+	RelatedObjects() ([]configv1.ObjectReference, error)
+}
+
 type csiDriverControllerManager struct {
 	operatorConfig csioperatorclient.CSIOperatorConfig
 	// ControllerManager that installs the CSI driver operator and all its
 	// objects.
-	mgr     manager.ControllerManager
-	running bool
+	mgr                manager.ControllerManager
+	running            bool
+	ctrlRelatedObjects RelatedObjectGetter
 }
 
 func NewCSIDriverStarterController(
@@ -86,10 +91,12 @@ func NewCSIDriverStarterController(
 	// started in sync() when their platform is detected.
 	c.controllers = []csiDriverControllerManager{}
 	for _, cfg := range driverConfigs {
+		mgr, ctrlRelatedObjects := c.createCSIControllerManager(cfg, clients, resyncInterval)
 		c.controllers = append(c.controllers, csiDriverControllerManager{
-			operatorConfig: cfg,
-			mgr:            c.createCSIControllerManager(cfg, clients, resyncInterval),
-			running:        false,
+			operatorConfig:     cfg,
+			mgr:                mgr,
+			running:            false,
+			ctrlRelatedObjects: ctrlRelatedObjects,
 		})
 	}
 
@@ -148,6 +155,12 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 				Resource: "clustercsidrivers",
 				Name:     ctrl.operatorConfig.CSIDriverName,
 			})
+			// add static assets
+			objs, err := ctrl.ctrlRelatedObjects.RelatedObjects()
+			if err != nil {
+				return err
+			}
+			relatedObjects = append(relatedObjects, objs...)
 			klog.V(2).Infof("Starting ControllerManager for %s", ctrl.operatorConfig.ConditionPrefix)
 			go ctrl.mgr.Start(ctx)
 			ctrl.running = true
@@ -159,16 +172,19 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 func (c *CSIDriverStarterController) createCSIControllerManager(
 	cfg csioperatorclient.CSIOperatorConfig,
 	clients *csoclients.Clients,
-	resyncInterval time.Duration) manager.ControllerManager {
+	resyncInterval time.Duration) (manager.ControllerManager, RelatedObjectGetter) {
 
 	manager := manager.NewControllerManager()
-	manager = manager.WithController(staticresourcecontroller.NewStaticResourceController(
+
+	src := staticresourcecontroller.NewStaticResourceController(
 		cfg.ConditionPrefix+"CSIDriverOperatorStaticController",
-		generated.Asset,
-		cfg.StaticAssets,
-		resourceapply.NewKubeClientHolder(clients.KubeClient),
-		c.operatorClient,
-		c.eventRecorder).AddKubeInformers(clients.KubeInformers), 1)
+		generated.Asset, cfg.StaticAssets, resourceapply.NewKubeClientHolder(clients.KubeClient), c.operatorClient, c.eventRecorder).
+		AddKubeInformers(clients.KubeInformers).
+		AddRESTMapper(clients.RestMapper).
+		AddCategoryExpander(clients.CategoryExpander)
+
+	manager = manager.WithController(src, 1)
+	ctrlRelatedObjects := src
 
 	crController := NewCSIDriverOperatorCRController(
 		cfg.ConditionPrefix,
@@ -197,7 +213,7 @@ func (c *CSIDriverStarterController) createCSIControllerManager(
 		manager = manager.WithController(cfg.ExtraControllers[i], 1)
 	}
 
-	return manager
+	return manager, ctrlRelatedObjects
 }
 
 func RelatedObjectFunc() func() (isset bool, objs []configv1.ObjectReference) {
