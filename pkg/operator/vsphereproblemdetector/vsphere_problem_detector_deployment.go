@@ -76,7 +76,10 @@ func (c *VSphereProblemDetectorDeploymentController) sync(ctx context.Context, s
 	}
 
 	replacer := strings.NewReplacer(pairs...)
-	required := csoutils.GetRequiredDeployment("vsphere_problem_detector/06_deployment.yaml", opSpec, replacer)
+	required, err := csoutils.GetRequiredDeployment("vsphere_problem_detector/06_deployment.yaml", opSpec, replacer)
+	if err != nil {
+		return fmt.Errorf("failed to generate required Deployment: %s", err)
+	}
 
 	requiredCopy, err := util.InjectObservedProxyInDeploymentContainers(required, opSpec)
 	if err != nil {

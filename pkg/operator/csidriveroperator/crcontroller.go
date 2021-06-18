@@ -9,8 +9,8 @@ import (
 	operatorapi "github.com/openshift/api/operator/v1"
 	opclient "github.com/openshift/client-go/operator/clientset/versioned"
 	oplisters "github.com/openshift/client-go/operator/listers/operator/v1"
+	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
-	"github.com/openshift/cluster-storage-operator/pkg/generated"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -146,7 +146,11 @@ func (c *CSIDriverOperatorCRController) getRequestedClusterCSIDriver(logLevel op
 	if logLevel == "" {
 		logLevel = operatorapi.Normal
 	}
-	cr := readClusterCSIDriverOrDie(generated.MustAsset(c.csiDriverAsset))
+	assetBytes, err := assets.ReadFile(c.csiDriverAsset)
+	if err != nil {
+		panic(err)
+	}
+	cr := readClusterCSIDriverOrDie(assetBytes)
 	cr.Spec.LogLevel = logLevel
 	cr.Spec.OperatorLogLevel = logLevel
 	cr.Spec.ManagementState = operatorapi.Managed

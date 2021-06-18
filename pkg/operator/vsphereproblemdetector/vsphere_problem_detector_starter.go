@@ -7,8 +7,8 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	operatorapi "github.com/openshift/api/operator/v1"
 	openshiftv1 "github.com/openshift/client-go/config/listers/config/v1"
+	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
-	"github.com/openshift/cluster-storage-operator/pkg/generated"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/controller/manager"
@@ -108,7 +108,7 @@ func (c *VSphereProblemDetectorStarter) createVSphereProblemDetectorManager(
 
 	mgr = mgr.WithController(staticresourcecontroller.NewStaticResourceController(
 		"VSphereProblemDetectorStarterStaticController",
-		generated.Asset,
+		assets.ReadFile,
 		staticAssets,
 		resourceapply.NewKubeClientHolder(clients.KubeClient),
 		c.operatorClient,

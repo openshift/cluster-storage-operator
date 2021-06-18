@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	operatorapi "github.com/openshift/api/operator/v1"
-	"github.com/openshift/cluster-storage-operator/pkg/generated"
+	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/loglevel"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
@@ -92,8 +92,12 @@ func CreateDeployment(depOpts DeploymentOptions) (*appsv1.Deployment, error) {
 
 // GetRequiredDeployment returns a deployment from given assset after replacing necessary strings and setting
 // correct log level.
-func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpec, replacers ...*strings.Replacer) *appsv1.Deployment {
-	deploymentString := string(generated.MustAsset(deploymentAsset))
+func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpec, replacers ...*strings.Replacer) (*appsv1.Deployment, error) {
+	deploymentBytes, err := assets.ReadFile(deploymentAsset)
+	if err != nil {
+		return nil, err
+	}
+	deploymentString := string(deploymentBytes)
 
 	for _, replacer := range replacers {
 		// Replace images
@@ -107,5 +111,5 @@ func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpe
 	deploymentString = strings.ReplaceAll(deploymentString, "${LOG_LEVEL}", strconv.Itoa(logLevel))
 
 	deployment := resourceread.ReadDeploymentV1OrDie([]byte(deploymentString))
-	return deployment
+	return deployment, nil
 }
