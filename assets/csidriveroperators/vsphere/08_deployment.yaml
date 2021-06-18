@@ -50,6 +50,9 @@ spec:
           requests:
             memory: 50Mi
             cpu: 10m
+        volumeMounts:
+        - name: trusted-ca-bundle
+          mountPath: /etc/pki/ca-trust/extracted/pem
       priorityClassName: system-cluster-critical
       serviceAccountName: vmware-vsphere-csi-driver-operator
       nodeSelector:
@@ -60,3 +63,10 @@ spec:
       - key: node-role.kubernetes.io/master
         operator: Exists
         effect: "NoSchedule"
+      volumes:
+      - name: trusted-ca-bundle
+        configMap:
+          name: vsphere-csi-driver-operator-trusted-ca-bundle
+          items:
+            - key: ca-bundle.crt
+              path: tls-ca-bundle.pem
