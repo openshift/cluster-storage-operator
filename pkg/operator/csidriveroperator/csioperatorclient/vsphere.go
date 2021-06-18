@@ -26,6 +26,7 @@ func GetVMwareVSphereCSIOperatorConfig() CSIOperatorConfig {
 		ConditionPrefix: "VSphere",
 		Platform:        configv1.VSpherePlatformType,
 		StaticAssets: []string{
+			"csidriveroperators/vsphere/02_configmap.yaml",
 			"csidriveroperators/vsphere/03_sa.yaml",
 			"csidriveroperators/vsphere/04_role.yaml",
 			"csidriveroperators/vsphere/05_rolebinding.yaml",

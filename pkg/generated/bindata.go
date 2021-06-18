@@ -44,6 +44,7 @@
 // assets/csidriveroperators/ovirt/06_clusterrolebinding.yaml
 // assets/csidriveroperators/ovirt/07_deployment.yaml
 // assets/csidriveroperators/ovirt/08_cr.yaml
+// assets/csidriveroperators/vsphere/02_configmap.yaml
 // assets/csidriveroperators/vsphere/03_sa.yaml
 // assets/csidriveroperators/vsphere/04_role.yaml
 // assets/csidriveroperators/vsphere/05_rolebinding.yaml
@@ -61,7 +62,8 @@
 // assets/vsphere_problem_detector/03_rolebinding.yaml
 // assets/vsphere_problem_detector/04_clusterrole.yaml
 // assets/vsphere_problem_detector/05_clusterrolebinding.yaml
-// assets/vsphere_problem_detector/06_deployment.yaml
+// assets/vsphere_problem_detector/06_configmap.yaml
+// assets/vsphere_problem_detector/07_deployment.yaml
 // assets/vsphere_problem_detector/10_service.yaml
 // assets/vsphere_problem_detector/11_service_monitor.yaml
 // assets/vsphere_problem_detector/12_prometheusrules.yaml
@@ -3491,6 +3493,32 @@ func csidriveroperatorsOvirt08_crYaml() (*asset, error) {
 	return a, nil
 }
 
+var _csidriveroperatorsVsphere02_configmapYaml = []byte(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    # This label ensures that the OpenShift Certificate Authority bundle
+    # is added to the ConfigMap.
+    config.openshift.io/inject-trusted-cabundle: "true"
+  name: vsphere-csi-driver-operator-trusted-ca-bundle
+  namespace: openshift-cluster-csi-drivers
+`)
+
+func csidriveroperatorsVsphere02_configmapYamlBytes() ([]byte, error) {
+	return _csidriveroperatorsVsphere02_configmapYaml, nil
+}
+
+func csidriveroperatorsVsphere02_configmapYaml() (*asset, error) {
+	bytes, err := csidriveroperatorsVsphere02_configmapYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "csidriveroperators/vsphere/02_configmap.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _csidriveroperatorsVsphere03_saYaml = []byte(`apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -3998,6 +4026,9 @@ spec:
           requests:
             memory: 50Mi
             cpu: 10m
+        volumeMounts:
+        - name: trusted-ca-bundle
+          mountPath: /etc/pki/ca-trust/extracted/pem
       priorityClassName: system-cluster-critical
       serviceAccountName: vmware-vsphere-csi-driver-operator
       nodeSelector:
@@ -4008,6 +4039,13 @@ spec:
       - key: node-role.kubernetes.io/master
         operator: Exists
         effect: "NoSchedule"
+      volumes:
+      - name: trusted-ca-bundle
+        configMap:
+          name: vsphere-csi-driver-operator-trusted-ca-bundle
+          items:
+            - key: ca-bundle.crt
+              path: tls-ca-bundle.pem
 `)
 
 func csidriveroperatorsVsphere08_deploymentYamlBytes() ([]byte, error) {
@@ -4420,7 +4458,33 @@ func vsphere_problem_detector05_clusterrolebindingYaml() (*asset, error) {
 	return a, nil
 }
 
-var _vsphere_problem_detector06_deploymentYaml = []byte(`apiVersion: apps/v1
+var _vsphere_problem_detector06_configmapYaml = []byte(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    # This label ensures that the OpenShift Certificate Authority bundle
+    # is added to the ConfigMap.
+    config.openshift.io/inject-trusted-cabundle: "true"
+  name: trusted-ca-bundle
+  namespace: openshift-cluster-storage-operator
+`)
+
+func vsphere_problem_detector06_configmapYamlBytes() ([]byte, error) {
+	return _vsphere_problem_detector06_configmapYaml, nil
+}
+
+func vsphere_problem_detector06_configmapYaml() (*asset, error) {
+	bytes, err := vsphere_problem_detector06_configmapYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "vsphere_problem_detector/06_configmap.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _vsphere_problem_detector07_deploymentYaml = []byte(`apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: vsphere-problem-detector-operator
@@ -4461,6 +4525,9 @@ spec:
         volumeMounts:
         - mountPath: /var/run/secrets/serving-cert
           name: vsphere-problem-detector-serving-cert
+        - name: trusted-ca-bundle
+          mountPath: /etc/pki/ca-trust/extracted/pem
+          readOnly: true
       priorityClassName: system-cluster-critical
       serviceAccountName: vsphere-problem-detector-operator
       nodeSelector:
@@ -4476,19 +4543,25 @@ spec:
         secret:
           secretName: vsphere-problem-detector-serving-cert
           optional: true
+      - name: trusted-ca-bundle
+        configMap:
+          name: trusted-ca-bundle
+          items:
+            - key: ca-bundle.crt
+              path: tls-ca-bundle.pem
 `)
 
-func vsphere_problem_detector06_deploymentYamlBytes() ([]byte, error) {
-	return _vsphere_problem_detector06_deploymentYaml, nil
+func vsphere_problem_detector07_deploymentYamlBytes() ([]byte, error) {
+	return _vsphere_problem_detector07_deploymentYaml, nil
 }
 
-func vsphere_problem_detector06_deploymentYaml() (*asset, error) {
-	bytes, err := vsphere_problem_detector06_deploymentYamlBytes()
+func vsphere_problem_detector07_deploymentYaml() (*asset, error) {
+	bytes, err := vsphere_problem_detector07_deploymentYamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "vsphere_problem_detector/06_deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "vsphere_problem_detector/07_deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -4723,6 +4796,7 @@ var _bindata = map[string]func() (*asset, error){
 	"csidriveroperators/ovirt/06_clusterrolebinding.yaml":            csidriveroperatorsOvirt06_clusterrolebindingYaml,
 	"csidriveroperators/ovirt/07_deployment.yaml":                    csidriveroperatorsOvirt07_deploymentYaml,
 	"csidriveroperators/ovirt/08_cr.yaml":                            csidriveroperatorsOvirt08_crYaml,
+	"csidriveroperators/vsphere/02_configmap.yaml":                   csidriveroperatorsVsphere02_configmapYaml,
 	"csidriveroperators/vsphere/03_sa.yaml":                          csidriveroperatorsVsphere03_saYaml,
 	"csidriveroperators/vsphere/04_role.yaml":                        csidriveroperatorsVsphere04_roleYaml,
 	"csidriveroperators/vsphere/05_rolebinding.yaml":                 csidriveroperatorsVsphere05_rolebindingYaml,
@@ -4740,7 +4814,8 @@ var _bindata = map[string]func() (*asset, error){
 	"vsphere_problem_detector/03_rolebinding.yaml":                   vsphere_problem_detector03_rolebindingYaml,
 	"vsphere_problem_detector/04_clusterrole.yaml":                   vsphere_problem_detector04_clusterroleYaml,
 	"vsphere_problem_detector/05_clusterrolebinding.yaml":            vsphere_problem_detector05_clusterrolebindingYaml,
-	"vsphere_problem_detector/06_deployment.yaml":                    vsphere_problem_detector06_deploymentYaml,
+	"vsphere_problem_detector/06_configmap.yaml":                     vsphere_problem_detector06_configmapYaml,
+	"vsphere_problem_detector/07_deployment.yaml":                    vsphere_problem_detector07_deploymentYaml,
 	"vsphere_problem_detector/10_service.yaml":                       vsphere_problem_detector10_serviceYaml,
 	"vsphere_problem_detector/11_service_monitor.yaml":               vsphere_problem_detector11_service_monitorYaml,
 	"vsphere_problem_detector/12_prometheusrules.yaml":               vsphere_problem_detector12_prometheusrulesYaml,
@@ -4845,6 +4920,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"08_cr.yaml":                 {csidriveroperatorsOvirt08_crYaml, map[string]*bintree{}},
 		}},
 		"vsphere": {nil, map[string]*bintree{
+			"02_configmap.yaml":          {csidriveroperatorsVsphere02_configmapYaml, map[string]*bintree{}},
 			"03_sa.yaml":                 {csidriveroperatorsVsphere03_saYaml, map[string]*bintree{}},
 			"04_role.yaml":               {csidriveroperatorsVsphere04_roleYaml, map[string]*bintree{}},
 			"05_rolebinding.yaml":        {csidriveroperatorsVsphere05_rolebindingYaml, map[string]*bintree{}},
@@ -4867,7 +4943,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"03_rolebinding.yaml":        {vsphere_problem_detector03_rolebindingYaml, map[string]*bintree{}},
 		"04_clusterrole.yaml":        {vsphere_problem_detector04_clusterroleYaml, map[string]*bintree{}},
 		"05_clusterrolebinding.yaml": {vsphere_problem_detector05_clusterrolebindingYaml, map[string]*bintree{}},
-		"06_deployment.yaml":         {vsphere_problem_detector06_deploymentYaml, map[string]*bintree{}},
+		"06_configmap.yaml":          {vsphere_problem_detector06_configmapYaml, map[string]*bintree{}},
+		"07_deployment.yaml":         {vsphere_problem_detector07_deploymentYaml, map[string]*bintree{}},
 		"10_service.yaml":            {vsphere_problem_detector10_serviceYaml, map[string]*bintree{}},
 		"11_service_monitor.yaml":    {vsphere_problem_detector11_service_monitorYaml, map[string]*bintree{}},
 		"12_prometheusrules.yaml":    {vsphere_problem_detector12_prometheusrulesYaml, map[string]*bintree{}},
