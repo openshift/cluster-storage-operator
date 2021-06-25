@@ -106,7 +106,10 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 		replacers = append(replacers, c.csiOperatorConfig.ImageReplacer)
 	}
 
-	required := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, replacers...)
+	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, replacers...)
+	if err != nil {
+		return fmt.Errorf("failed to generate required Deployment: %s", err)
+	}
 	requiredCopy, err := util.InjectObservedProxyInDeploymentContainers(required, opSpec)
 	if err != nil {
 		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)

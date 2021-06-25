@@ -8,8 +8,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	cfgv1 "github.com/openshift/api/config/v1"
 	opv1 "github.com/openshift/api/operator/v1"
+	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
-	"github.com/openshift/cluster-storage-operator/pkg/generated"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -65,7 +65,11 @@ func newController(test operatorTest) *testContext {
 type storageClassModifier func(class *storagev1.StorageClass) *storagev1.StorageClass
 
 func getPlatformStorageClass(filename string, modifiers ...storageClassModifier) *storagev1.StorageClass {
-	sc := resourceread.ReadStorageClassV1OrDie(generated.MustAsset(filename))
+	assetBytes, err := assets.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	sc := resourceread.ReadStorageClassV1OrDie(assetBytes)
 	for _, modifier := range modifiers {
 		sc = modifier(sc)
 	}

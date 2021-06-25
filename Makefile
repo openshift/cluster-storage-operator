@@ -28,15 +28,6 @@ IMAGE_REGISTRY?=registry.svc.ci.openshift.org
 # It will generate target "image-$(1)" for building the image and binding it as a prerequisite to target "images".
 $(call build-image,cluster-storage-operator,$(IMAGE_REGISTRY)/ocp/4.6:cluster-storage-operator,./Dockerfile.rhel7,.)
 
-# generate bindata targets
-# $0 - macro name
-# $1 - target suffix
-# $2 - input dirs
-# $3 - prefix
-# $4 - pkg
-# $5 - output
-$(call add-bindata,generated,./assets/...,assets,generated,pkg/generated/bindata.go)
-
 # add targets to manage profile patches
 # $0 - macro name
 # $1 - target name

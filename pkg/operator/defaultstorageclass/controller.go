@@ -7,8 +7,8 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	operatorapi "github.com/openshift/api/operator/v1"
 	openshiftv1 "github.com/openshift/client-go/config/listers/config/v1"
+	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
-	"github.com/openshift/cluster-storage-operator/pkg/generated"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
@@ -180,22 +180,29 @@ func (c *Controller) syncStorageClass() error {
 // Returns either the StorageClass, if the PlatformType is supported, or an error
 // indicating whether the StorageClass is provided by a CSI driver or an unsupported platform
 func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storagev1.StorageClass, error) {
+	var storageClassFile string
 	switch infrastructure.Status.PlatformStatus.Type {
 	case configv1.AWSPlatformType:
-		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("storageclasses/aws.yaml")), nil
+		storageClassFile = "storageclasses/aws.yaml"
 	case configv1.AzurePlatformType:
-		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("storageclasses/azure.yaml")), nil
+		storageClassFile = "storageclasses/azure.yaml"
 	case configv1.GCPPlatformType:
-		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("storageclasses/gcp.yaml")), nil
+		storageClassFile = "storageclasses/gcp.yaml"
 	case configv1.OpenStackPlatformType:
-		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("storageclasses/openstack.yaml")), nil
+		storageClassFile = "storageclasses/openstack.yaml"
 	case configv1.VSpherePlatformType:
-		return resourceread.ReadStorageClassV1OrDie(generated.MustAsset("storageclasses/vsphere.yaml")), nil
+		storageClassFile = "storageclasses/vsphere.yaml"
 	case configv1.OvirtPlatformType:
 		return nil, supportedByCSIError
 	default:
 		return nil, unsupportedPlatformError
 	}
+
+	scBytes, err := assets.ReadFile(storageClassFile)
+	if err != nil {
+		return nil, err
+	}
+	return resourceread.ReadStorageClassV1OrDie(scBytes), nil
 }
 
 // UpdateConditionFunc returns a func to update a condition.
