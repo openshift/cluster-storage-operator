@@ -3,6 +3,6 @@ kind: "ClusterCSIDriver"
 metadata:
   name: "ebs.csi.aws.com"
 spec:
-  logLevel: Normal
+  logLevel: Trace
   managementState: Managed
-  operatorLogLevel: Normal
+  operatorLogLevel: Trace
