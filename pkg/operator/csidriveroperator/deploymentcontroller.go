@@ -12,6 +12,8 @@ import (
 	operatorapi "github.com/openshift/api/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
+	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 
@@ -25,8 +27,6 @@ import (
 // It replace ${LOG_LEVEL} in the Deployment with current log level.
 // It replaces images in the Deployment using  CSIOperatorConfig.ImageReplacer.
 // It produces following Conditions:
-// <CSI driver name>CSIDriverOperatorDeploymentAvailable
-// <CSI driver name>CSIDriverOperatorDeploymentProgressing
 // <CSI driver name>CSIDriverOperatorDeploymentDegraded
 type CSIDriverOperatorDeploymentController struct {
 	name              string
@@ -115,18 +115,14 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)
 	}
 
-	_, err = csoutils.CreateDeployment(csoutils.DeploymentOptions{
-		Required:       requiredCopy,
-		ControllerName: c.Name(),
-		OpStatus:       opStatus,
-		EventRecorder:  c.eventRecorder,
-		KubeClient:     c.kubeClient,
-		OperatorClient: c.operatorClient,
-		TargetVersion:  c.targetVersion,
-		VersionGetter:  c.versionGetter,
-		VersionName:    c.name + versionName,
-	})
-	return err
+	lastGeneration := resourcemerge.ExpectedDeploymentGeneration(requiredCopy, opStatus.Generations)
+	deployment, _, err := resourceapply.ApplyDeployment(c.kubeClient.AppsV1(), c.eventRecorder, requiredCopy, lastGeneration)
+	if err != nil {
+		// This will set Degraded condition
+		return err
+	}
+
+	return checkDeploymentHealth(ctx, c.kubeClient.AppsV1(), deployment)
 }
 
 func (c *CSIDriverOperatorDeploymentController) Run(ctx context.Context, workers int) {
