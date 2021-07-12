@@ -94,6 +94,22 @@ func getInfrastructure(platformType cfgv1.PlatformType) *cfgv1.Infrastructure {
 	}
 }
 
+func getAzureStackHubInfrastructure() *cfgv1.Infrastructure {
+	return &cfgv1.Infrastructure{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: infraConfigName,
+		},
+		Status: cfgv1.InfrastructureStatus{
+			PlatformStatus: &cfgv1.PlatformStatus{
+				Type: cfgv1.AzurePlatformType,
+				Azure: &cfgv1.AzurePlatformStatus{
+					CloudName: cfgv1.AzureStackCloud,
+				},
+			},
+		},
+	}
+}
+
 type crModifier func(cr *opv1.Storage) *opv1.Storage
 
 func getCR(modifiers ...crModifier) *opv1.Storage {
@@ -225,6 +241,21 @@ func TestSync(t *testing.T) {
 				),
 			},
 			expectErr: true,
+		},
+		{
+			// The controller syncs fine when azurestackhub is used and does not create a storage class
+			name: "azurestackhub",
+			initialObjects: testObjects{
+				storage:        getCR(),
+				infrastructure: getAzureStackHubInfrastructure(),
+			},
+			expectedObjects: testObjects{
+				storage: getCR(
+					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
+					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
+				),
+			},
+			expectErr: false,
 		},
 	}
 

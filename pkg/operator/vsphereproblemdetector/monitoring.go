@@ -93,7 +93,7 @@ func (c *monitoringController) sync(ctx context.Context, syncContext factory.Syn
 		return err
 	}
 	serviceMonitor := resourceread.ReadUnstructuredOrDie(smBytes)
-	_, _, err = resourceapply.ApplyServiceMonitor(c.dynamicClient, c.eventRecorder, serviceMonitor)
+	_, _, err = resourceapply.ApplyServiceMonitor(ctx, c.dynamicClient, c.eventRecorder, serviceMonitor)
 	if err != nil {
 		return err
 	}

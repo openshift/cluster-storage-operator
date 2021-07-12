@@ -115,7 +115,7 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)
 	}
 
-	_, err = csoutils.CreateDeployment(csoutils.DeploymentOptions{
+	_, err = csoutils.CreateDeployment(ctx, csoutils.DeploymentOptions{
 		Required:       requiredCopy,
 		ControllerName: c.Name(),
 		OpStatus:       opStatus,

@@ -74,6 +74,8 @@ Session.vim
 .netrwhist
 # auto-generated tag files
 tags
+### goland ###
+.idea
 ### VisualStudioCode ###
 .vscode/*
 .history
