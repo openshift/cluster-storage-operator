@@ -86,7 +86,7 @@ func (c *VSphereProblemDetectorDeploymentController) sync(ctx context.Context, s
 		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)
 	}
 
-	_, err = csoutils.CreateDeployment(csoutils.DeploymentOptions{
+	_, err = csoutils.CreateDeployment(ctx, csoutils.DeploymentOptions{
 		Required:       requiredCopy,
 		ControllerName: deploymentControllerName,
 		OpStatus:       opStatus,

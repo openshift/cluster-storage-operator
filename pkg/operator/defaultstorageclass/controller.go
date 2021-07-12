@@ -85,7 +85,7 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 		Status: operatorapi.ConditionFalse,
 	}
 
-	syncErr := c.syncStorageClass()
+	syncErr := c.syncStorageClass(ctx)
 	if syncErr != nil {
 		if syncErr == unsupportedPlatformError {
 			// Set Disabled condition - there is nothing to do
@@ -142,7 +142,7 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 	return syncErr
 }
 
-func (c *Controller) syncStorageClass() error {
+func (c *Controller) syncStorageClass(ctx context.Context) error {
 	infrastructure, err := c.infraLister.Get(infraConfigName)
 	if err != nil {
 		return err
@@ -162,7 +162,7 @@ func (c *Controller) syncStorageClass() error {
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			klog.V(2).Infof("StorageClass %s does not exist, creating", expectedSC.Name)
-			_, _, err = resourceapply.ApplyStorageClass(c.kubeClient.StorageV1(), c.eventRecorder, expectedSC)
+			_, _, err = resourceapply.ApplyStorageClass(ctx, c.kubeClient.StorageV1(), c.eventRecorder, expectedSC)
 			return err
 		}
 		return err
@@ -172,7 +172,7 @@ func (c *Controller) syncStorageClass() error {
 	// User may have made it non-default.
 	expectedSC.Annotations = existingSC.Annotations
 	klog.V(2).Infof("Existing StorageClass %s found, reconciling", expectedSC.Name)
-	_, _, err = resourceapply.ApplyStorageClass(c.kubeClient.StorageV1(), c.eventRecorder, expectedSC)
+	_, _, err = resourceapply.ApplyStorageClass(ctx, c.kubeClient.StorageV1(), c.eventRecorder, expectedSC)
 
 	return err
 }
@@ -185,6 +185,10 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 	case configv1.AWSPlatformType:
 		storageClassFile = "storageclasses/aws.yaml"
 	case configv1.AzurePlatformType:
+		if infrastructure.Status.PlatformStatus.Azure != nil &&
+			infrastructure.Status.PlatformStatus.Azure.CloudName == configv1.AzureStackCloud {
+			return nil, supportedByCSIError
+		}
 		storageClassFile = "storageclasses/azure.yaml"
 	case configv1.GCPPlatformType:
 		storageClassFile = "storageclasses/gcp.yaml"

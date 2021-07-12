@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -30,9 +31,9 @@ type DeploymentOptions struct {
 	VersionName    string
 }
 
-func CreateDeployment(depOpts DeploymentOptions) (*appsv1.Deployment, error) {
+func CreateDeployment(ctx context.Context, depOpts DeploymentOptions) (*appsv1.Deployment, error) {
 	lastGeneration := resourcemerge.ExpectedDeploymentGeneration(depOpts.Required, depOpts.OpStatus.Generations)
-	deployment, _, err := resourceapply.ApplyDeployment(depOpts.KubeClient.AppsV1(), depOpts.EventRecorder, depOpts.Required, lastGeneration)
+	deployment, _, err := resourceapply.ApplyDeployment(ctx, depOpts.KubeClient.AppsV1(), depOpts.EventRecorder, depOpts.Required, lastGeneration)
 	if err != nil {
 		// This will set Degraded condition
 		return nil, err
