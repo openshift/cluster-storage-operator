@@ -7,7 +7,9 @@ import (
 	"strings"
 	"time"
 
+	configv1 "github.com/openshift/api/config/v1"
 	operatorapi "github.com/openshift/api/operator/v1"
+	openshiftv1 "github.com/openshift/client-go/config/listers/config/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/util"
 	csoutils "github.com/openshift/cluster-storage-operator/pkg/utils"
@@ -28,6 +30,7 @@ const (
 type VSphereProblemDetectorDeploymentController struct {
 	operatorClient v1helpers.OperatorClient
 	kubeClient     kubernetes.Interface
+	infraLister    openshiftv1.InfrastructureLister
 	versionGetter  status.VersionGetter
 	targetVersion  string
 	eventRecorder  events.Recorder
@@ -42,6 +45,7 @@ func NewVSphereProblemDetectorDeploymentController(
 	c := &VSphereProblemDetectorDeploymentController{
 		operatorClient: clients.OperatorClient,
 		kubeClient:     clients.KubeClient,
+		infraLister:    clients.ConfigInformers.Config().V1().Infrastructures().Lister(),
 		versionGetter:  versionGetter,
 		eventRecorder:  eventRecorder,
 		targetVersion:  targetVersion,
@@ -50,7 +54,8 @@ func NewVSphereProblemDetectorDeploymentController(
 		WithSync(c.sync).
 		WithInformers(
 			c.operatorClient.Informer(),
-			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Apps().V1().Deployments().Informer()).
+			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Apps().V1().Deployments().Informer(),
+			clients.ConfigInformers.Config().V1().Infrastructures().Informer()).
 		ResyncEvery(resyncInterval).
 		WithSyncDegradedOnError(clients.OperatorClient).
 		ToController(deploymentControllerName, eventRecorder.WithComponentSuffix("vsphere-problem-detector-deployment"))
@@ -75,6 +80,11 @@ func (c *VSphereProblemDetectorDeploymentController) sync(ctx context.Context, s
 		"${OPERATOR_IMAGE}", os.Getenv(vSphereProblemDetectorOperatorImage),
 	}
 
+	infrastructure, err := c.infraLister.Get(infraConfigName)
+	if err != nil {
+		return err
+	}
+
 	replacer := strings.NewReplacer(pairs...)
 	required, err := csoutils.GetRequiredDeployment("vsphere_problem_detector/06_deployment.yaml", opSpec, replacer)
 	if err != nil {
@@ -84,6 +94,10 @@ func (c *VSphereProblemDetectorDeploymentController) sync(ctx context.Context, s
 	requiredCopy, err := util.InjectObservedProxyInDeploymentContainers(required, opSpec)
 	if err != nil {
 		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)
+	}
+
+	if shouldScheduleOnWorkers(infrastructure) {
+		requiredCopy.Spec.Template.Spec.NodeSelector = map[string]string{}
 	}
 
 	_, err = csoutils.CreateDeployment(ctx, csoutils.DeploymentOptions{
@@ -98,4 +112,8 @@ func (c *VSphereProblemDetectorDeploymentController) sync(ctx context.Context, s
 		VersionName:    deploymentControllerName,
 	})
 	return err
+}
+
+func shouldScheduleOnWorkers(infra *configv1.Infrastructure) bool {
+	return infra.Status.ControlPlaneTopology == configv1.ExternalTopologyMode
 }
