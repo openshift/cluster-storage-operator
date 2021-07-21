@@ -150,6 +150,7 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 			if !shouldRun {
 				continue
 			}
+			ctrl.operatorConfig.ScheduleOnWorkers = shouldScheduleOnWorkers(infrastructure)
 			relatedObjects = append(relatedObjects, configv1.ObjectReference{
 				Group:    operatorapi.GroupName,
 				Resource: "clustercsidrivers",
@@ -294,4 +295,8 @@ func isUnsupportedCSIDriverRunning(cfg csioperatorclient.CSIOperatorConfig, csiD
 	}
 
 	return true
+}
+
+func shouldScheduleOnWorkers(infra *configv1.Infrastructure) bool {
+	return infra.Status.ControlPlaneTopology == configv1.ExternalTopologyMode
 }
