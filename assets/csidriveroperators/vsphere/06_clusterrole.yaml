@@ -276,18 +276,13 @@ rules:
   resources:
   - customresourcedefinitions
   verbs:
-  - get
+  - '*'
 - apiGroups:
   - cns.vmware.com
   resources:
-  - cnsvspherevolumemigrations
+  - '*'
   verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - delete
+  - '*'
 # Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
 - apiGroups:
   - "authentication.k8s.io"
