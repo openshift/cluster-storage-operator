@@ -57,6 +57,12 @@ rules:
   - patch
   - update
 - apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - validatingwebhookconfigurations
+  verbs:
+  - '*'
+- apiGroups:
   - ''
   resources:
   - serviceaccounts
