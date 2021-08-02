@@ -28,10 +28,10 @@ spec:
         annotations:
           message: "VSphere cluster health checks are failing with {{ $labels.check }}"
       - alert: VSphereOpenshiftConnectionFailure
-        # Using min_over_time to make sure the metric is `1` for whole 15 minutes.
+        # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
         # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
-        expr: min_over_time(vsphere_sync_errors[15m]) == 1
-        for: 60m
+        expr: min_over_time(vsphere_sync_errors[5m]) == 1
+        for: 10m
         labels:
           severity: warning
         annotations:
@@ -51,7 +51,7 @@ spec:
           min_over_time(vsphere_node_hw_version_total{hw_version=~"vmx-(11|12|13|14)"}[5m]) > 0
           and ON()
           count(cluster_feature_set{name="TechPreviewNoUpgrade"}) > 0
-        for: 60m
+        for: 10m
         labels:
           severity: info
         annotations:
