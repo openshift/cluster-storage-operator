@@ -6,29 +6,25 @@ require (
 	github.com/go-bindata/go-bindata v3.1.2+incompatible
 	github.com/google/go-cmp v0.5.5
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/openshift/api v0.0.0-20210706092853-b63d499a70ce
-	github.com/openshift/build-machinery-go v0.0.0-20210702090207-9c7b89e8633a
-	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
-	github.com/openshift/library-go v0.0.0-20210706095353-8cc52ce9b72b
+	github.com/openshift/api v0.0.0-20210730095913-85e1d547cdee
+	github.com/openshift/build-machinery-go v0.0.0-20210712174854-1bb7fd1518d3
+	github.com/openshift/client-go v0.0.0-20210730113412-1811c1b3fc0e
+	github.com/openshift/library-go v0.0.0-20210730130811-cb83700729ae
 	github.com/prometheus-operator/prometheus-operator v0.44.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.44.1
-	github.com/prometheus/client_golang v1.8.0
-	github.com/spf13/cobra v1.1.1
+	github.com/prometheus/client_golang v1.11.0
+	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/net v0.0.0-20210410081132-afb366fc7cd1 // indirect
-	k8s.io/api v0.21.1
-	k8s.io/apiextensions-apiserver v0.21.1
-	k8s.io/apimachinery v0.21.1
+	k8s.io/api v0.22.0-rc.0
+	k8s.io/apiextensions-apiserver v0.22.0-rc.0
+	k8s.io/apimachinery v0.22.0-rc.0
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/code-generator v0.21.1
-	k8s.io/component-base v0.21.1
-	k8s.io/klog/v2 v2.8.0
-	sigs.k8s.io/structured-merge-diff/v4 v4.1.1 // indirect
+	k8s.io/code-generator v0.22.0-rc.0
+	k8s.io/component-base v0.22.0-rc.0
+	k8s.io/klog/v2 v2.9.0
 )
 
 replace (
 	google.golang.org/grpc => google.golang.org/grpc v1.27.0
-	// points to temporary-watch-reduction-patch-1.21 to pick up k/k/pull/101102 - please remove it once the pr merges and a new Z release is cut
-	k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20210419140141-620426e63a99
-	k8s.io/client-go => k8s.io/client-go v0.21.0
+	k8s.io/client-go => k8s.io/client-go v0.22.0-rc.0
 )
