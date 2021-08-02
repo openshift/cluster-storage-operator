@@ -3,7 +3,6 @@ module github.com/openshift/cluster-storage-operator
 go 1.16
 
 require (
-	github.com/go-bindata/go-bindata v3.1.2+incompatible
 	github.com/google/go-cmp v0.5.5
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/openshift/api v0.0.0-20210730095913-85e1d547cdee
@@ -19,7 +18,6 @@ require (
 	k8s.io/apiextensions-apiserver v0.22.0-rc.0
 	k8s.io/apimachinery v0.22.0-rc.0
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/code-generator v0.22.0-rc.0
 	k8s.io/component-base v0.22.0-rc.0
 	k8s.io/klog/v2 v2.9.0
 )
