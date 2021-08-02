@@ -24,7 +24,4 @@ require (
 	k8s.io/klog/v2 v2.9.0
 )
 
-replace (
-	google.golang.org/grpc => google.golang.org/grpc v1.27.0
-	k8s.io/client-go => k8s.io/client-go v0.22.0-rc.0
-)
+replace k8s.io/client-go => k8s.io/client-go v0.22.0-rc.0
