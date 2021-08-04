@@ -21,6 +21,7 @@ import (
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/loglevel"
 	"github.com/openshift/library-go/pkg/operator/management"
+	"github.com/openshift/library-go/pkg/operator/managementstatecontroller"
 	"github.com/openshift/library-go/pkg/operator/status"
 )
 
@@ -86,7 +87,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		status.VersionForOperandFromEnv(),
 		controllerConfig.EventRecorder)
 
-	managementStateController := management.NewOperatorManagementStateController(clusterOperatorName, clients.OperatorClient, controllerConfig.EventRecorder)
+	managementStateController := managementstatecontroller.NewOperatorManagementStateController(clusterOperatorName, clients.OperatorClient, controllerConfig.EventRecorder)
 
 	// This controller syncs CR.Status.Conditions with the value in the field CR.Spec.ManagementStatus. It only supports Managed state
 	management.SetOperatorNotRemovable()
