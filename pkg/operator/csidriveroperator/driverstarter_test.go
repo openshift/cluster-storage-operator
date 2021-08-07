@@ -160,6 +160,33 @@ func TestShouldRunController(t *testing.T) {
 	}
 }
 
+func TestShouldRunControllerAzureStackHub(t *testing.T) {
+	infra := &v1.Infrastructure{
+		Status: v1.InfrastructureStatus{
+			PlatformStatus: &v1.PlatformStatus{
+				Type: v1.AzurePlatformType,
+				Azure: &v1.AzurePlatformStatus{
+					CloudName: v1.AzureStackCloud,
+				},
+			},
+		},
+	}
+
+	config := csioperatorclient.CSIOperatorConfig{
+		CSIDriverName:      "disk.csi.azure.com",
+		Platform:           v1.AzurePlatformType,
+		RequireFeatureGate: "CSIDriverAzureDisk",
+	}
+
+	res, err := shouldRunController(config, infra, nil, nil)
+	if err != nil {
+		t.Errorf("Unexpected error occurred: %v", err)
+	}
+	if !res {
+		t.Error("Expected to run controller for Azure Stack Hub")
+	}
+}
+
 func featureSet(set v1.FeatureSet) *v1.FeatureGate {
 	return &v1.FeatureGate{
 		Spec: v1.FeatureGateSpec{
