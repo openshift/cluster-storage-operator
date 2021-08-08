@@ -136,6 +136,32 @@ func TestShouldRunController(t *testing.T) {
 			false,
 			true,
 		},
+		{
+			"GA CSI Driver on any platform",
+			v1.AWSPlatformType,
+			featureSet(""),
+			nil,
+			csioperatorclient.CSIOperatorConfig{
+				CSIDriverName:      "sharedresource",
+				Platform:           csioperatorclient.AllPlatforms,
+				RequireFeatureGate: "",
+			},
+			true,
+			false,
+		},
+		{
+			"custom feature gate CSI Driver on any platform",
+			v1.AWSPlatformType,
+			customSet("foo", "bar", "CSIDriverSharedResource"),
+			nil,
+			csioperatorclient.CSIOperatorConfig{
+				CSIDriverName:      "sharedresource",
+				Platform:           csioperatorclient.AllPlatforms,
+				RequireFeatureGate: "CSIDriverSharedResource",
+			},
+			true,
+			false,
+		},
 	}
 
 	for _, test := range tests {

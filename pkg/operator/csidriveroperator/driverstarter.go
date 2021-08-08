@@ -233,7 +233,7 @@ func shouldRunController(cfg csioperatorclient.CSIOperatorConfig, infrastructure
 	if infrastructure.Status.PlatformStatus != nil {
 		platform = infrastructure.Status.PlatformStatus.Type
 	}
-	if cfg.Platform != platform {
+	if cfg.Platform != csioperatorclient.AllPlatforms && cfg.Platform != platform {
 		klog.V(5).Infof("Not starting %s: wrong platform %s", cfg.CSIDriverName, platform)
 		return false, nil
 	}

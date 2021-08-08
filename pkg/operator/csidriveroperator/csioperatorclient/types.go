@@ -8,6 +8,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+const (
+	// AllPlatforms is a special PlatformType that indicates a CSI driver is installable on any cloud provider.
+	// It is only meant to be used by the CSIOperatorConfig, and does not represent a real OpenShift platform type.
+	AllPlatforms configv1.PlatformType = "AllPlatforms"
+)
+
 // CSIOperatorConfig is configuration of a CSI driver operator.
 type CSIOperatorConfig struct {
 	// Name of the CSI driver (such as ebs.csi.aws.com) and at the same time
