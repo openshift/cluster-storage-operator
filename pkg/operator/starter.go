@@ -7,6 +7,16 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
+	"github.com/openshift/library-go/pkg/controller/controllercmd"
+	"github.com/openshift/library-go/pkg/controller/factory"
+	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/loglevel"
+	"github.com/openshift/library-go/pkg/operator/management"
+	"github.com/openshift/library-go/pkg/operator/managementstatecontroller"
+	"github.com/openshift/library-go/pkg/operator/status"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/klog/v2"
+
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/configobservercontroller"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator"
@@ -15,14 +25,6 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/snapshotcrd"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/vsphereproblemdetector"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
-	"github.com/openshift/library-go/pkg/operator/events"
-	"k8s.io/klog/v2"
-
-	"github.com/openshift/library-go/pkg/controller/controllercmd"
-	"github.com/openshift/library-go/pkg/operator/loglevel"
-	"github.com/openshift/library-go/pkg/operator/management"
-	"github.com/openshift/library-go/pkg/operator/managementstatecontroller"
-	"github.com/openshift/library-go/pkg/operator/status"
 )
 
 const (
@@ -103,9 +105,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	csoclients.StartInformers(clients, ctx.Done())
 
 	klog.Info("Starting the controllers")
-	for _, controller := range []interface {
-		Run(ctx context.Context, workers int)
-	}{
+	for _, c := range []factory.Controller{
 		logLevelController,
 		clusterOperatorStatus,
 		managementStateController,
@@ -115,7 +115,10 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		csiDriverController,
 		vsphereProblemDetector,
 	} {
-		go controller.Run(ctx, 1)
+		go func(ctrl factory.Controller) {
+			defer utilruntime.HandleCrash()
+			ctrl.Run(ctx, 1)
+		}(c)
 	}
 
 	<-ctx.Done()
