@@ -1,0 +1,10 @@
+# Creating the namespace in cluster-storage-operator to simplify ReplatedObjects
+# composition - cluster-storage-operator needs to know what namespaces to add
+# there.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-manila-csi-driver
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    openshift.io/node-selector: ""

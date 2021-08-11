@@ -31,7 +31,6 @@ const (
 
 const (
 	operatorNamespace   = "openshift-cluster-storage-operator"
-	manilaNamespace     = "openshift-manila-csi-driver"
 	clusterOperatorName = "storage"
 )
 
@@ -57,7 +56,6 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	relatedObjects := []configv1.ObjectReference{
 		{Resource: "namespaces", Name: operatorNamespace},
 		{Resource: "namespaces", Name: csoclients.CSIOperatorNamespace},
-		{Resource: "namespaces", Name: manilaNamespace},
 		{Group: operatorv1.GroupName, Resource: "storages", Name: operatorclient.GlobalConfigName},
 	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
