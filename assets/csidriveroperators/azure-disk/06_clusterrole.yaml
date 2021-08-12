@@ -42,6 +42,14 @@ rules:
   verbs:
   - '*'
 - apiGroups:
+  - ''
+  resources:
+  - configmaps
+  verbs:
+  - watch
+  - list
+  - get
+- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - clusterroles
