@@ -27,6 +27,7 @@ const (
 	deploymentControllerName            = "VSphereProblemDetectorDeploymentController"
 )
 
+// TODO: move to DeploymentController form library-go instead
 type VSphereProblemDetectorDeploymentController struct {
 	operatorClient v1helpers.OperatorClient
 	kubeClient     kubernetes.Interface
