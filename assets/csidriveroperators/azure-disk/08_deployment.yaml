@@ -37,6 +37,8 @@ spec:
           value: ${LIVENESS_PROBE_IMAGE}
         - name: KUBE_RBAC_PROXY_IMAGE
           value: ${KUBE_RBAC_PROXY_IMAGE}
+        - name: CLUSTER_CLOUD_CONTROLLER_MANAGER_OPERATOR_IMAGE
+          value: ${CLUSTER_CLOUD_CONTROLLER_MANAGER_OPERATOR_IMAGE}
         - name: POD_NAME
           valueFrom:
             fieldRef:

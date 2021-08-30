@@ -75,6 +75,8 @@ spec:
           value: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver
         - name: VMWARE_VSPHERE_SYNCER_IMAGE
           value: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-syncer
+        - name: CLUSTER_CLOUD_CONTROLLER_MANAGER_OPERATOR_IMAGE
+          value: quay.io/openshift/origin-cluster-cloud-controller-manager-operator:latest
         image: quay.io/openshift/origin-cluster-storage-operator:latest
         imagePullPolicy: IfNotPresent
         name: cluster-storage-operator
