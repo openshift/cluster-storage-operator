@@ -10,7 +10,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 
+	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
+	configv1listers "github.com/openshift/client-go/config/listers/config/v1"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
@@ -42,6 +44,7 @@ type CSIDriverOperatorDeploymentController struct {
 	versionGetter     status.VersionGetter
 	targetVersion     string
 	eventRecorder     events.Recorder
+	infraLister       configv1listers.InfrastructureLister
 	factory           *factory.Factory
 }
 
@@ -72,7 +75,8 @@ func NewCSIDriverOperatorDeploymentController(
 	// controller queue, without anything reading it.
 	f = f.WithInformers(
 		clients.OperatorClient.Informer(),
-		clients.KubeInformers.InformersFor(csoclients.CSIOperatorNamespace).Apps().V1().Deployments().Informer())
+		clients.KubeInformers.InformersFor(csoclients.CSIOperatorNamespace).Apps().V1().Deployments().Informer(),
+		clients.ConfigInformers.Config().V1().Infrastructures().Informer())
 
 	c := &CSIDriverOperatorDeploymentController{
 		name:              csiOperatorConfig.ConditionPrefix,
@@ -83,6 +87,7 @@ func NewCSIDriverOperatorDeploymentController(
 		targetVersion:     targetVersion,
 		eventRecorder:     eventRecorder.WithComponentSuffix(csiOperatorConfig.ConditionPrefix),
 		factory:           f,
+		infraLister:       clients.ConfigInformers.Config().V1().Infrastructures().Lister(),
 	}
 	return c
 }
@@ -122,7 +127,11 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)
 	}
 
-	if c.csiOperatorConfig.ScheduleOnWorkers {
+	infra, err := c.infraLister.Get(infraConfigName)
+	if err != nil {
+		return fmt.Errorf("failed to get infrastructure resource: %w", err)
+	}
+	if infra.Status.ControlPlaneTopology == configv1.ExternalTopologyMode {
 		requiredCopy.Spec.Template.Spec.NodeSelector = map[string]string{}
 	}
 
