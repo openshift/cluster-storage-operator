@@ -47,8 +47,6 @@ type CSIOperatorConfig struct {
 	OLMOptions *OLMOptions
 	// Run the CSI driver operator only when given FeatureGate is enabled
 	RequireFeatureGate string
-	// Schedule CSI driver operator on workers when control plane is externalized
-	ScheduleOnWorkers bool
 }
 
 // OLMOptions contains information that is necessary to remove old CSI driver
