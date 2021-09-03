@@ -46,17 +46,26 @@ spec:
       - alert: CSIWithOldVSphereHWVersion
         # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
         # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
-        # Using ON() to have logical "and" with unrelated labels.
         expr: |
           min_over_time(vsphere_node_hw_version_total{hw_version=~"vmx-(11|12|13|14)"}[5m]) > 0
-          and ON()
-          count(cluster_feature_set{name="TechPreviewNoUpgrade"}) > 0
         for: 10m
         labels:
           severity: info
         annotations:
-          summary: "Detected vSphere VM with HW version lower than 15, which is not supported by the installed vSphere CSI driver."
+          summary: "Detected vSphere VM with HW version lower than 15, which is being deprecated by Openshift."
           description: |
-            The cluster runs the vSphere CSI driver (it has TechPreviewNoUpgrade features enabled) and the CSI driver does not
-            support vSphere VMs with HW version lower than 15. Please update HW version of all VMs that are part of the cluster
-            to at least HW version 15.
+            The cluster is using VMs with hardware version lower than 15, which is being deprecated by Openshift. Hardware version 15 or greater
+            is required by vSphere CSI driver. Please update your VMs to at least HW version 15.
+      - alert: VSphereOlderVersionPresent
+        # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
+        # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
+        expr: |
+          min_over_time(vsphere_esxi_version_total{api_version!~"6.7.3|7.*"}[5m]) > 0
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "Detected vSphere host with ESXi version less than 6.7u3 in Openshift cluster."
+          description: |
+            The cluster is using ESXi hosts which are on version less than 6.7u3, which is being deprecated by Openshift. A future version of
+            Openshift will remove support for ESXi version less than 6.7u3 and it is recommended to update your hosts to latest ESXi version.
