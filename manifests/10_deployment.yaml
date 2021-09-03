@@ -107,6 +107,8 @@ spec:
           - name: VMWARE_VSPHERE_SYNCER_IMAGE
             # TODO: replace with quay.io value
             value: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-syncer
+          - name: CLUSTER_CLOUD_CONTROLLER_MANAGER_OPERATOR_IMAGE
+            value: quay.io/openshift/origin-cluster-cloud-controller-manager-operator:latest
           resources:
             requests:
               cpu: 10m

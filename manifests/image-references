@@ -102,3 +102,7 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-kube-rbac-proxy:latest
+  - name: cluster-cloud-controller-manager-operator
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-cluster-cloud-controller-manager-operator:latest
