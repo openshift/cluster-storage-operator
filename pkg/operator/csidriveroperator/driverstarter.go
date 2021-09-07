@@ -150,17 +150,17 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 			if !shouldRun {
 				continue
 			}
-			relatedObjects = append(relatedObjects, configv1.ObjectReference{
-				Group:    operatorapi.GroupName,
-				Resource: "clustercsidrivers",
-				Name:     ctrl.operatorConfig.CSIDriverName,
-			})
 			// add static assets
 			objs, err := ctrl.ctrlRelatedObjects.RelatedObjects()
 			if err != nil {
 				return err
 			}
 			relatedObjects = append(relatedObjects, objs...)
+			relatedObjects = append(relatedObjects, configv1.ObjectReference{
+				Group:    operatorapi.GroupName,
+				Resource: "clustercsidrivers",
+				Name:     ctrl.operatorConfig.CSIDriverName,
+			})
 			klog.V(2).Infof("Starting ControllerManager for %s", ctrl.operatorConfig.ConditionPrefix)
 			go ctrl.mgr.Start(ctx)
 			ctrl.running = true
