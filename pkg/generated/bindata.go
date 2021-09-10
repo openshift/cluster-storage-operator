@@ -2771,6 +2771,8 @@ kind: Deployment
 metadata:
   name: openstack-cinder-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
+  annotations:
+    config.openshift.io/inject-proxy: openstack-cinder-csi-driver-operator
 spec:
   replicas: 1
   selector:
