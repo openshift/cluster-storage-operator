@@ -32,10 +32,9 @@ func GetAzureDiskCSIOperatorConfig() CSIOperatorConfig {
 			"csidriveroperators/azure-disk/06_clusterrole.yaml",
 			"csidriveroperators/azure-disk/07_clusterrolebinding.yaml",
 		},
-		CRAsset:            "csidriveroperators/azure-disk/09_cr.yaml",
-		DeploymentAsset:    "csidriveroperators/azure-disk/08_deployment.yaml",
-		ImageReplacer:      strings.NewReplacer(pairs...),
-		AllowDisabled:      false,
-		RequireFeatureGate: "CSIDriverAzureDisk",
+		CRAsset:         "csidriveroperators/azure-disk/09_cr.yaml",
+		DeploymentAsset: "csidriveroperators/azure-disk/08_deployment.yaml",
+		ImageReplacer:   strings.NewReplacer(pairs...),
+		AllowDisabled:   false,
 	}
 }
