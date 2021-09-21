@@ -5,9 +5,9 @@ go 1.16
 require (
 	github.com/google/go-cmp v0.5.5
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/openshift/api v0.0.0-20210730095913-85e1d547cdee
-	github.com/openshift/build-machinery-go v0.0.0-20210712174854-1bb7fd1518d3
-	github.com/openshift/client-go v0.0.0-20210730113412-1811c1b3fc0e
+	github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
+	github.com/openshift/build-machinery-go v0.0.0-20210806203541-4ea9b6da3a37
+	github.com/openshift/client-go v0.0.0-20210831095141-e19a065e79f7
 	github.com/openshift/library-go v0.0.0-20210830145332-4a9873bf5e74
 	github.com/prometheus-operator/prometheus-operator v0.44.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.44.1
@@ -22,4 +22,7 @@ require (
 	k8s.io/klog/v2 v2.10.0
 )
 
-replace k8s.io/client-go => k8s.io/client-go v0.22.1
+replace (
+	github.com/openshift/library-go => github.com/adambkaplan/library-go v0.0.0-20210913190501-63bfdacd4f1b
+	k8s.io/client-go => k8s.io/client-go v0.22.1
+)
