@@ -14,6 +14,7 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/controller/manager"
+	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
@@ -250,7 +251,15 @@ func shouldRunController(cfg csioperatorclient.CSIOperatorConfig, infrastructure
 		return true, nil
 	}
 
-	if !featureGateEnabled(fg, cfg.RequireFeatureGate) {
+	enabled, err := featuregates.IsFeatureGateEnabled(cfg.RequireFeatureGate, fg)
+	if err != nil {
+		return false, fmt.Errorf("could not determine if required feature %s for csi driver %s was enabled: %v",
+			cfg.RequireFeatureGate,
+			cfg.CSIDriverName,
+			err)
+	}
+
+	if !enabled {
 		klog.V(4).Infof("Not starting %s: feature %s is not enabled", cfg.CSIDriverName, cfg.RequireFeatureGate)
 		return false, nil
 	}
@@ -263,32 +272,6 @@ func shouldRunController(cfg csioperatorclient.CSIOperatorConfig, infrastructure
 	// Tech preview operator and tech preview is enabled
 	klog.V(5).Infof("Starting %s: feature %s is enabled", cfg.CSIDriverName, cfg.RequireFeatureGate)
 	return true, nil
-}
-
-// Get list of enabled feature fates from FeatureGate CR.
-func getEnabledFeatures(fg *configv1.FeatureGate) []string {
-	if fg.Spec.FeatureSet == "" {
-		return nil
-	}
-	if fg.Spec.FeatureSet == configv1.CustomNoUpgrade {
-		return fg.Spec.CustomNoUpgrade.Enabled
-	}
-	gates := configv1.FeatureSets[fg.Spec.FeatureSet]
-	if gates == nil {
-		return nil
-	}
-	return gates.Enabled
-}
-
-// featureGateEnabled returns true if a given feature is enabled in FeatureGate CR.
-func featureGateEnabled(fg *configv1.FeatureGate, feature string) bool {
-	enabledFeatures := getEnabledFeatures(fg)
-	for _, f := range enabledFeatures {
-		if f == feature {
-			return true
-		}
-	}
-	return false
 }
 
 func isUnsupportedCSIDriverRunning(cfg csioperatorclient.CSIOperatorConfig, csiDriver *storagev1.CSIDriver) bool {
