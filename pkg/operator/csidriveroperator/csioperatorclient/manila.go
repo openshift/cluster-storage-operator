@@ -6,11 +6,8 @@ import (
 
 	v1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
-	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
-	"github.com/openshift/library-go/pkg/operator/resourcesynccontroller"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/klog/v2"
 )
 
 const (
@@ -42,10 +39,7 @@ func GetManilaOperatorConfig(clients *csoclients.Clients, recorder events.Record
 		CRAsset:         "csidriveroperators/manila/08_cr.yaml",
 		DeploymentAsset: "csidriveroperators/manila/07_deployment.yaml",
 		ImageReplacer:   strings.NewReplacer(pairs...),
-		ExtraControllers: []factory.Controller{
-			newCertificateSyncerOrDie(clients, recorder),
-		},
-		AllowDisabled: true,
+		AllowDisabled:   true,
 		OLMOptions: &OLMOptions{
 			OLMOperatorDeploymentName: "csi-driver-manila-operator",
 
@@ -57,30 +51,4 @@ func GetManilaOperatorConfig(clients *csoclients.Clients, recorder events.Record
 			},
 		},
 	}
-}
-
-func newCertificateSyncerOrDie(clients *csoclients.Clients, recorder events.Recorder) factory.Controller {
-	// sync config map with OpenStack CA certificate to the operator namespace,
-	// so the operator can get it as a ConfigMap volume.
-	srcConfigMap := resourcesynccontroller.ResourceLocation{
-		Namespace: csoclients.CloudConfigNamespace,
-		Name:      CloudConfigName,
-	}
-	dstConfigMap := resourcesynccontroller.ResourceLocation{
-		Namespace: csoclients.CSIOperatorNamespace,
-		Name:      CloudConfigName,
-	}
-	certController := resourcesynccontroller.NewResourceSyncController(
-		clients.OperatorClient,
-		clients.KubeInformers,
-		clients.KubeClient.CoreV1(),
-		clients.KubeClient.CoreV1(),
-		recorder)
-	err := certController.SyncConfigMap(dstConfigMap, srcConfigMap)
-	if err != nil {
-		// This can fail if provided clients.KubeInformers does not watch requested namespaces,
-		// which is programmatic error.
-		klog.Fatalf("Failed to start Manila CA certificate sync controller: %s", err)
-	}
-	return certController
 }

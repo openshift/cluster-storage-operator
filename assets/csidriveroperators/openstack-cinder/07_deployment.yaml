@@ -47,8 +47,9 @@ spec:
         - name: secret-cinderplugin
           mountPath: /etc/openstack
           readOnly: true
-        - name: cacert
-          mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
+        - name: trusted-ca
+          mountPath: /etc/pki/ca-trust/extracted/pem
+          readOnly: true
         name: openstack-cinder-csi-driver-operator
         resources:
           requests:
@@ -71,15 +72,9 @@ spec:
           items:
             - key: clouds.yaml
               path: clouds.yaml
-      - name: cacert
-        # If present, extract ca-bundle.pem to
-        # /etc/kubernetes/static-pod-resources/configmaps/cloud-config
-        # Let the pod start when the ConfigMap does not exist or the certificate
-        # is not preset there. The certificate file will be created once the
-        # ConfigMap is created / the cerificate is added to it.
+      - name: trusted-ca
         configMap:
-          name: cloud-provider-config
+          name: trusted-ca
           items:
-          - key: ca-bundle.pem
-            path: ca-bundle.pem
-          optional: true
+            - key: ca-bundle.crt 
+              path: tls-ca-bundle.pem
