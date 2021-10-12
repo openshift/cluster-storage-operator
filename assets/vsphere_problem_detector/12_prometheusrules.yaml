@@ -17,6 +17,11 @@ spec:
         labels:
           severity: warning
         annotations:
+          summary: "VSphere node health checks are failing"
+          description: |
+            The vsphere-problem-detector performs health checks on individual OpenShift nodes on 
+            VSphere to confirm configuration and performance requirements are met.  Health checks 
+            verify machine scaling, storage provisioning, and node performance meet requirements.
           message: "VSphere health check {{ $labels.check }} is failing on {{ $labels.node }}."
       - alert: VSphereOpenshiftClusterHealthFail
         # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
@@ -26,6 +31,11 @@ spec:
         labels:
           severity: warning
         annotations:
+          summary: "VSphere cluster health checks are failing"
+          description: |
+            The vsphere-problem-detector monitors the health and configuration of OpenShift on
+            VSphere.  If problems are found which may prevent machine scaling, storage provisioning,
+            and safe upgrades, the vsphere-problem-detector will raise alerts.
           message: "VSphere cluster health checks are failing with {{ $labels.check }}"
       - alert: VSphereOpenshiftConnectionFailure
         # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
