@@ -98,6 +98,14 @@ spec:
     from:
       kind: DockerImage
       name: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver
+  - name: azure-file-csi-driver-operator
+    from:
+      kind: DockerImage
+      name: registry.ci.openshift.org/ocp/4.10:azure-file-csi-driver-operator
+  - name: azure-file-csi-driver
+    from:
+      kind: DockerImage
+      name: registry.ci.openshift.org/ocp/4.10:azure-file-csi-driver
   - name: kube-rbac-proxy
     from:
       kind: DockerImage

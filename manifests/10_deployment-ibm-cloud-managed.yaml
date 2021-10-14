@@ -67,6 +67,10 @@ spec:
           value: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver-operator
         - name: AZURE_DISK_DRIVER_IMAGE
           value: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver
+        - name: AZURE_FILE_DRIVER_OPERATOR_IMAGE
+          value: registry.ci.openshift.org/ocp/4.10:azure-file-csi-driver-operator
+        - name: AZURE_FILE_DRIVER_IMAGE
+          value: registry.ci.openshift.org/ocp/4.10:azure-file-csi-driver
         - name: KUBE_RBAC_PROXY_IMAGE
           value: quay.io/openshift/origin-kube-rbac-proxy:latest
         - name: VMWARE_VSPHERE_DRIVER_OPERATOR_IMAGE
