@@ -133,5 +133,6 @@ func populateConfigs(clients *csoclients.Clients, recorder events.Recorder) []cs
 		csioperatorclient.GetManilaOperatorConfig(clients, recorder),
 		csioperatorclient.GetVMwareVSphereCSIOperatorConfig(),
 		csioperatorclient.GetAzureDiskCSIOperatorConfig(),
+		csioperatorclient.GetAzureFileCSIOperatorConfig(),
 	}
 }
