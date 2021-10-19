@@ -102,9 +102,7 @@ rules:
   resources:
   - secrets
   verbs:
-  - get
-  - list
-  - watch
+  - '*'
 - apiGroups:
   - ''
   resources:
