@@ -243,13 +243,6 @@ func shouldRunController(cfg csioperatorclient.CSIOperatorConfig, infrastructure
 		return true, nil
 	}
 
-	// For Azure Stack Hub we have to enable the CSI driver because it does not support
-	// in-tree volume plugin for azure disk.
-	if isAzureStackHub(infrastructure.Status.PlatformStatus) {
-		klog.V(5).Infof("Starting %s for Azure Stack Hub", cfg.CSIDriverName)
-		return true, nil
-	}
-
 	if !featureGateEnabled(fg, cfg.RequireFeatureGate) {
 		klog.V(4).Infof("Not starting %s: feature %s is not enabled", cfg.CSIDriverName, cfg.RequireFeatureGate)
 		return false, nil
@@ -301,8 +294,4 @@ func isUnsupportedCSIDriverRunning(cfg csioperatorclient.CSIOperatorConfig, csiD
 	}
 
 	return true
-}
-
-func isAzureStackHub(platformStatus *configv1.PlatformStatus) bool {
-	return platformStatus.Azure != nil && platformStatus.Azure.CloudName == configv1.AzureStackCloud
 }
