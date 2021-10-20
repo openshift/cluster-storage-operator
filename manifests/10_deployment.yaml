@@ -115,6 +115,10 @@ spec:
             value: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-syncer
           - name: CLUSTER_CLOUD_CONTROLLER_MANAGER_OPERATOR_IMAGE
             value: quay.io/openshift/origin-cluster-cloud-controller-manager-operator:latest
+          - name: SHARED_RESOURCE_DRIVER_OPERATOR_IMAGE
+            value: quay.io/openshift/origin-csi-driver-shared-resource-operator:latest
+          - name: SHARED_RESOURCE_DRIVER_IMAGE
+            value: quay.io/openshift/origin-csi-driver-shared-resource:latest
           resources:
             requests:
               cpu: 10m

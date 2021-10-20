@@ -20,6 +20,58 @@ func TestShouldRunController(t *testing.T) {
 		expectError bool
 	}{
 		{
+			"tech preview Shared Resource driver on AllPlatforms type",
+			v1.AWSPlatformType,
+			featureSet("TechPreviewNoUpgrade"),
+			nil,
+			csioperatorclient.CSIOperatorConfig{
+				CSIDriverName:      "csi.sharedresource.openshift.io",
+				Platform:           csioperatorclient.AllPlatforms,
+				RequireFeatureGate: "CSIDriverSharedResource",
+			},
+			true,
+			false,
+		},
+		{
+			"tech preview Shared Resource driver on AWSPlatformType",
+			v1.AWSPlatformType,
+			featureSet("TechPreviewNoUpgrade"),
+			nil,
+			csioperatorclient.CSIOperatorConfig{
+				CSIDriverName:      "csi.sharedresource.openshift.io",
+				Platform:           v1.AWSPlatformType,
+				RequireFeatureGate: "CSIDriverSharedResource",
+			},
+			true,
+			false,
+		},
+		{
+			"tech preview Shared Resource driver on GCPPlatformType",
+			v1.GCPPlatformType,
+			featureSet("TechPreviewNoUpgrade"),
+			nil,
+			csioperatorclient.CSIOperatorConfig{
+				CSIDriverName:      "csi.sharedresource.openshift.io",
+				Platform:           v1.GCPPlatformType,
+				RequireFeatureGate: "CSIDriverSharedResource",
+			},
+			true,
+			false,
+		},
+		{
+			"tech preview Shared Resource driver on GCPPlatformType",
+			v1.VSpherePlatformType,
+			featureSet("TechPreviewNoUpgrade"),
+			nil,
+			csioperatorclient.CSIOperatorConfig{
+				CSIDriverName:      "csi.sharedresource.openshift.io",
+				Platform:           v1.VSpherePlatformType,
+				RequireFeatureGate: "CSIDriverSharedResource",
+			},
+			true,
+			false,
+		},
+		{
 			"GA CSI driver on matching platform",
 			v1.AWSPlatformType,
 			featureSet(""),
@@ -135,32 +187,6 @@ func TestShouldRunController(t *testing.T) {
 			},
 			false,
 			true,
-		},
-		{
-			"GA CSI Driver on any platform",
-			v1.AWSPlatformType,
-			featureSet(""),
-			nil,
-			csioperatorclient.CSIOperatorConfig{
-				CSIDriverName:      "sharedresource",
-				Platform:           csioperatorclient.AllPlatforms,
-				RequireFeatureGate: "",
-			},
-			true,
-			false,
-		},
-		{
-			"custom feature gate CSI Driver on any platform",
-			v1.AWSPlatformType,
-			customSet("foo", "bar", "CSIDriverSharedResource"),
-			nil,
-			csioperatorclient.CSIOperatorConfig{
-				CSIDriverName:      "sharedresource",
-				Platform:           csioperatorclient.AllPlatforms,
-				RequireFeatureGate: "CSIDriverSharedResource",
-			},
-			true,
-			false,
 		},
 	}
 

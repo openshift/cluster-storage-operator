@@ -114,3 +114,11 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-cluster-cloud-controller-manager-operator:latest
+  - name: csi-driver-shared-resource-operator
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-csi-driver-shared-resource-operator:latest
+  - name: csi-driver-shared-resource
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-csi-driver-shared-resource:latest

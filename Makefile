@@ -39,12 +39,3 @@ clean:
 .PHONY: clean
 
 GO_TEST_PACKAGES :=./pkg/... ./cmd/...
-
-# Run e2e tests. Requires openshift-tests in $PATH.
-#
-# Example:
-#   make test-e2e
-test-e2e:
-	hack/e2e.sh
-
-.PHONY: test-e2e
