@@ -29,6 +29,7 @@ func GetSharedResourceCSIOperatorConfig() CSIOperatorConfig {
 			"csidriveroperators/shared-resource/06_clusterrolebinding.yaml",
 			"csidriveroperators/shared-resource/07_role_config.yaml",
 			"csidriveroperators/shared-resource/08_rolebinding_config.yaml",
+			"csidriveroperators/shared-resource/13_config_configmap.yaml",
 		},
 		CRAsset:            "csidriveroperators/shared-resource/10_cr.yaml",
 		DeploymentAsset:    "csidriveroperators/shared-resource/09_deployment.yaml",

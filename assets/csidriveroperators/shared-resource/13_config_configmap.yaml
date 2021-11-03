@@ -1,0 +1,5 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: csi-driver-shared-resource-config
+  namespace: openshift-cluster-csi-drivers
