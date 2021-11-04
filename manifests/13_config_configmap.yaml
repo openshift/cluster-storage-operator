@@ -1,0 +1,37 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: csi-driver-shared-resource-config
+  namespace: openshift-cluster-csi-drivers
+data:
+  config.yaml: |
+    ---
+    ignoredNamespaces:
+      - openshift-machine-api
+      - openshift-kube-apiserver
+      - openshift-kube-apiserver-operator
+      - openshift-kube-scheduler
+      - openshift-kube-controller-manager
+      - openshift-kube-controller-manager-operator
+      - openshift-kube-scheduler-operator
+      - openshift-console-operator
+      - openshift-controller-manager
+      - openshift-controller-manager-operator
+      - openshift-cloud-credential-operator
+      - openshift-authentication-operator
+      - openshift-service-ca
+      - openshift-kube-storage-version-migrator-operator
+      - openshift-config-operator
+      - openshift-etcd-operator
+      - openshift-apiserver-operator
+      - openshift-cluster-csi-drivers
+      - openshift-cluster-storage-operator
+      - openshift-cluster-version
+      - openshift-image-registry
+      - openshift-machine-config-operator
+      - openshift-sdn
+      - openshift-service-ca-operator
+
+    refreshResources: true
+
+    shareRelistInterval: 10m
