@@ -209,6 +209,17 @@ func (c *CSIDriverStarterController) createCSIControllerManager(
 		manager = manager.WithController(olmRemovalCtrl, 1)
 	}
 
+	if cfg.ServiceMonitorAsset != "" {
+		manager = manager.WithController(staticresourcecontroller.NewStaticResourceController(
+			cfg.ConditionPrefix+"CSIDriverOperatorServiceMonitorController",
+			assets.ReadFile,
+			[]string{cfg.ServiceMonitorAsset},
+			(&resourceapply.ClientHolder{}).WithDynamicClient(clients.DynamicClient),
+			c.operatorClient,
+			c.eventRecorder,
+		).WithIgnoreNotFoundOnCreate(), 1)
+	}
+
 	for i := range cfg.ExtraControllers {
 		manager = manager.WithController(cfg.ExtraControllers[i], 1)
 	}

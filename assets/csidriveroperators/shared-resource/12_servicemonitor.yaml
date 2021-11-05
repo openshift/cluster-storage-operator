@@ -1,0 +1,12 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: shared-resource-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+spec:
+  endpoints:
+    - port: metrics
+  selector:
+    matchLabels:
+      name: shared-resource-csi-driver-operator

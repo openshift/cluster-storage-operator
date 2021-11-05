@@ -29,6 +29,8 @@ type CSIOperatorConfig struct {
 	// CRAsset is name of the bindata asset with ClusterCSIDriver of the
 	// operator. Its logLevel & operatorLoglevel will be set by CSO.
 	CRAsset string
+	// ServiceMonitorAsset is the name of the bindata asset with the ServiceMonitor
+	ServiceMonitorAsset string
 	// DeploymentAsset is name of the bindata asset with Deployment of the
 	// operator. It will get updated by OCS in this way:
 	// - ImageReplacer this CSIOperatorConfig is run.
