@@ -29,11 +29,13 @@ func GetSharedResourceCSIOperatorConfig() CSIOperatorConfig {
 			"csidriveroperators/shared-resource/06_clusterrolebinding.yaml",
 			"csidriveroperators/shared-resource/07_role_config.yaml",
 			"csidriveroperators/shared-resource/08_rolebinding_config.yaml",
+			"csidriveroperators/shared-resource/11_metrics_service.yaml",
 		},
-		CRAsset:            "csidriveroperators/shared-resource/10_cr.yaml",
-		DeploymentAsset:    "csidriveroperators/shared-resource/09_deployment.yaml",
-		ImageReplacer:      strings.NewReplacer(pairs...),
-		AllowDisabled:      false,
-		RequireFeatureGate: "CSIDriverSharedResource",
+		ServiceMonitorAsset: "csidriveroperators/shared-resource/12_servicemonitor.yaml",
+		CRAsset:             "csidriveroperators/shared-resource/10_cr.yaml",
+		DeploymentAsset:     "csidriveroperators/shared-resource/09_deployment.yaml",
+		ImageReplacer:       strings.NewReplacer(pairs...),
+		AllowDisabled:       false,
+		RequireFeatureGate:  "CSIDriverSharedResource",
 	}
 }
