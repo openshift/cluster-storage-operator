@@ -26,6 +26,8 @@ type CSIOperatorConfig struct {
 	// StaticAssets is list of bindata assets to create when starting the CSI
 	// driver operator.
 	StaticAssets []string
+	// ServiceMonitorAsset is the name of the bindata asset to install a servicemonitor
+	ServiceMonitorAsset string
 	// CRAsset is name of the bindata asset with ClusterCSIDriver of the
 	// operator. Its logLevel & operatorLoglevel will be set by CSO.
 	CRAsset string

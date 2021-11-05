@@ -81,7 +81,7 @@ func CreateDeployment(ctx context.Context, depOpts DeploymentOptions) (*appsv1.D
 		return nil
 	}
 
-	if _, _, err := v1helpers.UpdateStatus(depOpts.OperatorClient,
+	if _, _, err := v1helpers.UpdateStatus(context.TODO(), depOpts.OperatorClient,
 		v1helpers.UpdateConditionFn(deploymentAvailable),
 		v1helpers.UpdateConditionFn(deploymentProgressing),
 		updateGenerationFn,

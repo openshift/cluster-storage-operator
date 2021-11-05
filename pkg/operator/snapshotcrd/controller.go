@@ -80,7 +80,7 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 		upgradeable.Reason = "AlphaDetected"
 	}
 
-	if _, _, updateErr := v1helpers.UpdateStatus(c.operatorClient,
+	if _, _, updateErr := v1helpers.UpdateStatus(context.TODO(), c.operatorClient,
 		v1helpers.UpdateConditionFn(upgradeable),
 	); updateErr != nil {
 		return updateErr

@@ -222,7 +222,7 @@ func (c *CSIDriverOperatorCRController) syncConditions(conditions []operatorapi.
 		degradedCnd.Status = operatorapi.ConditionFalse
 	}
 
-	_, _, err := v1helpers.UpdateStatus(c.operatorClient,
+	_, _, err := v1helpers.UpdateStatus(context.TODO(), c.operatorClient,
 		v1helpers.UpdateConditionFn(availableCnd),
 		v1helpers.UpdateConditionFn(progressingCnd),
 		v1helpers.UpdateConditionFn(degradedCnd),

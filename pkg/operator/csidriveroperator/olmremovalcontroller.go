@@ -286,7 +286,7 @@ func (c *OLMOperatorRemovalController) markProgressing(syncCtx factory.SyncConte
 		Message: message,
 	}
 
-	if _, _, err := v1helpers.UpdateStatus(c.operatorClient,
+	if _, _, err := v1helpers.UpdateStatus(context.TODO(), c.operatorClient,
 		v1helpers.UpdateConditionFn(progressing),
 		v1helpers.UpdateConditionFn(available),
 	); err != nil {
@@ -317,7 +317,7 @@ func (c *OLMOperatorRemovalController) markFinished(message string) error {
 	if err := c.saveMetadata("", ""); err != nil {
 		return err
 	}
-	_, _, err := v1helpers.UpdateStatus(c.operatorClient,
+	_, _, err := v1helpers.UpdateStatus(context.TODO(), c.operatorClient,
 		v1helpers.UpdateConditionFn(progressing),
 		v1helpers.UpdateConditionFn(available),
 	)

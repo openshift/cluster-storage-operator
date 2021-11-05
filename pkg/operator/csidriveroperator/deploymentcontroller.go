@@ -158,6 +158,7 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 	}
 
 	_, _, err = v1helpers.UpdateStatus(
+		context.TODO(),
 		c.operatorClient,
 		updateStatusFn,
 		v1helpers.UpdateConditionFn(progressingCondition),

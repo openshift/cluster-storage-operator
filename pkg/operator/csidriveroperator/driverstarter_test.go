@@ -5,6 +5,7 @@ import (
 
 	v1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
+	"github.com/openshift/cluster-storage-operator/pkg/utils"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -200,7 +201,7 @@ func TestShouldRunController(t *testing.T) {
 					},
 				},
 			}
-			res, err := shouldRunController(test.config, infra, test.featureGate, test.csiDriver)
+			res, err := utils.ShouldRunController(test.config, infra, test.featureGate, test.csiDriver)
 			if res != test.expectRun {
 				t.Errorf("Expected run %t, got %t", test.expectRun, res)
 			}

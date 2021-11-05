@@ -22,6 +22,7 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/servicemonitor"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/snapshotcrd"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/vsphereproblemdetector"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
@@ -87,6 +88,13 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		status.VersionForOperandFromEnv(),
 		controllerConfig.EventRecorder)
 
+	serviceMonitorController := servicemonitor.NewServiceMonitorController(
+		clients,
+		controllerConfig.EventRecorder,
+		resync,
+		csiDriverConfigs,
+	)
+
 	managementStateController := managementstatecontroller.NewOperatorManagementStateController(clusterOperatorName, clients.OperatorClient, controllerConfig.EventRecorder)
 
 	// This controller syncs CR.Status.Conditions with the value in the field CR.Spec.ManagementStatus. It only supports Managed state
@@ -112,6 +120,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		snapshotCRDController,
 		csiDriverController,
 		vsphereProblemDetector,
+		serviceMonitorController,
 	} {
 		go func(ctrl factory.Controller) {
 			defer utilruntime.HandleCrash()
