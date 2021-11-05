@@ -207,6 +207,19 @@ func (c *CSIDriverStarterController) createCSIControllerManager(
 		manager = manager.WithController(olmRemovalCtrl, 1)
 	}
 
+	if cfg.ServiceMonitorAsset != "" {
+		// Use StaticResourceController to apply ServiceMonitors.
+		// Ensure that NotFound errors are ignored, e.g. when ServiceMonitor CRD missing.
+		manager = manager.WithController(staticresourcecontroller.NewStaticResourceController(
+			cfg.ConditionPrefix+"CSIDriverOperatorServiceMonitorController",
+			assets.ReadFile,
+			[]string{cfg.ServiceMonitorAsset},
+			(&resourceapply.ClientHolder{}).WithDynamicClient(clients.DynamicClient),
+			c.operatorClient,
+			c.eventRecorder,
+		).WithIgnoreNotFoundOnCreate(), 1)
+	}
+
 	for i := range cfg.ExtraControllers {
 		manager = manager.WithController(cfg.ExtraControllers[i], 1)
 	}
