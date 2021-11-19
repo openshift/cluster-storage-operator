@@ -1,13 +1,27 @@
 kind: Service
 apiVersion: v1
 metadata:
+  annotations:
+    service.beta.openshift.io/serving-cert-secret-name: shared-resource-csi-driver-operator-metrics-serving-cert
   name: shared-resource-csi-driver-operator-metrics
   namespace: openshift-cluster-csi-drivers
   labels:
-    name: shared-resource-csi-driver-operator
+    name: shared-resource-csi-driver-operator-metrics
 spec:
+  sessionAffinity: None
+  type: ClusterIP
   selector:
     name: shared-resource-csi-driver-operator
   ports:
-    - name: metrics
-      port: 6000
+  - name: provisioner-m
+    port: 443
+    protocol: TCP
+    targetPort: provisioner-m
+  - name: attacher-m
+    port: 444
+    protocol: TCP
+    targetPort: attacher-m
+  - name: resizer-m
+    port: 445
+    protocol: TCP
+    targetPort: resizer-m
