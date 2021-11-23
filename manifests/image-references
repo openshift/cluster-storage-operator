@@ -81,23 +81,23 @@ spec:
   - name: vsphere-csi-driver-operator
     from:
       kind: DockerImage
-      name: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-operator
+      name: quay.io/openshift/origin-vsphere-csi-driver-operator:latest
   - name: vsphere-csi-driver
     from:
       kind: DockerImage
-      name: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver
+      name: quay.io/openshift/origin-vsphere-csi-driver:latest
   - name: vsphere-csi-driver-syncer
     from:
       kind: DockerImage
-      name: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-syncer
+      name: quay.io/openshift/origin-vsphere-csi-driver-syncer:latest
   - name: azure-disk-csi-driver-operator
     from:
       kind: DockerImage
-      name: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver-operator
+      name: quay.io/openshift/origin-azure-disk-csi-driver-operator:latest
   - name: azure-disk-csi-driver
     from:
       kind: DockerImage
-      name: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver
+      name: quay.io/openshift/origin-azure-disk-csi-driver:latest
   - name: azure-file-csi-driver-operator
     from:
       kind: DockerImage
