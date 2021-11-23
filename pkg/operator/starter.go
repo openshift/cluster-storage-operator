@@ -135,5 +135,6 @@ func populateConfigs(clients *csoclients.Clients, recorder events.Recorder) []cs
 		csioperatorclient.GetAzureDiskCSIOperatorConfig(),
 		csioperatorclient.GetAzureFileCSIOperatorConfig(),
 		csioperatorclient.GetSharedResourceCSIOperatorConfig(),
+		csioperatorclient.GetAlibabaDiskCSIOperatorConfig(),
 	}
 }
