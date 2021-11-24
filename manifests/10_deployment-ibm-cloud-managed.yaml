@@ -64,21 +64,21 @@ spec:
         - name: VSPHERE_PROBLEM_DETECTOR_OPERATOR_IMAGE
           value: quay.io/openshift/origin-vsphere-problem-detector:latest
         - name: AZURE_DISK_DRIVER_OPERATOR_IMAGE
-          value: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver-operator
+          value: quay.io/openshift/origin-azure-disk-csi-driver-operator:latest
         - name: AZURE_DISK_DRIVER_IMAGE
-          value: registry.ci.openshift.org/ocp/4.8:azure-disk-csi-driver
+          value: quay.io/openshift/origin-azure-disk-csi-driver:latest
         - name: AZURE_FILE_DRIVER_OPERATOR_IMAGE
-          value: registry.ci.openshift.org/ocp/4.10:azure-file-csi-driver-operator
+          value: quay.io/openshift/origin-azure-file-csi-driver-operator:latest
         - name: AZURE_FILE_DRIVER_IMAGE
-          value: registry.ci.openshift.org/ocp/4.10:azure-file-csi-driver
+          value: quay.io/openshift/origin-azure-file-csi-driver:latest
         - name: KUBE_RBAC_PROXY_IMAGE
           value: quay.io/openshift/origin-kube-rbac-proxy:latest
         - name: VMWARE_VSPHERE_DRIVER_OPERATOR_IMAGE
-          value: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-operator
+          value: quay.io/openshift/origin-vsphere-csi-driver-operator:latest
         - name: VMWARE_VSPHERE_DRIVER_IMAGE
-          value: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver
+          value: quay.io/openshift/origin-vsphere-csi-driver:latest
         - name: VMWARE_VSPHERE_SYNCER_IMAGE
-          value: registry.ci.openshift.org/origin/4.8:vsphere-csi-driver-syncer
+          value: quay.io/openshift/origin-vsphere-csi-driver-syncer:latest
         - name: CLUSTER_CLOUD_CONTROLLER_MANAGER_OPERATOR_IMAGE
           value: quay.io/openshift/origin-cluster-cloud-controller-manager-operator:latest
         - name: SHARED_RESOURCE_DRIVER_OPERATOR_IMAGE
