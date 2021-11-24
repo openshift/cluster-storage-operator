@@ -85,6 +85,10 @@ spec:
           value: quay.io/openshift/origin-csi-driver-shared-resource-operator:latest
         - name: SHARED_RESOURCE_DRIVER_IMAGE
           value: quay.io/openshift/origin-csi-driver-shared-resource:latest
+        - name: ALIBABA_DISK_DRIVER_OPERATOR_IMAGE
+          value: quay.io/openshift/origin-alibaba-disk-csi-driver-operator:latest
+        - name: ALIBABA_CLOUD_DRIVER_IMAGE
+          value: quay.io/openshift/origin-alibaba-cloud-csi-driver:latest
         image: quay.io/openshift/origin-cluster-storage-operator:latest
         imagePullPolicy: IfNotPresent
         name: cluster-storage-operator

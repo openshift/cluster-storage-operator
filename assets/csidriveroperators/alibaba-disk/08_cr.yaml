@@ -1,0 +1,8 @@
+apiVersion: operator.openshift.io/v1
+kind: "ClusterCSIDriver"
+metadata:
+  name: "diskplugin.csi.alibabacloud.com"
+spec:
+  logLevel: Normal
+  managementState: Managed
+  operatorLogLevel: Normal
