@@ -101,11 +101,11 @@ spec:
   - name: azure-file-csi-driver-operator
     from:
       kind: DockerImage
-      name: registry.ci.openshift.org/ocp/4.10:azure-file-csi-driver-operator
+      name: quay.io/openshift/origin-azure-file-csi-driver-operator:latest
   - name: azure-file-csi-driver
     from:
       kind: DockerImage
-      name: registry.ci.openshift.org/ocp/4.10:azure-file-csi-driver
+      name: quay.io/openshift/origin-azure-file-csi-driver:latest
   - name: kube-rbac-proxy
     from:
       kind: DockerImage
