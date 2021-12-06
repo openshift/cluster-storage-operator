@@ -130,3 +130,15 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-alibaba-cloud-csi-driver:latest
+  - name: ibm-vpc-block-csi-driver-operator
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-ibm-vpc-block-csi-driver-operator:latest
+  - name: ibm-vpc-block-csi-driver
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-ibm-vpc-block-csi-driver:latest
+  - name: ibm-vpc-node-label-updater
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-ibm-vpc-node-label-updater:latest
