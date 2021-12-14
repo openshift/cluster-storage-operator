@@ -6,7 +6,7 @@ require (
 	github.com/google/go-cmp v0.5.5
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/openshift/api v0.0.0-20211018182944-3a31a0369345
-	github.com/openshift/build-machinery-go v0.0.0-20210712174854-1bb7fd1518d3
+	github.com/openshift/build-machinery-go v0.0.0-20211213093930-7e33a7eb4ce3
 	github.com/openshift/client-go v0.0.0-20211014121513-e0d04d36b53a
 	github.com/openshift/library-go v0.0.0-20210830145332-4a9873bf5e74
 	github.com/prometheus-operator/prometheus-operator v0.44.1
