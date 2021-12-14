@@ -89,6 +89,12 @@ spec:
           value: quay.io/openshift/origin-alibaba-disk-csi-driver-operator:latest
         - name: ALIBABA_CLOUD_DRIVER_IMAGE
           value: quay.io/openshift/origin-alibaba-cloud-csi-driver:latest
+        - name: IBM_VPC_BLOCK_DRIVER_OPERATOR_IMAGE
+          value: quay.io/openshift/origin-ibm-vpc-block-csi-driver-operator:latest
+        - name: IBM_VPC_BLOCK_DRIVER_IMAGE
+          value: quay.io/openshift/origin-ibm-vpc-block-csi-driver:latest
+        - name: IBM_VPC_NODE_LABEL_UPDATER_IMAGE
+          value: quay.io/openshift/origin-ibm-vpc-node-label-updater:latest
         image: quay.io/openshift/origin-cluster-storage-operator:latest
         imagePullPolicy: IfNotPresent
         name: cluster-storage-operator
