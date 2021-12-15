@@ -22,6 +22,7 @@ func main() {
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 
 	logs.InitLogs()
+	logs.AddFlags(pflag.CommandLine)
 	defer logs.FlushLogs()
 
 	command := NewOperatorCommand()
