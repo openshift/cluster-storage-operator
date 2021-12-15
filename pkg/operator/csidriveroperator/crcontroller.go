@@ -118,7 +118,7 @@ func (c *CSIDriverOperatorCRController) Sync(ctx context.Context, syncCtx factor
 
 	// Sync CSIDriver CR
 	requiredCR := c.getRequestedClusterCSIDriver(opSpec.LogLevel)
-	cr, _, err := c.applyClusterCSIDriver(requiredCR)
+	cr, _, err := c.applyClusterCSIDriver(ctx, requiredCR)
 	if err != nil {
 		// This will set Degraded condition
 		return err
@@ -136,7 +136,7 @@ func (c *CSIDriverOperatorCRController) Sync(ctx context.Context, syncCtx factor
 		return nil
 	}
 
-	if err := c.syncConditions(cr.Status.Conditions, updateGenerationFn); err != nil {
+	if err := c.syncConditions(ctx, cr.Status.Conditions, updateGenerationFn); err != nil {
 		errs = append(errs, err)
 	}
 	return errors.NewAggregate(errs)
@@ -171,10 +171,10 @@ func (c *CSIDriverOperatorCRController) crConditionName(cndType string) string {
 	return c.name + csiDriverControllerConditionPrefix + cndType
 }
 
-func (c *CSIDriverOperatorCRController) applyClusterCSIDriver(required *operatorapi.ClusterCSIDriver) (*operatorapi.ClusterCSIDriver, bool, error) {
-	existing, err := c.operatorClientSet.OperatorV1().ClusterCSIDrivers().Get(context.TODO(), required.Name, metav1.GetOptions{})
+func (c *CSIDriverOperatorCRController) applyClusterCSIDriver(ctx context.Context, required *operatorapi.ClusterCSIDriver) (*operatorapi.ClusterCSIDriver, bool, error) {
+	existing, err := c.operatorClientSet.OperatorV1().ClusterCSIDrivers().Get(ctx, required.Name, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
-		actual, err := c.operatorClientSet.OperatorV1().ClusterCSIDrivers().Create(context.TODO(), required, metav1.CreateOptions{})
+		actual, err := c.operatorClientSet.OperatorV1().ClusterCSIDrivers().Create(ctx, required, metav1.CreateOptions{})
 		reportCreateEvent(c.eventRecorder, required, err)
 		return actual, true, err
 	}
@@ -185,7 +185,7 @@ func (c *CSIDriverOperatorCRController) applyClusterCSIDriver(required *operator
 	return existing.DeepCopy(), false, nil
 }
 
-func (c *CSIDriverOperatorCRController) syncConditions(conditions []operatorapi.OperatorCondition, updatefn v1helpers.UpdateStatusFunc) error {
+func (c *CSIDriverOperatorCRController) syncConditions(ctx context.Context, conditions []operatorapi.OperatorCondition, updatefn v1helpers.UpdateStatusFunc) error {
 	var availableCnd operatorapi.OperatorCondition
 	disabled, msg := c.hasDisabledCondition(conditions)
 	if disabled && c.allowDisabled {
@@ -222,7 +222,7 @@ func (c *CSIDriverOperatorCRController) syncConditions(conditions []operatorapi.
 		degradedCnd.Status = operatorapi.ConditionFalse
 	}
 
-	_, _, err := v1helpers.UpdateStatus(c.operatorClient,
+	_, _, err := v1helpers.UpdateStatus(ctx, c.operatorClient,
 		v1helpers.UpdateConditionFn(availableCnd),
 		v1helpers.UpdateConditionFn(progressingCnd),
 		v1helpers.UpdateConditionFn(degradedCnd),

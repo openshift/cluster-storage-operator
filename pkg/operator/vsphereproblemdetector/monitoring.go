@@ -111,7 +111,7 @@ func (c *monitoringController) sync(ctx context.Context, syncContext factory.Syn
 		Type:   monitoringControllerName + operatorapi.OperatorStatusTypeAvailable,
 		Status: operatorapi.ConditionTrue,
 	}
-	if _, _, err := v1helpers.UpdateStatus(c.operatorClient,
+	if _, _, err := v1helpers.UpdateStatus(ctx, c.operatorClient,
 		v1helpers.UpdateConditionFn(monitoringCondition),
 	); err != nil {
 		return err

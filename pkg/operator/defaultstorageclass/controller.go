@@ -102,7 +102,7 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 			availableCnd.Message = "No default StorageClass for this platform"
 			availableCnd.Status = operatorapi.ConditionTrue
 
-			_, _, updateErr := v1helpers.UpdateStatus(c.operatorClient,
+			_, _, updateErr := v1helpers.UpdateStatus(ctx, c.operatorClient,
 				v1helpers.UpdateConditionFn(disabledCnd),
 				v1helpers.UpdateConditionFn(availableCnd),
 				v1helpers.UpdateConditionFn(progressingCnd),
@@ -115,7 +115,7 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 			availableCnd.Message = "StorageClass provided by supplied CSI Driver instead of the cluster-storage-operator"
 			availableCnd.Status = operatorapi.ConditionTrue
 
-			_, _, updateErr := v1helpers.UpdateStatus(c.operatorClient,
+			_, _, updateErr := v1helpers.UpdateStatus(ctx, c.operatorClient,
 				v1helpers.UpdateConditionFn(availableCnd),
 				v1helpers.UpdateConditionFn(progressingCnd),
 			)
@@ -131,7 +131,7 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 		progressingCnd.Message = syncErr.Error()
 	}
 
-	if _, _, updateErr := v1helpers.UpdateStatus(c.operatorClient,
+	if _, _, updateErr := v1helpers.UpdateStatus(ctx, c.operatorClient,
 		v1helpers.UpdateConditionFn(availableCnd),
 		v1helpers.UpdateConditionFn(progressingCnd),
 		removeConditionFn(conditionsPrefix+disabledConditionType),
