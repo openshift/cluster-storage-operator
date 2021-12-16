@@ -134,7 +134,7 @@ func (c *OLMOperatorRemovalController) Sync(ctx context.Context, syncCtx factory
 		}
 		if !removed {
 			klog.V(4).Infof("OLMOperatorRemovalController.Sync waiting for OLM Subscription to disappear")
-			return c.markProgressing(syncCtx, "Waiting for OLM Subscription to be deleted")
+			return c.markProgressing(ctx, syncCtx, "Waiting for OLM Subscription to be deleted")
 		}
 	}
 
@@ -148,7 +148,7 @@ func (c *OLMOperatorRemovalController) Sync(ctx context.Context, syncCtx factory
 			// There is no Subscription + there is no work recorded in CR annotations: we're done!
 			klog.V(4).Infof("OLMOperatorRemovalController.Sync the old driver was not installed")
 			// Since the old driver wasn't installed, we don't add any messages to avoid noisy Available/Progressing conditions.
-			return c.markFinished("")
+			return c.markFinished(ctx, "")
 		}
 	}
 
@@ -159,7 +159,7 @@ func (c *OLMOperatorRemovalController) Sync(ctx context.Context, syncCtx factory
 	}
 	if !removed {
 		klog.V(4).Infof("OLMOperatorRemovalController.Sync waiting for OLM CSV to disappear")
-		return c.markProgressing(syncCtx, "Waiting for OLM CSV to be deleted")
+		return c.markProgressing(ctx, syncCtx, "Waiting for OLM CSV to be deleted")
 	}
 
 	// 3. Wait until OLM removes the the operator deployment
@@ -169,7 +169,7 @@ func (c *OLMOperatorRemovalController) Sync(ctx context.Context, syncCtx factory
 	}
 	if !removed {
 		klog.V(4).Infof("OLMOperatorRemovalController.Sync waiting for OLM to delete the operator")
-		return c.markProgressing(syncCtx, "Waiting for OLM to delete the operator")
+		return c.markProgressing(ctx, syncCtx, "Waiting for OLM to delete the operator")
 	}
 
 	// 4. Remove CR
@@ -179,11 +179,11 @@ func (c *OLMOperatorRemovalController) Sync(ctx context.Context, syncCtx factory
 	}
 	if !removed {
 		klog.V(4).Infof("OLMOperatorRemovalController.Sync waiting for the CR to disappear")
-		return c.markProgressing(syncCtx, "Waiting for the old operator CR to be deleted")
+		return c.markProgressing(ctx, syncCtx, "Waiting for the old operator CR to be deleted")
 	}
 
 	klog.V(4).Infof("OLMOperatorRemovalController.Sync done!")
-	return c.markFinished("CSI driver has been removed from OLM")
+	return c.markFinished(ctx, "CSI driver has been removed from OLM")
 }
 
 func (c *OLMOperatorRemovalController) findSubscription(ctx context.Context) (string, string, string, bool, error) {
@@ -272,7 +272,7 @@ func (c *OLMOperatorRemovalController) loadMetadata() (string, string, error) {
 	return ns, csv, nil
 }
 
-func (c *OLMOperatorRemovalController) markProgressing(syncCtx factory.SyncContext, message string) error {
+func (c *OLMOperatorRemovalController) markProgressing(ctx context.Context, syncCtx factory.SyncContext, message string) error {
 	progressing := operatorapi.OperatorCondition{
 		Type:    c.Name() + operatorapi.OperatorStatusTypeProgressing,
 		Reason:  "RemovingOLMOperator",
@@ -286,7 +286,7 @@ func (c *OLMOperatorRemovalController) markProgressing(syncCtx factory.SyncConte
 		Message: message,
 	}
 
-	if _, _, err := v1helpers.UpdateStatus(c.operatorClient,
+	if _, _, err := v1helpers.UpdateStatus(ctx, c.operatorClient,
 		v1helpers.UpdateConditionFn(progressing),
 		v1helpers.UpdateConditionFn(available),
 	); err != nil {
@@ -299,7 +299,7 @@ func (c *OLMOperatorRemovalController) markProgressing(syncCtx factory.SyncConte
 	return nil
 }
 
-func (c *OLMOperatorRemovalController) markFinished(message string) error {
+func (c *OLMOperatorRemovalController) markFinished(ctx context.Context, message string) error {
 	progressing := operatorapi.OperatorCondition{
 		Type:    c.Name() + operatorapi.OperatorStatusTypeProgressing,
 		Reason:  "Finished",
@@ -317,7 +317,7 @@ func (c *OLMOperatorRemovalController) markFinished(message string) error {
 	if err := c.saveMetadata("", ""); err != nil {
 		return err
 	}
-	_, _, err := v1helpers.UpdateStatus(c.operatorClient,
+	_, _, err := v1helpers.UpdateStatus(ctx, c.operatorClient,
 		v1helpers.UpdateConditionFn(progressing),
 		v1helpers.UpdateConditionFn(available),
 	)

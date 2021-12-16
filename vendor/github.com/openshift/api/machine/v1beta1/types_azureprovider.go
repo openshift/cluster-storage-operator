@@ -12,6 +12,7 @@ import (
 // by the actuator.
 // Compatibility level 2: Stable within a major release for a minimum of 9 months or 3 minor releases (whichever is longer).
 // +openshift:compatibility-gen:level=2
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type AzureMachineProviderSpec struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
@@ -82,6 +83,15 @@ type AzureMachineProviderSpec struct {
 	// SecurityProfile specifies the Security profile settings for a virtual machine.
 	// +optional
 	SecurityProfile *SecurityProfile `json:"securityProfile,omitempty"`
+	// AcceleratedNetworking enables or disables Azure accelerated networking feature.
+	// Set to false by default. If true, then this will depend on whether the requested
+	// VMSize is supported. If set to true with an unsupported VMSize, Azure will return an error.
+	// +optional
+	AcceleratedNetworking bool `json:"acceleratedNetworking,omitempty"`
+	// AvailabilitySet specifies the availability set to use for this instance.
+	// Availability set should be precreated, before using this field.
+	// +optional
+	AvailabilitySet string `json:"availabilitySet,omitempty"`
 }
 
 // SpotVMOptions defines the options relevant to running the Machine on Spot VMs
@@ -164,7 +174,27 @@ type Image struct {
 	Version string `json:"version"`
 	// ResourceID specifies an image to use by ID
 	ResourceID string `json:"resourceID"`
+	// Type identifies the source of the image and related information, such as purchase plans.
+	// Valid values are "ID", "MarketplaceWithPlan", "MarketplaceNoPlan", and omitted, which
+	// means no opinion and the platform chooses a good default which may change over time.
+	// Currently that default is "MarketplaceNoPlan" if publisher data is supplied, or "ID" if not.
+	// For more information about purchase plans, see:
+	// https://docs.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage#check-the-purchase-plan-information
+	// +optional
+	Type AzureImageType `json:"type,omitempty"`
 }
+
+// AzureImageType provides an enumeration for the valid image types.
+type AzureImageType string
+
+const (
+	// AzureImageTypeID specifies that the image should be referenced by its resource ID.
+	AzureImageTypeID AzureImageType = "ID"
+	// AzureImageTypeMarketplaceNoPlan are images available from the marketplace that do not require a purchase plan.
+	AzureImageTypeMarketplaceNoPlan AzureImageType = "MarketplaceNoPlan"
+	// AzureImageTypeMarketplaceWithPlan require a purchase plan. Upstream these images are referred to as "ThirdParty."
+	AzureImageTypeMarketplaceWithPlan AzureImageType = "MarketplaceWithPlan"
+)
 
 type OSDisk struct {
 	// OSType is the operating system type of the OS disk. Possible values include "Linux" and "Windows".
@@ -173,6 +203,28 @@ type OSDisk struct {
 	ManagedDisk ManagedDiskParameters `json:"managedDisk"`
 	// DiskSizeGB is the size in GB to assign to the data disk.
 	DiskSizeGB int32 `json:"diskSizeGB"`
+	// DiskSettings describe ephemeral disk settings for the os disk.
+	// +optional
+	DiskSettings DiskSettings `json:"diskSettings,omitempty"`
+	// CachingType specifies the caching requirements.
+	// Possible values include: 'None', 'ReadOnly', 'ReadWrite'.
+	// Empty value means no opinion and the platform chooses a default, which is subject to change over
+	// time. Currently the default is `None`.
+	// +optional
+	// +kubebuilder:validation:Enum=None;ReadOnly;ReadWrite
+	CachingType string `json:"cachingType,omitempty"`
+}
+
+// DiskSettings describe ephemeral disk settings for the os disk.
+type DiskSettings struct {
+	// EphemeralStorageLocation enables ephemeral OS when set to 'Local'.
+	// Possible values include: 'Local'.
+	// See https://docs.microsoft.com/en-us/azure/virtual-machines/ephemeral-os-disks for full details.
+	// Empty value means no opinion and the platform chooses a default, which is subject to change over
+	// time. Currently the default is that disks are saved to remote Azure storage.
+	// +optional
+	// +kubebuilder:validation:Enum=Local
+	EphemeralStorageLocation string `json:"ephemeralStorageLocation,omitempty"`
 }
 
 // ManagedDiskParameters is the parameters of a managed disk.
