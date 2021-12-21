@@ -13,7 +13,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/opencontainers/runc v0.0.0-20191031171055-b133feaeeb2e // indirect
 	github.com/openshift/api v0.0.0-20210412212256-79bd8cfbbd59
-	github.com/openshift/build-machinery-go v0.0.0-20210413112106-60cf6ea633f9
+	github.com/openshift/build-machinery-go v0.0.0-20211221165021-8d8fec7ad2c7
 	github.com/openshift/client-go v0.0.0-20210409155308-a8e62c60e930
 	github.com/openshift/library-go v0.0.0-20210408164723-7a65fdb398e2
 	github.com/prometheus-operator/prometheus-operator v0.44.1
@@ -36,7 +36,7 @@ require (
 
 replace (
 	google.golang.org/grpc => google.golang.org/grpc v1.27.0
-	k8s.io/client-go => k8s.io/client-go v0.21.0
 	// points to temporary-watch-reduction-patch-1.21 to pick up k/k/pull/101102 - please remove it once the pr merges and a new Z release is cut
-    k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20210419140141-620426e63a99
+	k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20210419140141-620426e63a99
+	k8s.io/client-go => k8s.io/client-go v0.21.0
 )

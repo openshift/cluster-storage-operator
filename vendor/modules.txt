@@ -163,7 +163,7 @@ github.com/openshift/api/template
 github.com/openshift/api/template/v1
 github.com/openshift/api/user
 github.com/openshift/api/user/v1
-# github.com/openshift/build-machinery-go v0.0.0-20210413112106-60cf6ea633f9
+# github.com/openshift/build-machinery-go v0.0.0-20211221165021-8d8fec7ad2c7
 ## explicit
 github.com/openshift/build-machinery-go
 github.com/openshift/build-machinery-go/make
@@ -1070,5 +1070,5 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml
 # google.golang.org/grpc => google.golang.org/grpc v1.27.0
-# k8s.io/client-go => k8s.io/client-go v0.21.0
 # k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20210419140141-620426e63a99
+# k8s.io/client-go => k8s.io/client-go v0.21.0
