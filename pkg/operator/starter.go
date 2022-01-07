@@ -25,6 +25,7 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/snapshotcrd"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/vsphereproblemdetector"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
+	rbacv1 "k8s.io/api/rbac/v1"
 )
 
 const (
@@ -59,6 +60,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		{Resource: "namespaces", Name: operatorNamespace},
 		{Resource: "namespaces", Name: csoclients.CSIOperatorNamespace},
 		{Group: operatorv1.GroupName, Resource: "storages", Name: operatorclient.GlobalConfigName},
+		{Group: rbacv1.GroupName, Resource: "clusterrolebindings", Name: "cluster-storage-operator-role"},
 	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
 		clusterOperatorName,
