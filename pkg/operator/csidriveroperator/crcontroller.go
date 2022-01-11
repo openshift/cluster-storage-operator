@@ -216,6 +216,12 @@ func (c *CSIDriverOperatorCRController) syncConditions(ctx context.Context, cond
 		}
 	}
 
+	upgradeableCond := status.UnionCondition(operatorapi.OperatorStatusTypeUpgradeable, operatorapi.ConditionTrue, nil, conditions...)
+	upgradeableCond.Type = c.crConditionName(operatorapi.OperatorStatusTypeUpgradeable)
+	if upgradeableCond.Status == operatorapi.ConditionUnknown {
+		upgradeableCond.Status = operatorapi.ConditionTrue
+	}
+
 	degradedCnd := status.UnionCondition(operatorapi.OperatorStatusTypeDegraded, operatorapi.ConditionFalse, nil, conditions...)
 	degradedCnd.Type = c.crConditionName(operatorapi.OperatorStatusTypeDegraded)
 	if degradedCnd.Status == operatorapi.ConditionUnknown {
@@ -226,6 +232,7 @@ func (c *CSIDriverOperatorCRController) syncConditions(ctx context.Context, cond
 		v1helpers.UpdateConditionFn(availableCnd),
 		v1helpers.UpdateConditionFn(progressingCnd),
 		v1helpers.UpdateConditionFn(degradedCnd),
+		v1helpers.UpdateConditionFn(upgradeableCond),
 		updatefn,
 	)
 	return err
