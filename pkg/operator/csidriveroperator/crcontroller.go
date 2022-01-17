@@ -216,10 +216,15 @@ func (c *CSIDriverOperatorCRController) syncConditions(ctx context.Context, cond
 		}
 	}
 
-	upgradeableCond := status.UnionCondition(operatorapi.OperatorStatusTypeUpgradeable, operatorapi.ConditionTrue, nil, conditions...)
-	upgradeableCond.Type = c.crConditionName(operatorapi.OperatorStatusTypeUpgradeable)
-	if upgradeableCond.Status == operatorapi.ConditionUnknown {
-		upgradeableCond.Status = operatorapi.ConditionTrue
+	upgradeableConditionType := c.crConditionName(operatorapi.OperatorStatusTypeUpgradeable)
+	upgradeableCond := operatorapi.OperatorCondition{
+		Type:   upgradeableConditionType,
+		Status: operatorapi.ConditionTrue,
+	}
+
+	if hasCondition(conditions, operatorapi.OperatorStatusTypeUpgradeable) {
+		upgradeableCond = status.UnionCondition(operatorapi.OperatorStatusTypeUpgradeable, operatorapi.ConditionTrue, nil, conditions...)
+		upgradeableCond.Type = upgradeableConditionType
 	}
 
 	degradedCnd := status.UnionCondition(operatorapi.OperatorStatusTypeDegraded, operatorapi.ConditionFalse, nil, conditions...)
@@ -245,6 +250,15 @@ func (c *CSIDriverOperatorCRController) hasDisabledCondition(conditions []operat
 		}
 	}
 	return false, ""
+}
+
+func hasCondition(conditions []operatorapi.OperatorCondition, conditionType string) bool {
+	for _, condition := range conditions {
+		if strings.HasSuffix(condition.Type, conditionType) {
+			return true
+		}
+	}
+	return false
 }
 
 func readClusterCSIDriverOrDie(objBytes []byte) *operatorapi.ClusterCSIDriver {
