@@ -225,6 +225,7 @@ rules:
   - watch
   - update
   - delete
+  - patch
 - apiGroups:
   - snapshot.storage.k8s.io
   resources:
@@ -234,6 +235,13 @@ rules:
   - list
   - watch
   - update
+  - patch
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshots/status
+  verbs:
+  - patch
 - apiGroups:
   - storage.k8s.io
   resources:
