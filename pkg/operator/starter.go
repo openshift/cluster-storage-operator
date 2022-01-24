@@ -7,6 +7,7 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
+	"github.com/openshift/api/sharedresource"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -61,6 +62,8 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		{Resource: "namespaces", Name: csoclients.CSIOperatorNamespace},
 		{Group: operatorv1.GroupName, Resource: "storages", Name: operatorclient.GlobalConfigName},
 		{Group: rbacv1.GroupName, Resource: "clusterrolebindings", Name: "cluster-storage-operator-role"},
+		{Group: sharedresource.GroupName, Resource: "sharedconfigmaps"},
+		{Group: sharedresource.GroupName, Resource: "sharedsecrets"},
 	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
 		clusterOperatorName,
