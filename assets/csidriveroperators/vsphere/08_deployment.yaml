@@ -19,6 +19,7 @@ spec:
       containers:
       - args:
         - start
+        - --listen=0.0.0.0:8445
         - -v=${LOG_LEVEL}
         env:
         - name: DRIVER_IMAGE
@@ -50,9 +51,14 @@ spec:
           requests:
             memory: 50Mi
             cpu: 10m
+        ports:
+        - containerPort: 8445
+          name: vsphere-omp
         volumeMounts:
         - name: trusted-ca-bundle
           mountPath: /etc/pki/ca-trust/extracted/pem
+        - mountPath: /var/run/secrets/serving-cert
+          name: vmware-vsphere-csi-driver-operator-metrics-serving-cert
       priorityClassName: system-cluster-critical
       serviceAccountName: vmware-vsphere-csi-driver-operator
       nodeSelector:
@@ -70,3 +76,7 @@ spec:
           items:
             - key: ca-bundle.crt
               path: tls-ca-bundle.pem
+      - name: vmware-vsphere-csi-driver-operator-metrics-serving-cert
+        secret:
+          secretName: vmware-vsphere-csi-driver-operator-metrics-serving-cert
+          optional: true

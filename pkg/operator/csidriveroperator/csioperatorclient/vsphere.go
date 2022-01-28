@@ -32,10 +32,12 @@ func GetVMwareVSphereCSIOperatorConfig() CSIOperatorConfig {
 			"csidriveroperators/vsphere/05_rolebinding.yaml",
 			"csidriveroperators/vsphere/06_clusterrole.yaml",
 			"csidriveroperators/vsphere/07_clusterrolebinding.yaml",
+			"csidriveroperators/vsphere/11_service.yaml",
 		},
-		CRAsset:         "csidriveroperators/vsphere/09_cr.yaml",
-		DeploymentAsset: "csidriveroperators/vsphere/08_deployment.yaml",
-		ImageReplacer:   strings.NewReplacer(pairs...),
-		AllowDisabled:   false,
+		ServiceMonitorAsset: "csidriveroperators/vsphere/12_servicemonitor.yaml",
+		CRAsset:             "csidriveroperators/vsphere/09_cr.yaml",
+		DeploymentAsset:     "csidriveroperators/vsphere/08_deployment.yaml",
+		ImageReplacer:       strings.NewReplacer(pairs...),
+		AllowDisabled:       false,
 	}
 }
