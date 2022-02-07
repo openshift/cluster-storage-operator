@@ -108,7 +108,7 @@ func (c *CSIDriverOperatorCRController) Sync(ctx context.Context, syncCtx factor
 	defer klog.V(4).Infof("CSIDriverOperatorCRController sync finished")
 
 	var errs []error
-	opSpec, opStatus, _, err := c.operatorClient.GetOperatorState()
+	opSpec, _, _, err := c.operatorClient.GetOperatorState()
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (c *CSIDriverOperatorCRController) Sync(ctx context.Context, syncCtx factor
 		LastGeneration: cr.ObjectMeta.Generation,
 	}
 	updateGenerationFn := func(newStatus *operatorapi.OperatorStatus) error {
-		resourcemerge.SetGeneration(&opStatus.Generations, newGeneration)
+		resourcemerge.SetGeneration(&newStatus.Generations, newGeneration)
 		return nil
 	}
 

@@ -164,6 +164,10 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 		v1helpers.UpdateConditionFn(progressingCondition),
 	)
 
+	if err != nil {
+		return err
+	}
+
 	return checkDeploymentHealth(ctx, c.kubeClient.AppsV1(), deployment)
 }
 
