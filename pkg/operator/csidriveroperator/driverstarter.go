@@ -257,6 +257,11 @@ func shouldRunController(cfg csioperatorclient.CSIOperatorConfig, infrastructure
 		return false, nil
 	}
 
+	if cfg.StatusFilter != nil && !cfg.StatusFilter(&infrastructure.Status) {
+		klog.V(5).Infof("Not starting %s: StatusFilter returned false", cfg.CSIDriverName)
+		return false, nil
+	}
+
 	if cfg.RequireFeatureGate == "" {
 		// This is GA / always enabled operator, always run
 		klog.V(5).Infof("Starting %s: it's GA", cfg.CSIDriverName)
