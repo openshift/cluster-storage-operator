@@ -23,6 +23,13 @@ type CSIOperatorConfig struct {
 	ConditionPrefix string
 	// Platform where the driver should run.
 	Platform configv1.PlatformType
+	// StatusFilter is an optional callback to determine whether the operator
+	// should run based on the InfrastructureStatus. Return true to proceed
+	// like normal and run the usual checks (Platform, RequireFeatureGate, etc).
+	// Return false if the operator should NOT run based on InfrastructureStatus.
+	// If StatusFilter is nil, it is assumed to be true and will proceed like
+	// normal and run the usual checks.
+	StatusFilter func(*configv1.InfrastructureStatus) bool
 	// StaticAssets is list of bindata assets to create when starting the CSI
 	// driver operator.
 	StaticAssets []string

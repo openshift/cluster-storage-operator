@@ -193,6 +193,38 @@ func TestShouldRunController(t *testing.T) {
 			false,
 			true,
 		},
+		{
+			"GA CSI driver with StatusFilter returning true",
+			v1.IBMCloudPlatformType,
+			featureSet(""),
+			nil,
+			csioperatorclient.CSIOperatorConfig{
+				CSIDriverName:      "vpc.block.csi.ibm.io",
+				Platform:           v1.IBMCloudPlatformType,
+				RequireFeatureGate: "",
+				StatusFilter: func(*v1.InfrastructureStatus) bool {
+					return true
+				},
+			},
+			true,
+			false,
+		},
+		{
+			"GA CSI driver with StatusFilter returning false",
+			v1.IBMCloudPlatformType,
+			featureSet(""),
+			nil,
+			csioperatorclient.CSIOperatorConfig{
+				CSIDriverName:      "vpc.block.csi.ibm.io",
+				Platform:           v1.IBMCloudPlatformType,
+				RequireFeatureGate: "",
+				StatusFilter: func(*v1.InfrastructureStatus) bool {
+					return false
+				},
+			},
+			false,
+			false,
+		},
 	}
 
 	for _, test := range tests {
