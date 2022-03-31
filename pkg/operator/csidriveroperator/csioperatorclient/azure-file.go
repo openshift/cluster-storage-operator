@@ -31,10 +31,9 @@ func GetAzureFileCSIOperatorConfig() CSIOperatorConfig {
 			"csidriveroperators/azure-file/06_clusterrole.yaml",
 			"csidriveroperators/azure-file/07_clusterrolebinding.yaml",
 		},
-		CRAsset:            "csidriveroperators/azure-file/09_cr.yaml",
-		DeploymentAsset:    "csidriveroperators/azure-file/08_deployment.yaml",
-		ImageReplacer:      strings.NewReplacer(pairs...),
-		AllowDisabled:      false,
-		RequireFeatureGate: "CSIDriverAzureFile",
+		CRAsset:         "csidriveroperators/azure-file/09_cr.yaml",
+		DeploymentAsset: "csidriveroperators/azure-file/08_deployment.yaml",
+		ImageReplacer:   strings.NewReplacer(pairs...),
+		AllowDisabled:   false,
 	}
 }
