@@ -15,7 +15,13 @@ rules:
   - configmaps
   - secrets
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - ''
   resources:
@@ -28,7 +34,13 @@ rules:
   - deployments
   - replicasets
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - monitoring.coreos.com
   resources:
