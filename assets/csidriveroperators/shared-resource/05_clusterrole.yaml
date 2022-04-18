@@ -283,12 +283,6 @@ rules:
   - update
   - delete
 - apiGroups:
-  - cloudcredential.openshift.io
-  resources:
-  - credentialsrequests
-  verbs:
-  - '*'
-- apiGroups:
   - config.openshift.io
   resources:
   - infrastructures
