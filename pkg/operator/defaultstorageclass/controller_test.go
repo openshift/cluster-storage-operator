@@ -243,7 +243,7 @@ func TestSync(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			// The controller syncs fine when azurestackhub is used and does not create a storage class
+			// azurestackhub is not recognized by sync as a valid platform
 			name: "azurestackhub",
 			initialObjects: testObjects{
 				storage:        getCR(),
@@ -252,7 +252,7 @@ func TestSync(t *testing.T) {
 			expectedObjects: testObjects{
 				storage: getCR(
 					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
-					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
+					withTrueConditions(conditionsPrefix+"Disabled", conditionsPrefix+opv1.OperatorStatusTypeAvailable),
 				),
 			},
 			expectErr: false,
