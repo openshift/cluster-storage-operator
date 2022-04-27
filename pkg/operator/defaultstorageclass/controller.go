@@ -184,12 +184,6 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 	switch infrastructure.Status.PlatformStatus.Type {
 	case configv1.AWSPlatformType:
 		storageClassFile = "storageclasses/aws.yaml"
-	case configv1.AzurePlatformType:
-		if infrastructure.Status.PlatformStatus.Azure != nil &&
-			infrastructure.Status.PlatformStatus.Azure.CloudName == configv1.AzureStackCloud {
-			return nil, supportedByCSIError
-		}
-		storageClassFile = "storageclasses/azure.yaml"
 	case configv1.GCPPlatformType:
 		storageClassFile = "storageclasses/gcp.yaml"
 	case configv1.OpenStackPlatformType:
