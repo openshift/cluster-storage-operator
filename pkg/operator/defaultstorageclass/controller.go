@@ -186,8 +186,6 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 		storageClassFile = "storageclasses/aws.yaml"
 	case configv1.GCPPlatformType:
 		storageClassFile = "storageclasses/gcp.yaml"
-	case configv1.OpenStackPlatformType:
-		storageClassFile = "storageclasses/openstack.yaml"
 	case configv1.VSpherePlatformType:
 		storageClassFile = "storageclasses/vsphere.yaml"
 	case configv1.OvirtPlatformType:
