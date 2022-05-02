@@ -37,7 +37,10 @@ spec:
       securityContext:
         fsGroup: 10400
         runAsGroup: 10400
+        runAsNonRoot: true
         runAsUser: 10400
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: cluster-storage-operator
           image: quay.io/openshift/origin-cluster-storage-operator:latest
@@ -126,6 +129,11 @@ spec:
             requests:
               cpu: 10m
               memory: 20Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
           volumeMounts:
             - mountPath: /var/run/secrets/serving-cert
               name: cluster-storage-operator-serving-cert

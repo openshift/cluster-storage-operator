@@ -105,6 +105,11 @@ spec:
           requests:
             cpu: 10m
             memory: 20Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /var/run/secrets/serving-cert
@@ -113,7 +118,10 @@ spec:
       securityContext:
         fsGroup: 10400
         runAsGroup: 10400
+        runAsNonRoot: true
         runAsUser: 10400
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: cluster-storage-operator
       tolerations:
       - effect: NoSchedule
