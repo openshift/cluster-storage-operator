@@ -3,6 +3,9 @@ package operator
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/component-base/metrics"
+	"k8s.io/component-base/metrics/legacyregistry"
 	"time"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -34,8 +37,9 @@ const (
 )
 
 const (
-	operatorNamespace   = "openshift-cluster-storage-operator"
-	clusterOperatorName = "storage"
+	operatorNamespace      = "openshift-cluster-storage-operator"
+	clusterOperatorName    = "storage"
+	defaultScAnnotationKey = "storageclass.kubernetes.io/is-default-class"
 )
 
 func RunOperator(ctx context.Context, controllerConfig *controllercmd.ControllerContext) error {
@@ -51,6 +55,29 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		clients,
 		controllerConfig.EventRecorder,
 	)
+	klog.Infof("Registering default StorageClass count metric for controller %s", storageClassController.Name())
+	legacyregistry.RawMustRegister(metrics.NewGaugeFunc(
+		metrics.GaugeOpts{
+			Name:           "default_storage_class_count",
+			Help:           "Number of default storage classes currently configured.",
+			StabilityLevel: metrics.ALPHA,
+		},
+		func() float64 {
+			scLister := clients.KubeInformers.InformersFor("").Storage().V1().StorageClasses().Lister()
+			existingSCs, err := scLister.List(labels.Everything())
+			if err != nil {
+				klog.Fatalf("Failed to get existing storage classes: %s", err)
+			}
+			defaultSCCount := 0
+			for _, sc := range existingSCs {
+				if sc.Annotations[defaultScAnnotationKey] == "true" {
+					defaultSCCount++
+				}
+			}
+			klog.V(4).Infof("Current default StorageClass count %v", defaultSCCount)
+			return float64(defaultSCCount)
+		},
+	))
 
 	snapshotCRDController := snapshotcrd.NewController(
 		clients,
