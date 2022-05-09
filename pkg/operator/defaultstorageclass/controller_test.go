@@ -229,7 +229,7 @@ func TestSync(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			// The controller returns error
+			// The controller returns error - missing Available is added
 			name: "infrastructure not found",
 			initialObjects: testObjects{
 				storage: getCR(),
@@ -253,6 +253,42 @@ func TestSync(t *testing.T) {
 				storage: getCR(
 					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
 					withTrueConditions(conditionsPrefix+"Disabled", conditionsPrefix+opv1.OperatorStatusTypeAvailable),
+				),
+			},
+			expectErr: false,
+		},
+		{
+			// The controller returns error + Available is True -> not flipped to False
+			name: "available not false after error",
+			initialObjects: testObjects{
+				storage: getCR(
+					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
+					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
+				),
+			},
+			expectedObjects: testObjects{
+				storage: getCR(
+					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
+					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
+				),
+			},
+			expectErr: true,
+		},
+		{
+			// The controller flips Avialable=False to True after a successful sync
+			name: "available=False set to True after OK",
+			initialObjects: testObjects{
+				infrastructure: getInfrastructure(cfgv1.AWSPlatformType),
+				storage: getCR(
+					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
+					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
+				),
+			},
+			expectedObjects: testObjects{
+				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/aws.yaml")},
+				storage: getCR(
+					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
+					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
 			},
 			expectErr: false,
