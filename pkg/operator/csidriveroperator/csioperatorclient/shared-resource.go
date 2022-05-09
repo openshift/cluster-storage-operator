@@ -9,12 +9,14 @@ const (
 	SharedResourceDriverName             = "csi.sharedresource.openshift.io"
 	envSharedResourceDriverOperatorImage = "SHARED_RESOURCE_DRIVER_OPERATOR_IMAGE"
 	envSharedResourceDriverImage         = "SHARED_RESOURCE_DRIVER_IMAGE"
+	envSharedResourceDriverWebhookImage  = "SHARED_RESOURCE_DRIVER_WEBHOOK_IMAGE"
 )
 
 func GetSharedResourceCSIOperatorConfig() CSIOperatorConfig {
 	pairs := []string{
 		"${OPERATOR_IMAGE}", os.Getenv(envSharedResourceDriverOperatorImage),
 		"${DRIVER_IMAGE}", os.Getenv(envSharedResourceDriverImage),
+		"${WEBHOOK_IMAGE}", os.Getenv(envSharedResourceDriverWebhookImage),
 	}
 
 	return CSIOperatorConfig{
