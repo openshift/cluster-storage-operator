@@ -70,12 +70,25 @@ spec:
         # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
         # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
         expr: |
-          min_over_time(vsphere_esxi_version_total{api_version!~"6.7.3|7.*"}[5m]) > 0
+          min_over_time(vsphere_esxi_version_total{api_version=~"^7\\.0\\.[0-1]|^6"}[5m]) > 0
         for: 10m
         labels:
           severity: info
         annotations:
-          summary: "Detected vSphere host with ESXi version less than 6.7u3 in Openshift cluster."
+          summary: "Detected vSphere host with ESXi version less than 7.0.2 in Openshift cluster."
           description: |
-            The cluster is using ESXi hosts which are on version less than 6.7u3, which is being deprecated by Openshift. A future version of
-            Openshift will remove support for ESXi version less than 6.7u3 and it is recommended to update your hosts to latest ESXi version.
+            The cluster is using ESXi hosts which are on version less than 7.0.2, which is being deprecated by Openshift. A future version of
+            Openshift will remove support for ESXi version less than 7.0.2 and it is recommended to update your hosts to the latest ESXi version.
+      - alert: VSphereOlderVCenterPresent
+        # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
+        # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
+        expr: |
+          min_over_time(vsphere_vcenter_info{api_version=~"^7\\.0\\.[0-1]|^6"}[5m]) > 0
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "Detected vSphere vCenter version less than 7.0.2 in Openshift cluster."
+          description: |
+            The cluster is using vCenter version less than 7.0.2, which is being deprecated by Openshift. A future version of
+            Openshift will remove support for vCenter versions lest than 7.0.2 and it is recommended to update your vCenter to the latest version.
