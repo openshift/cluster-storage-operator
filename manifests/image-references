@@ -122,6 +122,10 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-csi-driver-shared-resource:latest
+  - name: csi-driver-shared-resource-webhook
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-csi-driver-shared-resource-webhook:latest
   - name: alibaba-disk-csi-driver-operator
     from:
       kind: DockerImage

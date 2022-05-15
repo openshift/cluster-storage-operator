@@ -25,6 +25,8 @@ spec:
           value: ${DRIVER_IMAGE}
         - name: NODE_DRIVER_REGISTRAR_IMAGE
           value: ${NODE_DRIVER_REGISTRAR_IMAGE}
+        - name: WEBHOOK_IMAGE
+          value: ${WEBHOOK_IMAGE}
         - name: POD_NAME
           valueFrom:
             fieldRef:
