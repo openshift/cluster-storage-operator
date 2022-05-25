@@ -68,7 +68,7 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 	klog.V(4).Infof("DefaultStorageClassController sync started")
 	defer klog.V(4).Infof("DefaultStorageClassController sync finished")
 
-	opSpec, _, _, err := c.operatorClient.GetOperatorState()
+	opSpec, opStatus, _, err := c.operatorClient.GetOperatorState()
 	if err != nil {
 		return err
 	}
@@ -122,13 +122,21 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 			return updateErr
 		}
 
-		// Set Available=false, Progressing=true
-		availableCnd.Status = operatorapi.ConditionFalse
+		if v1helpers.IsOperatorConditionPresentAndEqual(opStatus.Conditions, availableCnd.Type, operatorapi.ConditionTrue) {
+			// Don't flip Available=true -> false on a random API server hiccup, e.g. during cluster upgrade.
+			// The operator will get Degraded=true with inertia.
+			availableCnd.Status = operatorapi.ConditionTrue
+		} else {
+			// Either add Available=false if it's missing or keep it false.
+			availableCnd.Status = operatorapi.ConditionFalse
+		}
 		availableCnd.Reason = "SyncError"
 		availableCnd.Message = syncErr.Error()
+		// Progressing=true
 		progressingCnd.Status = operatorapi.ConditionTrue
 		progressingCnd.Reason = "SyncError"
 		progressingCnd.Message = syncErr.Error()
+		// fall through with syncErr -> mark as Degraded with inertia
 	}
 
 	if _, _, updateErr := v1helpers.UpdateStatus(ctx, c.operatorClient,
