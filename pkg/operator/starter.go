@@ -57,7 +57,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	)
 	klog.Infof("Registering default StorageClass count metric for controller %s", storageClassController.Name())
 	legacyregistry.RawMustRegister(metrics.NewGaugeFunc(
-		metrics.GaugeOpts{
+		&metrics.GaugeOpts{
 			Name:           "default_storage_class_count",
 			Help:           "Number of default storage classes currently configured.",
 			StabilityLevel: metrics.ALPHA,
