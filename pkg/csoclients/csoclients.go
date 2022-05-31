@@ -1,11 +1,15 @@
 package csoclients
 
 import (
-	"k8s.io/apimachinery/pkg/api/meta"
+	"time"
+
+	apiextclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apiextinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/restmapper"
-	"time"
 
 	cfgclientset "github.com/openshift/client-go/config/clientset/versioned"
 	cfginformers "github.com/openshift/client-go/config/informers/externalversions"
@@ -16,10 +20,6 @@ import (
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	prominformer "github.com/prometheus-operator/prometheus-operator/pkg/client/informers/externalversions"
 	promclient "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned"
-	apiextclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apiextinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 )
 
 type Clients struct {
@@ -54,7 +54,7 @@ type Clients struct {
 	DynamicClient dynamic.Interface
 
 	// Rest Mapper for mapping GVK to GVR
-	RestMapper       meta.RESTMapper
+	RestMapper       *restmapper.DeferredDiscoveryRESTMapper
 	CategoryExpander restmapper.CategoryExpander
 }
 

@@ -20,8 +20,11 @@ import (
 	"github.com/openshift/library-go/pkg/operator/status"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	storagelister "k8s.io/client-go/listers/storage/v1"
+	"k8s.io/client-go/restmapper"
 	"k8s.io/klog/v2"
 )
 
@@ -46,6 +49,7 @@ type CSIDriverStarterController struct {
 	infraLister       openshiftv1.InfrastructureLister
 	featureGateLister openshiftv1.FeatureGateLister
 	csiDriverLister   storagelister.CSIDriverLister
+	restMapper        *restmapper.DeferredDiscoveryRESTMapper
 	versionGetter     status.VersionGetter
 	targetVersion     string
 	eventRecorder     events.Recorder
@@ -77,6 +81,7 @@ func NewCSIDriverStarterController(
 		infraLister:       clients.ConfigInformers.Config().V1().Infrastructures().Lister(),
 		featureGateLister: clients.ConfigInformers.Config().V1().FeatureGates().Lister(),
 		csiDriverLister:   clients.KubeInformers.InformersFor("").Storage().V1().CSIDrivers().Lister(),
+		restMapper:        clients.RestMapper,
 		versionGetter:     versionGetter,
 		targetVersion:     targetVersion,
 		eventRecorder:     eventRecorder.WithComponentSuffix("CSIDriverStarter"),
@@ -158,6 +163,10 @@ func (c *CSIDriverStarterController) sync(ctx context.Context, syncCtx factory.S
 			// add static assets
 			objs, err := ctrl.ctrlRelatedObjects.RelatedObjects()
 			if err != nil {
+				if isNoMatchError(err) {
+					// RESTMapper NoResourceMatch / NoKindMatch errors are cached. Reset the cache to get fresh results on the next sync.
+					c.restMapper.Reset()
+				}
 				return err
 			}
 			relatedObjects = append(relatedObjects, objs...)
@@ -305,4 +314,19 @@ func isUnsupportedCSIDriverRunning(cfg csioperatorclient.CSIOperatorConfig, csiD
 
 func isAzureStackHub(platformStatus *configv1.PlatformStatus) bool {
 	return platformStatus.Azure != nil && platformStatus.Azure.CloudName == configv1.AzureStackCloud
+}
+
+func isNoMatchError(err error) bool {
+	// ctrlRelatedObjects.RelatedObjects() may return aggregated errors, process that
+	if agg, ok := err.(utilerrors.Aggregate); ok {
+		errs := agg.Errors()
+		for _, err := range errs {
+			if meta.IsNoMatchError(err) {
+				return true
+			}
+		}
+		return false
+	}
+
+	return meta.IsNoMatchError(err)
 }

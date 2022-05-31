@@ -1,12 +1,17 @@
 package csidriveroperator
 
 import (
+	"io/fs"
+	"os"
 	"testing"
 
 	v1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	storagev1 "k8s.io/api/storage/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/errors"
 )
 
 func TestShouldRunController(t *testing.T) {
@@ -244,4 +249,77 @@ func csiDriver(csiDriverName string, annotations map[string]string) *storagev1.C
 		},
 		Spec: storagev1.CSIDriverSpec{},
 	}
+}
+
+func TestIsNoMatchError(t *testing.T) {
+	gvr := schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "foos",
+	}
+	gvk := schema.GroupVersionKind{
+		Group:   "",
+		Version: "v1",
+		Kind:    "Foo",
+	}
+	gk := schema.GroupKind{
+		Group: "",
+		Kind:  "foo",
+	}
+
+	tests := []struct {
+		name          string
+		err           error
+		expectNoMatch bool
+	}{
+		{
+			name:          "no error",
+			err:           nil,
+			expectNoMatch: false,
+		},
+		{
+			name:          "NoResourceMatch",
+			err:           &meta.NoResourceMatchError{PartialResource: gvr},
+			expectNoMatch: true,
+		},
+		{
+			name:          "NoKindMatch",
+			err:           &meta.NoKindMatchError{GroupKind: gk},
+			expectNoMatch: true,
+		},
+		{
+			name: "unrelated error",
+			err: &meta.AmbiguousKindError{
+				PartialKind:       gvk,
+				MatchingResources: nil,
+				MatchingKinds:     nil,
+			},
+			expectNoMatch: false,
+		},
+		{
+			name:          "aggregated NoResourceMatch",
+			err:           errors.NewAggregate([]error{&meta.NoResourceMatchError{PartialResource: gvr}, os.ErrPermission}),
+			expectNoMatch: true,
+		},
+		{
+			name:          "aggregated NoKindMatch",
+			err:           errors.NewAggregate([]error{os.ErrPermission, &meta.NoKindMatchError{GroupKind: gk}}),
+			expectNoMatch: true,
+		},
+		{
+			name:          "aggregated unrelated errors",
+			err:           errors.NewAggregate([]error{os.ErrPermission, os.ErrExist, fs.ErrClosed}),
+			expectNoMatch: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ret := isNoMatchError(test.err)
+			if ret != test.expectNoMatch {
+				t.Errorf("expected %t, got %t", test.expectNoMatch, ret)
+			}
+		})
+	}
+
 }
