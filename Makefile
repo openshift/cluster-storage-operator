@@ -25,7 +25,7 @@ IMAGE_REGISTRY?=registry.svc.ci.openshift.org
 # $3 - Dockerfile path
 # $4 - context directory for image build
 # It will generate target "image-$(1)" for building the image and binding it as a prerequisite to target "images".
-$(call build-image,cluster-storage-operator,$(IMAGE_REGISTRY)/ocp/4.6:cluster-storage-operator,./Dockerfile.rhel7,.)
+$(call build-image,cluster-storage-operator,$(IMAGE_REGISTRY)/ocp/4.10:cluster-storage-operator,./Dockerfile,.)
 
 # add targets to manage profile patches
 # $0 - macro name
