@@ -343,9 +343,9 @@ type KuryrConfig struct {
 
 	// enablePortPoolsPrepopulation when true will make Kuryr prepopulate each newly created port
 	// pool with a minimum number of ports. Kuryr uses Neutron port pooling to fight the fact
-	// that it takes a significant amount of time to create one. Instead of creating it when
-	// pod is being deployed, Kuryr keeps a number of ports ready to be attached to pods. By
-	// default port prepopulation is disabled.
+	// that it takes a significant amount of time to create one. It creates a number of ports when
+	// the first pod that is configured to use the dedicated network for pods is created in a namespace,
+	// and keeps them ready to be attached to pods. Port prepopulation is disabled by default.
 	// +optional
 	EnablePortPoolsPrepopulation bool `json:"enablePortPoolsPrepopulation,omitempty"`
 
@@ -411,6 +411,22 @@ type OVNKubernetesConfig struct {
 	// gatewayConfig holds the configuration for node gateway options.
 	// +optional
 	GatewayConfig *GatewayConfig `json:"gatewayConfig,omitempty"`
+	// v4InternalSubnet is a v4 subnet used internally by ovn-kubernetes in case the
+	// default one is being already used by something else. It must not overlap with
+	// any other subnet being used by OpenShift or by the node network. The size of the
+	// subnet must be larger than the number of nodes. The value cannot be changed
+	// after installation.
+	// Default is 100.64.0.0/16
+	// +optional
+	V4InternalSubnet string `json:"v4InternalSubnet,omitempty"`
+	// v6InternalSubnet is a v6 subnet used internally by ovn-kubernetes in case the
+	// default one is being already used by something else. It must not overlap with
+	// any other subnet being used by OpenShift or by the node network. The size of the
+	// subnet must be larger than the number of nodes. The value cannot be changed
+	// after installation.
+	// Default is fd98::/48
+	// +optional
+	V6InternalSubnet string `json:"v6InternalSubnet,omitempty"`
 }
 
 type HybridOverlayConfig struct {
