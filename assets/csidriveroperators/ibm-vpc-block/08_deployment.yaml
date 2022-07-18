@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: ibm-vpc-block-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
+  annotations:
+    config.openshift.io/inject-proxy: ibm-vpc-block-csi-driver-operator
 spec:
   replicas: 1
   selector:
