@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: shared-resource-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
+  annotations:
+    config.openshift.io/inject-proxy: shared-resource-csi-driver-operator
 spec:
   replicas: 1
   selector:
