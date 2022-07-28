@@ -1,4 +1,5 @@
 # Create the namespace at runlevel 49, so cluster-csi-snapshot-controller-operator (running at level 50) can use it.
+# We keep this namespace without capability name untill we merge cluster-csi-snapshot-controller capability
 apiVersion: v1
 kind: Namespace
 metadata:
