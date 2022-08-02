@@ -185,9 +185,10 @@ func (c *CSIDriverStarterController) createCSIControllerManager(
 
 	manager := manager.NewControllerManager()
 
+	staticResourceClients := resourceapply.NewKubeClientHolder(clients.KubeClient).WithDynamicClient(clients.DynamicClient)
 	src := staticresourcecontroller.NewStaticResourceController(
 		cfg.ConditionPrefix+"CSIDriverOperatorStaticController",
-		assets.ReadFile, cfg.StaticAssets, resourceapply.NewKubeClientHolder(clients.KubeClient), c.operatorClient, c.eventRecorder).
+		assets.ReadFile, cfg.StaticAssets, staticResourceClients, c.operatorClient, c.eventRecorder).
 		AddKubeInformers(clients.KubeInformers).
 		AddRESTMapper(clients.RestMapper).
 		AddCategoryExpander(clients.CategoryExpander)
