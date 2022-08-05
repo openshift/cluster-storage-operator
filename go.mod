@@ -108,4 +108,12 @@ require (
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
-replace k8s.io/client-go => k8s.io/client-go v0.24.0
+replace k8s.io/api => github.com/qjkee/kubernetes/staging/src/k8s.io/api v0.0.0-20220805164915-f97fa78cef58
+
+replace k8s.io/apimachinery => github.com/qjkee/kubernetes/staging/src/k8s.io/apimachinery v0.0.0-20220805164915-f97fa78cef58
+
+replace k8s.io/client-go => github.com/qjkee/kubernetes/staging/src/k8s.io/client-go v0.0.0-20220805164915-f97fa78cef58
+
+replace k8s.io/component-base => github.com/qjkee/kubernetes/staging/src/k8s.io/component-base v0.0.0-20220805164915-f97fa78cef58
+
+replace k8s.io/apiserver => github.com/qjkee/kubernetes/staging/src/k8s.io/apiserver v0.0.0-20220805164915-f97fa78cef58
