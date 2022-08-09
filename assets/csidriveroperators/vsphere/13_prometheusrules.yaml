@@ -1,0 +1,30 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vmware-vsphere-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+  labels:
+    role: alert-rules
+spec:
+  groups:
+    - name: vmware-vsphere-csi-driver-operator.rules
+      rules:
+      - alert: UnsupportedCSIDriverInstalled
+        # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
+        # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
+        expr:  min_over_time(vsphere_csi_driver_error{condition="install_blocked",failure_reason="existing_driver_found"}[5m]) == 1
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "Unsupported VSphere CSI driver installed"
+          description: |
+            OpenShift has detected that an unsupported version of vSphere CSI driver is installed.
+            It is OK to use this CSI driver for now, however, Red Hat does not support it.
+            In a future OpenShift version it will be required to use OpenShift's version of the CSI
+            driver to correctly migrate vSphere PersistentVolumes to CSI. Please consult OpenShift
+            release notes before upgrading to the next version.
+            To get a version of the CSI driver supported by Red Hat, uninstall the CSI driver,
+            including its Deployment, DaemonSet and CSIDriver objects and OpenShift will
+            automatically install a supported version of the CSI driver.
+          message: "An unsupported version of vSphere CSI driver installation detected."
