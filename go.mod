@@ -9,7 +9,7 @@ require (
 	github.com/openshift/api v0.0.0-20220525145417-ee5b62754c68
 	github.com/openshift/build-machinery-go v0.0.0-20220429084610-baff9f8d23b3
 	github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a
-	github.com/openshift/library-go v0.0.0-20220525173854-9b950a41acdc
+	github.com/openshift/library-go v0.0.0-20220808125832-84c00ba9649a
 	github.com/prometheus-operator/prometheus-operator v0.44.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.44.1
 	github.com/prometheus/client_golang v1.12.1
