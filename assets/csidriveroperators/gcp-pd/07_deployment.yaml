@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: gcp-pd-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
+  annotations:
+    config.openshift.io/inject-proxy: gcp-pd-csi-driver-operator
 spec:
   replicas: 1
   selector:
