@@ -196,6 +196,10 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 		storageClassFile = "storageclasses/openstack.yaml"
 	case configv1.VSpherePlatformType:
 		storageClassFile = "storageclasses/vsphere.yaml"
+	case configv1.AlibabaCloudPlatformType:
+		return nil, supportedByCSIError
+	case configv1.IBMCloudPlatformType:
+		return nil, supportedByCSIError
 	case configv1.OvirtPlatformType:
 		return nil, supportedByCSIError
 	default:
