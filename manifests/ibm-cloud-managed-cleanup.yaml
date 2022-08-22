@@ -46,6 +46,15 @@ metadata:
 apiVersion: cloudcredential.openshift.io/v1
 kind: CredentialsRequest
 metadata:
+   name: powervs-block-csi-driver-operator
+   namespace: openshift-cloud-credential-operator
+   annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    release.openshift.io/delete: "true"
+---
+apiVersion: cloudcredential.openshift.io/v1
+kind: CredentialsRequest
+metadata:
   name: manila-csi-driver-operator
   namespace: openshift-cloud-credential-operator
   annotations:
