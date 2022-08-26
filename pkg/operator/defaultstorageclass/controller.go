@@ -191,9 +191,9 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 	var storageClassFile string
 	switch infrastructure.Status.PlatformStatus.Type {
 	case configv1.AWSPlatformType:
-		storageClassFile = "storageclasses/aws.yaml"
+		return nil, supportedByCSIError
 	case configv1.GCPPlatformType:
-		storageClassFile = "storageclasses/gcp.yaml"
+		return nil, supportedByCSIError
 	case configv1.VSpherePlatformType:
 		storageClassFile = "storageclasses/vsphere.yaml"
 	case configv1.AlibabaCloudPlatformType:
