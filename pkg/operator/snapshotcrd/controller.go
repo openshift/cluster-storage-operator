@@ -28,7 +28,8 @@ const (
 // and marks the cluster Upgradeable=false when they're found.
 // It produces following Conditions:
 // SnapshotCRDControllerUpgradeable: v1alpha1 VolumeSnapshot CRDs are not
-//    present.
+// present.
+//
 // SnapshotCRDControllerDegraded - error checking for CRDs.
 type Controller struct {
 	operatorClient v1helpers.OperatorClient

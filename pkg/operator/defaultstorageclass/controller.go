@@ -35,9 +35,11 @@ var supportedByCSIError = errors.New("only supported by a provided CSI Driver")
 // based on the underlying cloud (read from Infrastructure instance).
 // It produces following Conditions:
 // DefaultStorageClassControllerAvailable: the default storage class has been
-//    created.
+// created.
+//
 // DefaultStorageClassControllerProgressing - the default storage class has
-//    not been created yet (typically on error).
+// not been created yet (typically on error).
+//
 // DefaultStorageClassControllerDegraded - error creating the storage class.
 type Controller struct {
 	operatorClient     v1helpers.OperatorClient
