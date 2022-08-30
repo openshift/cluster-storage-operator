@@ -6,8 +6,7 @@ metadata:
   namespace: openshift-cluster-csi-drivers
 spec:
   endpoints:
-  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
-    interval: 30s
+  - interval: 30s
     path: /metrics
     port: provisioner-m
     scheme: https
@@ -16,8 +15,7 @@ spec:
       serverName: shared-resource-csi-driver-operator-metrics.openshift-cluster-csi-drivers.svc
       certFile: /etc/prometheus/secrets/metrics-client-certs/tls.crt
       keyFile: /etc/prometheus/secrets/metrics-client-certs/tls.key
-  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
-    interval: 30s
+  - interval: 30s
     path: /metrics
     port: attacher-m
     scheme: https
@@ -26,8 +24,7 @@ spec:
       serverName: shared-resource-csi-driver-operator-metrics.openshift-cluster-csi-drivers.svc
       certFile: /etc/prometheus/secrets/metrics-client-certs/tls.crt
       keyFile: /etc/prometheus/secrets/metrics-client-certs/tls.key
-  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
-    interval: 30s
+  - interval: 30s
     path: /metrics
     port: resizer-m
     scheme: https
