@@ -35,10 +35,7 @@ spec:
       priorityClassName: system-cluster-critical
       serviceAccountName: cluster-storage-operator
       securityContext:
-        fsGroup: 10400
-        runAsGroup: 10400
         runAsNonRoot: true
-        runAsUser: 10400
         seccompProfile:
           type: RuntimeDefault
       containers:
