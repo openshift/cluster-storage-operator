@@ -1,0 +1,4 @@
+# Remove any included.* annotation, we don't want the manifest instantiated by any CVO!
+# The manifest should be copied to HyperShift
+- op: remove
+  path: /metadata/annotations

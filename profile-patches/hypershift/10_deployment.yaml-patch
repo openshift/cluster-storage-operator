@@ -1,0 +1,39 @@
+# Remove any included.* annotation, we don't want the manifest instantiated by any CVO!
+# The manifest should be copied to HyperShift
+- op: remove
+  path: /metadata/annotations
+
+# control-plane-operator will set the right selector + Node + PodAffinity
+- op: remove
+  path: /spec/template/spec/nodeSelector
+
+# control-plane-operator will set the right affinity
+- op: remove
+  path: /spec/template/spec/tolerations
+
+# control-plane-operator will set the right namespace
+- op: remove
+  path: /metadata/namespace
+
+# control-plane-operator will set the right priority
+- op: remove
+  path: /spec/template/spec/priorityClassName
+
+# Add guest-kubeconfig volume
+- op: add
+  path: /spec/template/spec/volumes
+  value:
+    - name: guest-kubeconfig
+      secret:
+        secretName: service-network-admin-kubeconfig
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts
+  value:
+    - name: guest-kubeconfig
+      mountPath: /etc/guest-kubeconfig
+
+# Add cmdline args
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value:
+    "--guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig"

@@ -31,8 +31,17 @@ type CSIOperatorConfig struct {
 	// normal and run the usual checks.
 	StatusFilter func(*configv1.InfrastructureStatus) bool
 	// StaticAssets is list of bindata assets to create when starting the CSI
-	// driver operator.
+	// driver operator in standalone OCP clusters
 	StaticAssets []string
+
+	// GuestStaticAssets returns a list of bindata assets to create in guest cluster
+	// when starting the driver in hypershift clusters
+	GuestStaticAssets []string
+
+	// MgmtStaticAssets returns a list of bindata assets to create in mgmt cluster
+	// when starting the driver in hypershift clusters
+	MgmtStaticAssets []string
+
 	// CRAsset is name of the bindata asset with ClusterCSIDriver of the
 	// operator. Its logLevel & operatorLoglevel will be set by CSO.
 	CRAsset string
