@@ -22,6 +22,7 @@ spec:
       - args:
         - start
         - -v=${LOG_LEVEL}
+        - --guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig
         env:
         - name: DRIVER_IMAGE
           value: ${DRIVER_IMAGE}
@@ -50,7 +51,10 @@ spec:
           requests:
             memory: 50Mi
             cpu: 10m
-      priorityClassName: system-cluster-critical
+        volumeMounts:
+        - mountPath: /etc/guest-kubeconfig
+          name: guest-kubeconfig
+      priorityClassName: hypershift-control-plane
       serviceAccountName: aws-ebs-csi-driver-operator
       tolerations:
       - key: CriticalAddonsOnly
@@ -58,3 +62,7 @@ spec:
       - key: node-role.kubernetes.io/master
         operator: Exists
         effect: "NoSchedule"
+      volumes:
+      - name: guest-kubeconfig
+        secret:
+          secretName: service-network-admin-kubeconfig
