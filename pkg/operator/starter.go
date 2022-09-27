@@ -35,7 +35,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	if !isHyperShift {
 		return startControllerStandAlone(ctx, controllerConfig)
 	}
-	return nil
+	return startHyperShiftController(ctx, controllerConfig, *guestKubeConfig)
 }
 
 func countStorageClasses(storageClassController factory.Controller, clients *csoclients.Clients) {

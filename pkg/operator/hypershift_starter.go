@@ -2,18 +2,24 @@ package operator
 
 import (
 	"context"
+	"fmt"
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/api/sharedresource"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/configobservercontroller"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/loglevel"
+	"github.com/openshift/library-go/pkg/operator/management"
+	"github.com/openshift/library-go/pkg/operator/managementstatecontroller"
 	"github.com/openshift/library-go/pkg/operator/status"
 	rbacv1 "k8s.io/api/rbac/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog/v2"
 )
 
@@ -91,5 +97,35 @@ func startHyperShiftController(ctx context.Context, controllerConfig *controller
 	clusterOperatorStatus.WithRelatedObjectsFunc(csidriveroperator.RelatedObjectFunc())
 	allControllers = append(allControllers, csiDriverController)
 
-	return nil
+	managementStateController := managementstatecontroller.NewOperatorManagementStateController(clusterOperatorName, guestClients.OperatorClient, guestEventRecorder)
+
+	// This controller syncs CR.Status.Conditions with the value in the field CR.Spec.ManagementStatus. It only supports Managed state
+	management.SetOperatorNotRemovable()
+
+	allControllers = append(allControllers, managementStateController)
+
+	// This controller syncs the operator log level with the value set in the CR.Spec.OperatorLogLevel
+	logLevelController := loglevel.NewClusterOperatorLoggingController(guestClients.OperatorClient, guestEventRecorder)
+	allControllers = append(allControllers, logLevelController)
+
+	// This controller observes a config (proxy for now) and writes it to CR.Spec.ObservedConfig for later use by the operator
+	configObserverController := configobservercontroller.NewConfigObserverController(guestClients, guestEventRecorder)
+	allControllers = append(allControllers, configObserverController)
+
+	klog.Info("Starting the Informers.")
+
+	csoclients.StartGuestInformers(guestClients, ctx.Done())
+	csoclients.StartMgmtInformers(mgmtClients, ctx.Done())
+
+	klog.Info("Starting the controllers")
+	for _, c := range allControllers {
+		go func(ctrl factory.Controller) {
+			defer utilruntime.HandleCrash()
+			ctrl.Run(ctx, 1)
+		}(c)
+	}
+
+	<-ctx.Done()
+
+	return fmt.Errorf("stopped")
 }

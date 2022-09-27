@@ -252,3 +252,28 @@ func StartInformers(clients *Clients, stopCh <-chan struct{}) {
 		informer.Start(stopCh)
 	}
 }
+
+func StartGuestInformers(clients *Clients, stopCh <-chan struct{}) {
+	for _, informer := range []interface {
+		Start(stopCh <-chan struct{})
+	}{
+		clients.KubeInformers,
+		clients.OperatorInformers,
+		clients.ConfigInformers,
+		clients.ExtensionInformer,
+		clients.MonitoringInformer,
+	} {
+		informer.Start(stopCh)
+	}
+}
+
+func StartMgmtInformers(clients *Clients, stopCh <-chan struct{}) {
+	for _, informer := range []interface {
+		Start(stopCh <-chan struct{})
+	}{
+		clients.KubeInformers,
+		clients.ConfigInformers,
+	} {
+		informer.Start(stopCh)
+	}
+}
