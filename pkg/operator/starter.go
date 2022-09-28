@@ -65,6 +65,11 @@ func countStorageClasses(storageClassController factory.Controller, clients *cso
 }
 
 func populateConfigs(clients *csoclients.Clients, recorder events.Recorder, isHypershift bool) []csioperatorclient.CSIOperatorConfig {
+	if isHypershift {
+		return []csioperatorclient.CSIOperatorConfig{
+			csioperatorclient.GetAWSEBSCSIOperatorConfig(isHypershift),
+		}
+	}
 	return []csioperatorclient.CSIOperatorConfig{
 		csioperatorclient.GetAWSEBSCSIOperatorConfig(isHypershift),
 		csioperatorclient.GetGCPPDCSIOperatorConfig(),

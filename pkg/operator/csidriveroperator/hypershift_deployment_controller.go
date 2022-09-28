@@ -70,7 +70,7 @@ func NewHyperShiftControllerDeployment(
 	// controller queue, without anything reading it.
 	f = f.WithInformers(
 		guestClient.OperatorClient.Informer(),
-		mgtClient.KubeInformers.InformersFor(csoclients.CSIOperatorNamespace).Apps().V1().Deployments().Informer(),
+		mgtClient.KubeInformers.InformersFor(controlNamespace).Apps().V1().Deployments().Informer(),
 		guestClient.ConfigInformers.Config().V1().Infrastructures().Informer())
 
 	c := &HyperShiftDeploymentController{
