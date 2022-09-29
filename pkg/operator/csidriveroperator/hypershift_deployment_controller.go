@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"k8s.io/klog/v2"
+	"os"
 	"strings"
 	"time"
 )
@@ -46,6 +47,10 @@ type HyperShiftDeploymentController struct {
 }
 
 var _ factory.Controller = &HyperShiftDeploymentController{}
+
+var (
+	hypershiftImage = os.Getenv("HYPERSHIFT_IMAGE")
+)
 
 func NewHyperShiftControllerDeployment(
 	mgtClient *csoclients.Clients,
@@ -108,7 +113,9 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 	}
 
 	namespaceReplacer := strings.NewReplacer("${CONTROLPLANE_NAMESPACE}", c.controlNamespace)
+	hyperShiftImageReplacer := strings.NewReplacer("${HYPERSHIFT_IMAGE}", os.Getenv(hypershiftImage))
 	replacers = append(replacers, namespaceReplacer)
+	replacers = append(replacers, hyperShiftImageReplacer)
 
 	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, replacers...)
 	if err != nil {
