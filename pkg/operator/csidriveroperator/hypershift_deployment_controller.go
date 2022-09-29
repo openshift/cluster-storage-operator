@@ -3,6 +3,10 @@ package csidriveroperator
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	configv1listers "github.com/openshift/client-go/config/listers/config/v1"
@@ -17,9 +21,6 @@ import (
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"k8s.io/klog/v2"
-	"os"
-	"strings"
-	"time"
 )
 
 // This HyperShiftDeploymentController installs and syncs CSI driver operator Deployment.
@@ -49,7 +50,7 @@ type HyperShiftDeploymentController struct {
 var _ factory.Controller = &HyperShiftDeploymentController{}
 
 var (
-	hypershiftImage = os.Getenv("HYPERSHIFT_IMAGE")
+	envHyperShiftImage = os.Getenv("HYPERSHIFT_IMAGE")
 )
 
 func NewHyperShiftControllerDeployment(
@@ -113,7 +114,7 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 	}
 
 	namespaceReplacer := strings.NewReplacer("${CONTROLPLANE_NAMESPACE}", c.controlNamespace)
-	hyperShiftImageReplacer := strings.NewReplacer("${HYPERSHIFT_IMAGE}", os.Getenv(hypershiftImage))
+	hyperShiftImageReplacer := strings.NewReplacer("${HYPERSHIFT_IMAGE}", envHyperShiftImage)
 	replacers = append(replacers, namespaceReplacer)
 	replacers = append(replacers, hyperShiftImageReplacer)
 
