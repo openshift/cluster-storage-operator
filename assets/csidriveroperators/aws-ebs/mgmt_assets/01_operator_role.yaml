@@ -26,9 +26,7 @@ rules:
   - apps
   resources:
   - deployments
-  - daemonsets
   - replicasets
-  - statefulsets
   verbs:
   - '*'
 - apiGroups:
@@ -37,16 +35,6 @@ rules:
   - poddisruptionbudgets
   verbs:
   - '*'
-- apiGroups:
-  - monitoring.coreos.com
-  resources:
-  - servicemonitors
-  verbs:
-  - get
-  - create
-  - update
-  - patch
-  - delete
 - apiGroups:
   - coordination.k8s.io
   resources:
@@ -74,14 +62,6 @@ rules:
   - update
   - patch
   - delete
-- apiGroups:
-  - cloudcredential.openshift.io
-  resources:
-  - credentialsrequests
-  verbs:
-  - get
-  - list
-  - watche
 - apiGroups:
   - config.openshift.io
   resources:
