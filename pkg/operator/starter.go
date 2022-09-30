@@ -28,7 +28,7 @@ const (
 
 func RunOperator(ctx context.Context, controllerConfig *controllercmd.ControllerContext, guestKubeConfig *string) error {
 	isHyperShift := false
-	if guestKubeConfig != nil {
+	if guestKubeConfig != nil && *guestKubeConfig != "" {
 		isHyperShift = true
 	}
 
