@@ -23,10 +23,11 @@ import (
 // This OLMOperatorRemovalController deletes pre-existing CSI driver installed by
 // OLM to new CSI driver namespace.
 // Steps performed:
-// 1. Remove old OLM Subscription and CSV. Remember the operator namespace
-//    (in Storage CR annotation), just in case the controller is restarted
-//    after Subscription removal.
-// 3. Remove the old CR (incl. force-removing all of its finalizers).
+//  1. Remove old OLM Subscription and CSV. Remember the operator namespace
+//     (in Storage CR annotation), just in case the controller is restarted
+//     after Subscription removal.
+//  3. Remove the old CR (incl. force-removing all of its finalizers).
+//
 // It produces following conditions:
 // <CSI driver name>OLMOperatorRemovalProgressing/Degraded: for status reporting.
 // <CSI driver name>OLMOperatorRemovalAvailable: to signal that the removal has been complete
