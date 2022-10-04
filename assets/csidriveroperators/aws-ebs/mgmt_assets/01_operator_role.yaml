@@ -63,15 +63,6 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - config.openshift.io
-  resources:
-  - infrastructures
-  - proxies
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - roles
