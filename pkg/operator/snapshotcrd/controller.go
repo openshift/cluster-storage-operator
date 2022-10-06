@@ -29,7 +29,6 @@ const (
 // It produces following Conditions:
 // SnapshotCRDControllerUpgradeable: v1alpha1 VolumeSnapshot CRDs are not
 // present.
-//
 // SnapshotCRDControllerDegraded - error checking for CRDs.
 type Controller struct {
 	operatorClient v1helpers.OperatorClient

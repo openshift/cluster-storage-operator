@@ -11,14 +11,15 @@ metadata:
     capability.openshift.io/name: Storage
 spec:
   endpoints:
-  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
-    interval: 30s
+  - interval: 30s
     path: /metrics
     port: https
     scheme: https
     tlsConfig:
       caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
       serverName: cluster-storage-operator-metrics.openshift-cluster-storage-operator.svc
+      certFile: /etc/prometheus/secrets/metrics-client-certs/tls.crt
+      keyFile: /etc/prometheus/secrets/metrics-client-certs/tls.key
   jobLabel: component
   selector:
     matchLabels:

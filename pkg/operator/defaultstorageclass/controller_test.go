@@ -162,17 +162,17 @@ func TestSync(t *testing.T) {
 	tests := []operatorTest{
 		{
 			// Default storage class is deployed if it does not exist
-			name: "initial AWS deployment",
+			name: "initial VSphere deployment",
 			initialObjects: testObjects{
 				storage:        getCR(),
-				infrastructure: getInfrastructure(cfgv1.AWSPlatformType),
+				infrastructure: getInfrastructure(cfgv1.VSpherePlatformType),
 			},
 			expectedObjects: testObjects{
 				storage: getCR(
 					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
 					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
-				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/aws.yaml")},
+				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/vsphere.yaml")},
 			},
 			expectErr: false,
 		},
@@ -199,15 +199,15 @@ func TestSync(t *testing.T) {
 					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
 					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
-				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/aws.yaml")},
-				infrastructure: getInfrastructure(cfgv1.AWSPlatformType),
+				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/vsphere.yaml")},
+				infrastructure: getInfrastructure(cfgv1.VSpherePlatformType),
 			},
 			expectedObjects: testObjects{
 				storage: getCR(
 					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
 					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
-				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/aws.yaml")},
+				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/vsphere.yaml")},
 			},
 			expectErr: false,
 		},
@@ -216,15 +216,15 @@ func TestSync(t *testing.T) {
 			name: "default storage class removed by user",
 			initialObjects: testObjects{
 				storage:        getCR(),
-				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/aws.yaml", withNoDefault)},
-				infrastructure: getInfrastructure(cfgv1.AWSPlatformType),
+				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/vsphere.yaml", withNoDefault)},
+				infrastructure: getInfrastructure(cfgv1.VSpherePlatformType),
 			},
 			expectedObjects: testObjects{
 				storage: getCR(
 					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
 					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
-				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/aws.yaml", withNoDefault)},
+				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/vsphere.yaml", withNoDefault)},
 			},
 			expectErr: false,
 		},
@@ -278,14 +278,14 @@ func TestSync(t *testing.T) {
 			// The controller flips Avialable=False to True after a successful sync
 			name: "available=False set to True after OK",
 			initialObjects: testObjects{
-				infrastructure: getInfrastructure(cfgv1.AWSPlatformType),
+				infrastructure: getInfrastructure(cfgv1.VSpherePlatformType),
 				storage: getCR(
 					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
 					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
 			},
 			expectedObjects: testObjects{
-				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/aws.yaml")},
+				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/vsphere.yaml")},
 				storage: getCR(
 					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
 					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
