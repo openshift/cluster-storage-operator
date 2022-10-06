@@ -31,7 +31,11 @@
   value:
     - name: guest-kubeconfig
       mountPath: /etc/guest-kubeconfig
-
+- op: add
+  path: /spec/template/spec/containers/0/env/39
+  value:
+    name: HYPERSHIFT_IMAGE
+    value: quay.io/openshift/origin-control-plane:latest
 # Add cmdline args
 - op: add
   path: /spec/template/spec/containers/0/args/-
