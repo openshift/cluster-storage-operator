@@ -3,6 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
+    capability.openshift.io/name: Storage
     include.release.openshift.io/ibm-cloud-managed: "true"
   name: cluster-storage-operator
   namespace: openshift-cluster-storage-operator
