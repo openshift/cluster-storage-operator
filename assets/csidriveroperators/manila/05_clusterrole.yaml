@@ -60,6 +60,7 @@ rules:
   resources:
   - customresourcedefinitions
   verbs:
+  - get
   - list
   - create
   - watch
