@@ -134,6 +134,58 @@ func TestShouldRunController(t *testing.T) {
 			false,
 			false,
 		},
+		{
+			"tech preview Shared Resource driver with positive custom featureGate",
+			v1.AWSPlatformType,
+			customSet("SomeOtherFeatureGate", "CSIDriverSharedResource", "YetAnotherGate"),
+			nil,
+			csioperatorclient.CSIOperatorConfig{
+				CSIDriverName:      "csi.sharedresource.openshift.io",
+				Platform:           v1.AWSPlatformType,
+				RequireFeatureGate: "CSIDriverSharedResource",
+			},
+			true,
+			false,
+		},
+		{
+			"tech preview Shared Resource driver with negative custom featureGate",
+			v1.AWSPlatformType,
+			customSet("SomeOtherFeatureGate"),
+			nil,
+			csioperatorclient.CSIOperatorConfig{
+				CSIDriverName:      "csi.sharedresource.openshift.io",
+				Platform:           v1.AWSPlatformType,
+				RequireFeatureGate: "CSIDriverSharedResource",
+			},
+			false,
+			false,
+		},
+		{
+			"tech preview Shared Resource driver with empty custom featureGate",
+			v1.AWSPlatformType,
+			customSet(),
+			nil,
+			csioperatorclient.CSIOperatorConfig{
+				CSIDriverName:      "csi.sharedresource.openshift.io",
+				Platform:           v1.AWSPlatformType,
+				RequireFeatureGate: "CSIDriverSharedResource",
+			},
+			false,
+			false,
+		},
+		{
+			"tech preview Shared Resource driver with nil custom featureGate",
+			v1.AWSPlatformType,
+			customNilSet(),
+			nil,
+			csioperatorclient.CSIOperatorConfig{
+				CSIDriverName:      "csi.sharedresource.openshift.io",
+				Platform:           v1.AWSPlatformType,
+				RequireFeatureGate: "CSIDriverSharedResource",
+			},
+			false,
+			false,
+		},
 	}
 
 	for _, test := range tests {
@@ -176,6 +228,17 @@ func customSet(gates ...string) *v1.FeatureGate {
 				CustomNoUpgrade: &v1.CustomFeatureGates{
 					Enabled: gates,
 				},
+			},
+		},
+	}
+}
+
+func customNilSet() *v1.FeatureGate {
+	return &v1.FeatureGate{
+		Spec: v1.FeatureGateSpec{
+			FeatureGateSelection: v1.FeatureGateSelection{
+				FeatureSet:      v1.CustomNoUpgrade,
+				CustomNoUpgrade: nil,
 			},
 		},
 	}

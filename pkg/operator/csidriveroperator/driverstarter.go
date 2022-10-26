@@ -290,7 +290,11 @@ func getEnabledFeatures(fg *configv1.FeatureGate) []string {
 		return nil
 	}
 	if fg.Spec.FeatureSet == configv1.CustomNoUpgrade {
-		return fg.Spec.CustomNoUpgrade.Enabled
+		if fg.Spec.CustomNoUpgrade != nil {
+			return fg.Spec.CustomNoUpgrade.Enabled
+		}
+		// User wants CustomNoUpgrade, but did not set any feature gate.
+		return nil
 	}
 	gates := configv1.FeatureSets[fg.Spec.FeatureSet]
 	if gates == nil {
