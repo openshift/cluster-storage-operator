@@ -43,6 +43,9 @@ spec:
         - name: cluster-storage-operator
           image: quay.io/openshift/origin-cluster-storage-operator:latest
           terminationMessagePolicy: FallbackToLogsOnError
+          args:
+          - start
+          - -v=2
           ports:
           - containerPort: 8443
             name: metrics

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -11,6 +12,10 @@ import (
 
 	"github.com/openshift/cluster-storage-operator/pkg/operator"
 	"github.com/openshift/cluster-storage-operator/pkg/version"
+)
+
+var (
+	guestKubeConfig *string
 )
 
 func main() {
@@ -32,12 +37,17 @@ func NewOperatorCommand() *cobra.Command {
 	ctrlCmd := controllercmd.NewControllerCommandConfig(
 		"cluster-storage-operator",
 		version.Get(),
-		operator.RunOperator,
+		runOperatorWithGuestKubeconfig,
 	).NewCommand()
 	ctrlCmd.Use = "start"
 	ctrlCmd.Short = "Start the Cluster Storage Operator"
+	guestKubeConfig = ctrlCmd.Flags().String("guest-kubeconfig", "", "Path to guest kubeconfig file. This flag enables hypershift integration")
 
 	cmd.AddCommand(ctrlCmd)
 
 	return cmd
+}
+
+func runOperatorWithGuestKubeconfig(ctx context.Context, controllerConfig *controllercmd.ControllerContext) error {
+	return operator.RunOperator(ctx, controllerConfig, guestKubeConfig)
 }

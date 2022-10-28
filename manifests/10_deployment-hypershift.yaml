@@ -2,11 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    capability.openshift.io/name: Storage
-    include.release.openshift.io/ibm-cloud-managed: "true"
   name: cluster-storage-operator
-  namespace: openshift-cluster-storage-operator
 spec:
   replicas: 1
   selector:
@@ -23,6 +19,7 @@ spec:
       - args:
         - start
         - -v=2
+        - --guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig
         command:
         - cluster-storage-operator
         - start
@@ -105,6 +102,8 @@ spec:
           value: quay.io/openshift/origin-powervs-block-csi-driver-operator:latest
         - name: POWERVS_BLOCK_CSI_DRIVER_IMAGE
           value: quay.io/openshift/origin-powervs-block-csi-driver:latest
+        - name: HYPERSHIFT_IMAGE
+          value: quay.io/openshift/origin-control-plane:latest
         image: quay.io/openshift/origin-cluster-storage-operator:latest
         imagePullPolicy: IfNotPresent
         name: cluster-storage-operator
@@ -122,28 +121,14 @@ spec:
             - ALL
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
-        - mountPath: /var/run/secrets/serving-cert
-          name: cluster-storage-operator-serving-cert
-      priorityClassName: system-cluster-critical
+        - mountPath: /etc/guest-kubeconfig
+          name: guest-kubeconfig
       securityContext:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
       serviceAccountName: cluster-storage-operator
-      tolerations:
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/master
-        operator: Exists
-      - effect: NoExecute
-        key: node.kubernetes.io/unreachable
-        operator: Exists
-        tolerationSeconds: 120
-      - effect: NoExecute
-        key: node.kubernetes.io/not-ready
-        operator: Exists
-        tolerationSeconds: 120
       volumes:
-      - name: cluster-storage-operator-serving-cert
+      - name: guest-kubeconfig
         secret:
-          optional: true
-          secretName: cluster-storage-operator-serving-cert
+          secretName: service-network-admin-kubeconfig

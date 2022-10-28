@@ -1,6 +1,9 @@
 package csoclients
 
 import (
+	"fmt"
+	"github.com/openshift/library-go/pkg/config/client"
+	"k8s.io/client-go/rest"
 	"time"
 
 	apiextclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -135,6 +138,107 @@ func NewClients(controllerConfig *controllercmd.ControllerContext, resync time.D
 	return c, nil
 }
 
+func NewHypershiftMgmtClients(controllerConfig *controllercmd.ControllerContext, controlNamespace string, resync time.Duration) (*Clients, error) {
+	c := &Clients{}
+	var err error
+	// Kubernetes client, used to manipulate StorageClasses
+	c.KubeClient, err = kubernetes.NewForConfig(controllerConfig.ProtoKubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	c.KubeInformers = v1helpers.NewKubeInformersForNamespaces(c.KubeClient, controlNamespace)
+
+	c.DynamicClient, err = dynamic.NewForConfig(controllerConfig.KubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// config.openshift.io client, used to get Infrastructure
+	c.ConfigClientSet, err = cfgclientset.NewForConfig(controllerConfig.KubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	c.ConfigInformers = cfginformers.NewSharedInformerFactory(c.ConfigClientSet, resync)
+
+	dc, err := discovery.NewDiscoveryClientForConfig(controllerConfig.KubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	c.RestMapper = restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+	c.CategoryExpander = restmapper.NewDiscoveryCategoryExpander(dc)
+
+	return c, nil
+}
+
+func NewHypershiftGuestClients(
+	controllerConfig *controllercmd.ControllerContext,
+	guestKubeConfig string,
+	controllerName string, resync time.Duration) (*Clients, error) {
+	c := &Clients{}
+	var err error
+	kubeRestConfig, err := client.GetKubeConfigOrInClusterConfig(guestKubeConfig, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to use guest kubeconfig %s: %s", guestKubeConfig, err)
+	}
+	// TODO set user agent name here
+	guestKubeClient := kubernetes.NewForConfigOrDie(rest.AddUserAgent(kubeRestConfig, controllerName))
+	// Kubernetes client, used to manipulate StorageClasses
+	c.KubeClient = guestKubeClient
+	if err != nil {
+		return nil, err
+	}
+
+	c.KubeInformers = v1helpers.NewKubeInformersForNamespaces(
+		c.KubeClient,
+		informerNamespaces...)
+
+	c.DynamicClient, err = dynamic.NewForConfig(kubeRestConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// operator.openshift.io client, used to manipulate the operator CR
+	c.OperatorClientSet, err = opclient.NewForConfig(kubeRestConfig)
+	if err != nil {
+		return nil, err
+	}
+	c.OperatorInformers = opinformers.NewSharedInformerFactory(c.OperatorClientSet, resync)
+
+	// config.openshift.io client, used to get Infrastructure
+	c.ConfigClientSet, err = cfgclientset.NewForConfig(kubeRestConfig)
+	if err != nil {
+		return nil, err
+	}
+	c.ConfigInformers = cfginformers.NewSharedInformerFactory(c.ConfigClientSet, resync)
+
+	// CRD client, used to list CRDs
+	c.ExtensionClientSet, err = apiextclient.NewForConfig(kubeRestConfig)
+	if err != nil {
+		return nil, err
+	}
+	c.ExtensionInformer = apiextinformers.NewSharedInformerFactory(c.ExtensionClientSet, resync)
+
+	c.MonitoringClient, err = promclient.NewForConfig(kubeRestConfig)
+	if err != nil {
+		return nil, err
+	}
+	c.MonitoringInformer = prominformer.NewSharedInformerFactory(c.MonitoringClient, resync)
+
+	c.OperatorClient = &operatorclient.OperatorClient{
+		Informers: c.OperatorInformers,
+		Client:    c.OperatorClientSet,
+	}
+
+	dc, err := discovery.NewDiscoveryClientForConfig(kubeRestConfig)
+	if err != nil {
+		return nil, err
+	}
+	c.RestMapper = restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+	c.CategoryExpander = restmapper.NewDiscoveryCategoryExpander(dc)
+	return c, nil
+}
+
 func StartInformers(clients *Clients, stopCh <-chan struct{}) {
 	for _, informer := range []interface {
 		Start(stopCh <-chan struct{})
@@ -144,6 +248,31 @@ func StartInformers(clients *Clients, stopCh <-chan struct{}) {
 		clients.ConfigInformers,
 		clients.ExtensionInformer,
 		clients.MonitoringInformer,
+	} {
+		informer.Start(stopCh)
+	}
+}
+
+func StartGuestInformers(clients *Clients, stopCh <-chan struct{}) {
+	for _, informer := range []interface {
+		Start(stopCh <-chan struct{})
+	}{
+		clients.KubeInformers,
+		clients.OperatorInformers,
+		clients.ConfigInformers,
+		clients.ExtensionInformer,
+		clients.MonitoringInformer,
+	} {
+		informer.Start(stopCh)
+	}
+}
+
+func StartMgmtInformers(clients *Clients, stopCh <-chan struct{}) {
+	for _, informer := range []interface {
+		Start(stopCh <-chan struct{})
+	}{
+		clients.KubeInformers,
+		clients.ConfigInformers,
 	} {
 		informer.Start(stopCh)
 	}
