@@ -16,6 +16,13 @@ include $(addprefix ./vendor/github.com/openshift/build-machinery-go/make/, \
 check: | verify test-unit
 .PHONY: check
 
+test: test-with-alert-unit-test
+
+test-with-alert-unit-test:
+	cat assets/vsphere_problem_detector/12_prometheusrules.yaml|yq -Y '.spec' > alert_rule_tests/12_prometheusrules.yaml
+	promtool test rules ./alert_rule_tests/vsphere_older_version_test.yaml
+
+
 IMAGE_REGISTRY?=registry.svc.ci.openshift.org
 
 # This will call a macro called "build-image" which will generate image specific targets based on the parameters:

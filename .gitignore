@@ -80,3 +80,5 @@ tags
 .vscode/*
 .history
 # End of https://www.gitignore.io/api/go,vim,emacs,visualstudiocode
+# ignore generated alerts
+alert_rule_tests/12_prometheusrules.yaml
