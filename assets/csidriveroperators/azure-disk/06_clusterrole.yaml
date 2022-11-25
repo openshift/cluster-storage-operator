@@ -40,7 +40,13 @@ rules:
   resources:
   - configmaps
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - ''
   resources:
@@ -91,13 +97,25 @@ rules:
   resources:
   - leases
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - ''
   resources:
   - nodes
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - ''
   resources:
@@ -162,7 +180,13 @@ rules:
   - replicasets
   - statefulsets
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - storage.k8s.io
   resources:
@@ -262,12 +286,6 @@ rules:
   - watch
   - update
   - delete
-- apiGroups:
-  - cloudcredential.openshift.io
-  resources:
-  - credentialsrequests
-  verbs:
-  - '*'
 - apiGroups:
   - config.openshift.io
   resources:

@@ -11,25 +11,49 @@ rules:
   resources:
   - configmaps
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - authentication.k8s.io
   resources:
   - tokenreviews
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - authorization.k8s.io
   resources:
   - subjectaccessreviews
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - coordination.k8s.io
   resources:
   - leases
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - ''
   resources:
@@ -64,7 +88,13 @@ rules:
   - 'storages'
   - 'storages/status'
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - config.openshift.io
   resources:

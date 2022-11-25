@@ -70,13 +70,25 @@ rules:
   resources:
   - leases
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - ''
   resources:
   - nodes
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - ''
   resources:
@@ -137,7 +149,13 @@ rules:
   - replicasets
   - statefulsets
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - storage.k8s.io
   resources:
@@ -236,13 +254,13 @@ rules:
   resources:
   - '*'
   verbs:
-  - '*'
-- apiGroups:
-  - cloudcredential.openshift.io
-  resources:
-  - credentialsrequests
-  verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - config.openshift.io
   resources:
@@ -258,7 +276,13 @@ rules:
   - 'clustercsidrivers'
   - 'clustercsidrivers/status'
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 # Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
 - apiGroups:
   - "authentication.k8s.io"
@@ -283,7 +307,13 @@ rules:
   resources:
   - services
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 # Grant these permissions in the driver namespace to Prometheus
 - apiGroups:
   - ''
@@ -299,4 +329,10 @@ rules:
   resources:
   - poddisruptionbudgets
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
