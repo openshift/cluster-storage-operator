@@ -2,6 +2,9 @@ package vsphereproblemdetector
 
 import (
 	"context"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -9,24 +12,28 @@ import (
 	openshiftv1 "github.com/openshift/client-go/config/listers/config/v1"
 	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
-	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/controller/manager"
+	"github.com/openshift/library-go/pkg/operator/csi/csidrivercontrollerservicecontroller"
+	"github.com/openshift/library-go/pkg/operator/deploymentcontroller"
 	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/loglevel"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
 	"github.com/openshift/library-go/pkg/operator/status"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"
 )
 
 const (
-	infraConfigName = "cluster"
+	infraConfigName                     = "cluster"
+	vSphereProblemDetectorOperatorImage = "VSPHERE_PROBLEM_DETECTOR_OPERATOR_IMAGE"
 )
 
 type VSphereProblemDetectorStarter struct {
 	controller     manager.ControllerManager
-	operatorClient *operatorclient.OperatorClient
+	operatorClient v1helpers.OperatorClientWithFinalizers
 	infraLister    openshiftv1.InfrastructureLister
 	versionGetter  status.VersionGetter
 	targetVersion  string
@@ -115,12 +122,27 @@ func (c *VSphereProblemDetectorStarter) createVSphereProblemDetectorManager(
 		c.operatorClient,
 		c.eventRecorder).AddKubeInformers(clients.KubeInformers), 1)
 
-	mgr = mgr.WithController(NewVSphereProblemDetectorDeploymentController(
-		clients,
-		c.versionGetter,
-		c.targetVersion,
+	deploymentAssets, err := assets.ReadFile("vsphere_problem_detector/07_deployment.yaml")
+	if err != nil {
+		panic(err)
+	}
+
+	mgr = mgr.WithController(deploymentcontroller.NewDeploymentController(
+		"VSphereProblemDetectorDeploymentController",
+		deploymentAssets,
 		c.eventRecorder,
-		resyncInterval), 1)
+		clients.OperatorClient,
+		clients.KubeClient,
+		clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Apps().V1().Deployments(),
+		[]factory.Informer{
+			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().Secrets().Informer(),
+			clients.ConfigInformers.Config().V1().Infrastructures().Informer(),
+		},
+		[]deploymentcontroller.ManifestHookFunc{
+			c.withReplacerHook(),
+		},
+		csidrivercontrollerservicecontroller.WithControlPlaneTopologyHook(clients.ConfigInformers),
+		csidrivercontrollerservicecontroller.WithObservedProxyDeploymentHook()), 1)
 
 	mgr = mgr.WithController(newMonitoringController(
 		clients,
@@ -128,4 +150,18 @@ func (c *VSphereProblemDetectorStarter) createVSphereProblemDetectorManager(
 		resyncInterval), 1)
 
 	return mgr
+}
+
+func (c *VSphereProblemDetectorStarter) withReplacerHook() deploymentcontroller.ManifestHookFunc {
+	return func(spec *operatorapi.OperatorSpec, deployment []byte) ([]byte, error) {
+		logLevel := loglevel.LogLevelToVerbosity(spec.LogLevel)
+		pairs := []string{
+			"${OPERATOR_IMAGE}", os.Getenv(vSphereProblemDetectorOperatorImage),
+			"${LOG_LEVEL}", strconv.Itoa(logLevel),
+		}
+
+		replacer := strings.NewReplacer(pairs...)
+		newDeployment := replacer.Replace(string(deployment))
+		return []byte(newDeployment), nil
+	}
 }

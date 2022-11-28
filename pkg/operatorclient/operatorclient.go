@@ -95,3 +95,52 @@ func (c OperatorClient) SetObjectAnnotations(required map[string]string) error {
 	}
 	return nil
 }
+
+func (c OperatorClient) EnsureFinalizer(ctx context.Context, finalizer string) error {
+	// In theory, this is unused - CSO is not a removable operator
+	storage, err := c.Informers.Operator().V1().Storages().Lister().Get(GlobalConfigName)
+	if err != nil {
+		return err
+	}
+
+	if storage.DeletionTimestamp != nil {
+		return nil
+	}
+
+	for _, f := range storage.Finalizers {
+		if f == finalizer {
+			// Finalizer already exists
+			return nil
+		}
+	}
+
+	newStorage := storage.DeepCopy()
+	newStorage.Finalizers = append(newStorage.Finalizers, finalizer)
+	_, err = c.Client.OperatorV1().Storages().Update(ctx, newStorage, metav1.UpdateOptions{})
+	return err
+}
+
+func (c OperatorClient) RemoveFinalizer(ctx context.Context, finalizer string) error {
+	// In theory, this is unused - CSO is not a removable operator
+	storage, err := c.Informers.Operator().V1().Storages().Lister().Get(GlobalConfigName)
+	if err != nil {
+		return err
+	}
+
+	var newFinalizers []string
+	for _, f := range storage.Finalizers {
+		if f != finalizer {
+			newFinalizers = append(newFinalizers, f)
+		}
+	}
+
+	if len(newFinalizers) == len(storage.Finalizers) {
+		return nil
+	}
+
+	newStorage := storage.DeepCopy()
+	newStorage.Finalizers = newFinalizers
+	_, err = c.Client.OperatorV1().Storages().Update(ctx, newStorage, metav1.UpdateOptions{})
+	return err
+
+}
