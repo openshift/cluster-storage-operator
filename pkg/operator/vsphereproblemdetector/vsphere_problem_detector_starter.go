@@ -2,6 +2,8 @@ package vsphereproblemdetector
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -19,16 +21,21 @@ import (
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/loglevel"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
+	"github.com/openshift/library-go/pkg/operator/resource/resourcehash"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
+	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/klog/v2"
 )
 
 const (
 	infraConfigName                     = "cluster"
 	vSphereProblemDetectorOperatorImage = "VSPHERE_PROBLEM_DETECTOR_OPERATOR_IMAGE"
+	secretName                          = "vsphere-cloud-credentials"
+	cloudConfigNamespace                = "openshift-config"
 )
 
 type VSphereProblemDetectorStarter struct {
@@ -142,7 +149,19 @@ func (c *VSphereProblemDetectorStarter) createVSphereProblemDetectorManager(
 			c.withReplacerHook(),
 		},
 		csidrivercontrollerservicecontroller.WithControlPlaneTopologyHook(clients.ConfigInformers),
-		csidrivercontrollerservicecontroller.WithObservedProxyDeploymentHook()), 1)
+		csidrivercontrollerservicecontroller.WithObservedProxyDeploymentHook(),
+		// Restart when credentials change to get a quick retest
+		csidrivercontrollerservicecontroller.WithSecretHashAnnotationHook(
+			csoclients.OperatorNamespace,
+			secretName,
+			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().Secrets(),
+		),
+		// Restart when cloud config changes to get a quick retest
+		c.WithConfigMapHashAnnotationHook(
+			cloudConfigNamespace,
+			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().ConfigMaps(),
+		),
+	), 1)
 
 	mgr = mgr.WithController(newMonitoringController(
 		clients,
@@ -164,4 +183,51 @@ func (c *VSphereProblemDetectorStarter) withReplacerHook() deploymentcontroller.
 		newDeployment := replacer.Replace(string(deployment))
 		return []byte(newDeployment), nil
 	}
+}
+
+func (c *VSphereProblemDetectorStarter) WithConfigMapHashAnnotationHook(namespace string, cmInformer coreinformers.ConfigMapInformer) deploymentcontroller.DeploymentHookFunc {
+	return func(opSpec *operatorapi.OperatorSpec, deployment *appsv1.Deployment) error {
+		// Find cloud-config ConfigMap name from Infrastructure
+		infra, err := c.infraLister.Get(infraConfigName)
+		if err != nil {
+			return err
+		}
+		cloudConfigName := infra.Spec.CloudConfig.Name
+
+		// Compute ConfigMap hash
+		inputHashes, err := resourcehash.MultipleObjectHashStringMapForObjectReferenceFromLister(
+			cmInformer.Lister(),
+			nil,
+			resourcehash.NewObjectRef().ForConfigMap().InNamespace(namespace).Named(cloudConfigName),
+		)
+		if err != nil {
+			return fmt.Errorf("invalid dependency reference: %w", err)
+		}
+
+		// Add the hash to Deployment annotations
+		return addObjectHash(deployment, inputHashes)
+	}
+}
+
+func addObjectHash(deployment *appsv1.Deployment, inputHashes map[string]string) error {
+	if deployment == nil {
+		return fmt.Errorf("invalid deployment: %v", deployment)
+	}
+	if deployment.Annotations == nil {
+		deployment.Annotations = map[string]string{}
+	}
+	if deployment.Spec.Template.Annotations == nil {
+		deployment.Spec.Template.Annotations = map[string]string{}
+	}
+	for k, v := range inputHashes {
+		annotationKey := fmt.Sprintf("operator.openshift.io/dep-%s", k)
+		if len(annotationKey) > 63 {
+			hash := sha256.Sum256([]byte(k))
+			annotationKey = fmt.Sprintf("operator.openshift.io/dep-%x", hash)
+			annotationKey = annotationKey[:63]
+		}
+		deployment.Annotations[annotationKey] = v
+		deployment.Spec.Template.Annotations[annotationKey] = v
+	}
+	return nil
 }
