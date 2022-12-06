@@ -2,6 +2,11 @@ package vsphereproblemdetector
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -9,24 +14,33 @@ import (
 	openshiftv1 "github.com/openshift/client-go/config/listers/config/v1"
 	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
-	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/controller/manager"
+	"github.com/openshift/library-go/pkg/operator/csi/csidrivercontrollerservicecontroller"
+	"github.com/openshift/library-go/pkg/operator/deploymentcontroller"
 	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/loglevel"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
+	"github.com/openshift/library-go/pkg/operator/resource/resourcehash"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
 	"github.com/openshift/library-go/pkg/operator/status"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
+	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/klog/v2"
 )
 
 const (
-	infraConfigName = "cluster"
+	infraConfigName                     = "cluster"
+	vSphereProblemDetectorOperatorImage = "VSPHERE_PROBLEM_DETECTOR_OPERATOR_IMAGE"
+	secretName                          = "vsphere-cloud-credentials"
+	cloudConfigNamespace                = "openshift-config"
 )
 
 type VSphereProblemDetectorStarter struct {
 	controller     manager.ControllerManager
-	operatorClient *operatorclient.OperatorClient
+	operatorClient v1helpers.OperatorClientWithFinalizers
 	infraLister    openshiftv1.InfrastructureLister
 	versionGetter  status.VersionGetter
 	targetVersion  string
@@ -115,12 +129,39 @@ func (c *VSphereProblemDetectorStarter) createVSphereProblemDetectorManager(
 		c.operatorClient,
 		c.eventRecorder).AddKubeInformers(clients.KubeInformers), 1)
 
-	mgr = mgr.WithController(NewVSphereProblemDetectorDeploymentController(
-		clients,
-		c.versionGetter,
-		c.targetVersion,
+	deploymentAssets, err := assets.ReadFile("vsphere_problem_detector/07_deployment.yaml")
+	if err != nil {
+		panic(err)
+	}
+
+	mgr = mgr.WithController(deploymentcontroller.NewDeploymentController(
+		"VSphereProblemDetectorDeploymentController",
+		deploymentAssets,
 		c.eventRecorder,
-		resyncInterval), 1)
+		clients.OperatorClient,
+		clients.KubeClient,
+		clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Apps().V1().Deployments(),
+		[]factory.Informer{
+			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().Secrets().Informer(),
+			clients.ConfigInformers.Config().V1().Infrastructures().Informer(),
+		},
+		[]deploymentcontroller.ManifestHookFunc{
+			c.withReplacerHook(),
+		},
+		csidrivercontrollerservicecontroller.WithControlPlaneTopologyHook(clients.ConfigInformers),
+		csidrivercontrollerservicecontroller.WithObservedProxyDeploymentHook(),
+		// Restart when credentials change to get a quick retest
+		csidrivercontrollerservicecontroller.WithSecretHashAnnotationHook(
+			csoclients.OperatorNamespace,
+			secretName,
+			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().Secrets(),
+		),
+		// Restart when cloud config changes to get a quick retest
+		c.WithConfigMapHashAnnotationHook(
+			cloudConfigNamespace,
+			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().ConfigMaps(),
+		),
+	), 1)
 
 	mgr = mgr.WithController(newMonitoringController(
 		clients,
@@ -128,4 +169,65 @@ func (c *VSphereProblemDetectorStarter) createVSphereProblemDetectorManager(
 		resyncInterval), 1)
 
 	return mgr
+}
+
+func (c *VSphereProblemDetectorStarter) withReplacerHook() deploymentcontroller.ManifestHookFunc {
+	return func(spec *operatorapi.OperatorSpec, deployment []byte) ([]byte, error) {
+		logLevel := loglevel.LogLevelToVerbosity(spec.LogLevel)
+		pairs := []string{
+			"${OPERATOR_IMAGE}", os.Getenv(vSphereProblemDetectorOperatorImage),
+			"${LOG_LEVEL}", strconv.Itoa(logLevel),
+		}
+
+		replacer := strings.NewReplacer(pairs...)
+		newDeployment := replacer.Replace(string(deployment))
+		return []byte(newDeployment), nil
+	}
+}
+
+func (c *VSphereProblemDetectorStarter) WithConfigMapHashAnnotationHook(namespace string, cmInformer coreinformers.ConfigMapInformer) deploymentcontroller.DeploymentHookFunc {
+	return func(opSpec *operatorapi.OperatorSpec, deployment *appsv1.Deployment) error {
+		// Find cloud-config ConfigMap name from Infrastructure
+		infra, err := c.infraLister.Get(infraConfigName)
+		if err != nil {
+			return err
+		}
+		cloudConfigName := infra.Spec.CloudConfig.Name
+
+		// Compute ConfigMap hash
+		inputHashes, err := resourcehash.MultipleObjectHashStringMapForObjectReferenceFromLister(
+			cmInformer.Lister(),
+			nil,
+			resourcehash.NewObjectRef().ForConfigMap().InNamespace(namespace).Named(cloudConfigName),
+		)
+		if err != nil {
+			return fmt.Errorf("invalid dependency reference: %w", err)
+		}
+
+		// Add the hash to Deployment annotations
+		return addObjectHash(deployment, inputHashes)
+	}
+}
+
+func addObjectHash(deployment *appsv1.Deployment, inputHashes map[string]string) error {
+	if deployment == nil {
+		return fmt.Errorf("invalid deployment: %v", deployment)
+	}
+	if deployment.Annotations == nil {
+		deployment.Annotations = map[string]string{}
+	}
+	if deployment.Spec.Template.Annotations == nil {
+		deployment.Spec.Template.Annotations = map[string]string{}
+	}
+	for k, v := range inputHashes {
+		annotationKey := fmt.Sprintf("operator.openshift.io/dep-%s", k)
+		if len(annotationKey) > 63 {
+			hash := sha256.Sum256([]byte(k))
+			annotationKey = fmt.Sprintf("operator.openshift.io/dep-%x", hash)
+			annotationKey = annotationKey[:63]
+		}
+		deployment.Annotations[annotationKey] = v
+		deployment.Spec.Template.Annotations[annotationKey] = v
+	}
+	return nil
 }

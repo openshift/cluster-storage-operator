@@ -266,11 +266,15 @@ github.com/openshift/library-go/pkg/network
 github.com/openshift/library-go/pkg/operator/condition
 github.com/openshift/library-go/pkg/operator/configobserver
 github.com/openshift/library-go/pkg/operator/configobserver/proxy
+github.com/openshift/library-go/pkg/operator/csi/csiconfigobservercontroller
+github.com/openshift/library-go/pkg/operator/csi/csidrivercontrollerservicecontroller
+github.com/openshift/library-go/pkg/operator/deploymentcontroller
 github.com/openshift/library-go/pkg/operator/events
 github.com/openshift/library-go/pkg/operator/loglevel
 github.com/openshift/library-go/pkg/operator/management
 github.com/openshift/library-go/pkg/operator/managementstatecontroller
 github.com/openshift/library-go/pkg/operator/resource/resourceapply
+github.com/openshift/library-go/pkg/operator/resource/resourcehash
 github.com/openshift/library-go/pkg/operator/resource/resourcehelper
 github.com/openshift/library-go/pkg/operator/resource/resourcemerge
 github.com/openshift/library-go/pkg/operator/resource/resourceread
