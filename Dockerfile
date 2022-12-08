@@ -1,9 +1,9 @@
-FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.19-openshift-4.12 AS builder
+FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.19-openshift-4.13 AS builder
 WORKDIR /go/src/github.com/openshift/cluster-storage-operator
 COPY . .
 RUN make
 
-FROM registry.ci.openshift.org/ocp/4.12:base
+FROM registry.ci.openshift.org/ocp/4.13:base
 COPY --from=builder /go/src/github.com/openshift/cluster-storage-operator/cluster-storage-operator /usr/bin/
 COPY manifests /manifests
 COPY vendor/github.com/openshift/api/operator/v1/0000_50_cluster_storage_operator_01_crd.yaml manifests/05_crd_operator.yaml
