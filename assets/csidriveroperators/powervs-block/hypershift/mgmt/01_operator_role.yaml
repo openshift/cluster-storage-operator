@@ -1,0 +1,101 @@
+# RBAC needed to start the IBMCloud PowerVS Operator in mgmt cluster
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: powervs-block-csi-driver-operator-role
+  namespace: ${CONTROLPLANE_NAMESPACE}
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - pods
+      - services
+      - endpoints
+      - events
+      - configmaps
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - policy
+    resources:
+      - poddisruptionbudgets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ''
+    resourceNames:
+      - extension-apiserver-authentication
+      - powervs-block-csi-driver-operator-lock
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ''
+    resources:
+      - serviceaccounts
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - roles
+      - rolebindings
+    verbs:
+      - watch
+      - list
+      - get
+      - create
+      - delete
+      - patch
+      - update
