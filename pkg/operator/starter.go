@@ -2,13 +2,13 @@ package operator
 
 import (
 	"context"
+	"time"
+
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/component-base/metrics"
 	"k8s.io/component-base/metrics/legacyregistry"
-	"time"
 
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
-	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"k8s.io/klog/v2"
 
@@ -38,8 +38,8 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	return startHyperShiftController(ctx, controllerConfig, *guestKubeConfig)
 }
 
-func countStorageClasses(storageClassController factory.Controller, clients *csoclients.Clients) {
-	klog.Infof("Registering default StorageClass count metric for controller %s", storageClassController.Name())
+func countStorageClasses(clients *csoclients.Clients) {
+	klog.Infof("Registering default StorageClass count metric")
 	legacyregistry.RawMustRegister(metrics.NewGaugeFunc(
 		&metrics.GaugeOpts{
 			Name:           "default_storage_class_count",
