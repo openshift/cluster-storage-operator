@@ -3,8 +3,6 @@ kind: Deployment
 metadata:
   name: aws-ebs-csi-driver-operator
   namespace: ${CONTROLPLANE_NAMESPACE}
-  annotations:
-    config.openshift.io/inject-proxy: aws-ebs-csi-driver-operator
 spec:
   replicas: 1
   selector:
