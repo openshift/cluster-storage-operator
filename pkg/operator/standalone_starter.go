@@ -3,13 +3,13 @@ package operator
 import (
 	"context"
 	"fmt"
-
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/api/sharedresource"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/configobservercontroller"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/snapshotcrd"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/vsphereproblemdetector"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
@@ -33,7 +33,12 @@ func startControllerStandAlone(ctx context.Context, controllerConfig *controller
 	versionGetter := status.NewVersionGetter()
 	versionGetter.SetVersion("operator", status.VersionForOperatorFromEnv())
 
-	countStorageClasses(clients)
+	storageClassController := defaultstorageclass.NewController(
+		clients,
+		controllerConfig.EventRecorder,
+	)
+
+	countStorageClasses(storageClassController, clients)
 
 	// We dont' need this in hypershift guest or mgmt clusters
 	snapshotCRDController := snapshotcrd.NewController(
@@ -97,6 +102,7 @@ func startControllerStandAlone(ctx context.Context, controllerConfig *controller
 		clusterOperatorStatus,
 		managementStateController,
 		configObserverController,
+		storageClassController,
 		snapshotCRDController,
 		csiDriverController,
 		vsphereProblemDetector,

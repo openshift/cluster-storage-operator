@@ -3,13 +3,13 @@ package operator
 import (
 	"context"
 	"fmt"
-
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/api/sharedresource"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/configobservercontroller"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/controller/factory"
@@ -39,6 +39,15 @@ func startHyperShiftController(ctx context.Context, controllerConfig *controller
 
 	versionGetter := status.NewVersionGetter()
 	versionGetter.SetVersion("operator", status.VersionForOperatorFromEnv())
+
+	allControllers := []factory.Controller{}
+
+	// start the storageclass controller in hypershift guest cluster
+	storageClassController := defaultstorageclass.NewController(
+		guestClients,
+		controllerConfig.EventRecorder,
+	)
+	allControllers = append(allControllers, storageClassController)
 
 	relatedObjects := []configv1.ObjectReference{
 		{Resource: "namespaces", Name: operatorNamespace},
@@ -71,7 +80,6 @@ func startHyperShiftController(ctx context.Context, controllerConfig *controller
 	)
 	clusterOperatorStatus.WithRelatedObjectsFunc(csidriveroperator.RelatedObjectFunc())
 
-	allControllers := []factory.Controller{}
 	allControllers = append(allControllers, clusterOperatorStatus)
 
 	csiDriverConfigs := populateConfigs(mgmtClients, controllerConfig.EventRecorder, true /* A hypershift cluster */)
