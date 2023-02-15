@@ -7,12 +7,10 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	operatorapi "github.com/openshift/api/operator/v1"
 	openshiftv1 "github.com/openshift/client-go/config/listers/config/v1"
-	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
-	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -185,17 +183,15 @@ func (c *Controller) syncStorageClass(ctx context.Context) error {
 	return err
 }
 
-// Returns either the StorageClass, if the PlatformType is supported, or an error
-// indicating whether the StorageClass is provided by a CSI driver or an unsupported platform
+// Returns an error indicating whether the StorageClass is provided by a CSI driver or an unsupported platform.
 func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storagev1.StorageClass, error) {
-	var storageClassFile string
 	switch infrastructure.Status.PlatformStatus.Type {
 	case configv1.AWSPlatformType:
 		return nil, supportedByCSIError
 	case configv1.GCPPlatformType:
 		return nil, supportedByCSIError
 	case configv1.VSpherePlatformType:
-		storageClassFile = "storageclasses/vsphere.yaml"
+		return nil, supportedByCSIError
 	case configv1.AlibabaCloudPlatformType:
 		return nil, supportedByCSIError
 	case configv1.AzurePlatformType:
@@ -209,12 +205,6 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 	default:
 		return nil, unsupportedPlatformError
 	}
-
-	scBytes, err := assets.ReadFile(storageClassFile)
-	if err != nil {
-		return nil, err
-	}
-	return resourceread.ReadStorageClassV1OrDie(scBytes), nil
 }
 
 // UpdateConditionFunc returns a func to update a condition.

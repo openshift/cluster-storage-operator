@@ -161,22 +161,6 @@ func withFalseConditions(conditions ...string) crModifier {
 func TestSync(t *testing.T) {
 	tests := []operatorTest{
 		{
-			// Default storage class is deployed if it does not exist
-			name: "initial VSphere deployment",
-			initialObjects: testObjects{
-				storage:        getCR(),
-				infrastructure: getInfrastructure(cfgv1.VSpherePlatformType),
-			},
-			expectedObjects: testObjects{
-				storage: getCR(
-					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
-					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
-				),
-				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/vsphere.yaml")},
-			},
-			expectErr: false,
-		},
-		{
 			// The controller reports Disable on unsupported platforms
 			name: "initial unsupported platform deployment",
 			initialObjects: testObjects{
@@ -188,43 +172,6 @@ func TestSync(t *testing.T) {
 					withTrueConditions(conditionsPrefix+"Disabled", conditionsPrefix+opv1.OperatorStatusTypeAvailable),
 					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
-			},
-			expectErr: false,
-		},
-		{
-			// Everything is deployed and the controller does nothing
-			name: "everything deployed",
-			initialObjects: testObjects{
-				storage: getCR(
-					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
-					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
-				),
-				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/vsphere.yaml")},
-				infrastructure: getInfrastructure(cfgv1.VSpherePlatformType),
-			},
-			expectedObjects: testObjects{
-				storage: getCR(
-					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
-					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
-				),
-				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/vsphere.yaml")},
-			},
-			expectErr: false,
-		},
-		{
-			// The controller does not set default storage class when removed by user
-			name: "default storage class removed by user",
-			initialObjects: testObjects{
-				storage:        getCR(),
-				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/vsphere.yaml", withNoDefault)},
-				infrastructure: getInfrastructure(cfgv1.VSpherePlatformType),
-			},
-			expectedObjects: testObjects{
-				storage: getCR(
-					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
-					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
-				),
-				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/vsphere.yaml", withNoDefault)},
 			},
 			expectErr: false,
 		},
@@ -243,21 +190,6 @@ func TestSync(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			// The controller syncs fine when azurestackhub is used and does not create a storage class
-			name: "azurestackhub",
-			initialObjects: testObjects{
-				storage:        getCR(),
-				infrastructure: getAzureStackHubInfrastructure(),
-			},
-			expectedObjects: testObjects{
-				storage: getCR(
-					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
-					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
-				),
-			},
-			expectErr: false,
-		},
-		{
 			// The controller returns error + Available is True -> not flipped to False
 			name: "available not false after error",
 			initialObjects: testObjects{
@@ -273,25 +205,6 @@ func TestSync(t *testing.T) {
 				),
 			},
 			expectErr: true,
-		},
-		{
-			// The controller flips Avialable=False to True after a successful sync
-			name: "available=False set to True after OK",
-			initialObjects: testObjects{
-				infrastructure: getInfrastructure(cfgv1.VSpherePlatformType),
-				storage: getCR(
-					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
-					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
-				),
-			},
-			expectedObjects: testObjects{
-				storageClasses: []*storagev1.StorageClass{getPlatformStorageClass("storageclasses/vsphere.yaml")},
-				storage: getCR(
-					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
-					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
-				),
-			},
-			expectErr: false,
 		},
 	}
 
