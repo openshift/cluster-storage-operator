@@ -38,6 +38,6 @@ func GetSharedResourceCSIOperatorConfig() CSIOperatorConfig {
 		DeploymentAsset:     "csidriveroperators/shared-resource/09_deployment.yaml",
 		ImageReplacer:       strings.NewReplacer(pairs...),
 		AllowDisabled:       false,
-		RequireFeatureGate:  "",
+		RequireFeatureGate:  "CSIDriverSharedResource",
 	}
 }
