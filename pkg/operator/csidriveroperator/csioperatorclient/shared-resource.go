@@ -12,32 +12,43 @@ const (
 	envSharedResourceDriverWebhookImage  = "SHARED_RESOURCE_DRIVER_WEBHOOK_IMAGE"
 )
 
-func GetSharedResourceCSIOperatorConfig() CSIOperatorConfig {
+func GetSharedResourceCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 	pairs := []string{
 		"${OPERATOR_IMAGE}", os.Getenv(envSharedResourceDriverOperatorImage),
 		"${DRIVER_IMAGE}", os.Getenv(envSharedResourceDriverImage),
 		"${WEBHOOK_IMAGE}", os.Getenv(envSharedResourceDriverWebhookImage),
 	}
 
-	return CSIOperatorConfig{
-		CSIDriverName:   SharedResourceDriverName,
-		ConditionPrefix: "SHARES",
-		Platform:        AllPlatforms,
-		StaticAssets: []string{
-			"csidriveroperators/shared-resource/02_sa.yaml",
-			"csidriveroperators/shared-resource/03_role.yaml",
-			"csidriveroperators/shared-resource/04_rolebinding.yaml",
-			"csidriveroperators/shared-resource/05_clusterrole.yaml",
-			"csidriveroperators/shared-resource/06_clusterrolebinding.yaml",
-			"csidriveroperators/shared-resource/07_role_config.yaml",
-			"csidriveroperators/shared-resource/08_rolebinding_config.yaml",
-			"csidriveroperators/shared-resource/11_metrics_service.yaml",
-		},
-		ServiceMonitorAsset: "csidriveroperators/shared-resource/12_servicemonitor.yaml",
-		CRAsset:             "csidriveroperators/shared-resource/10_cr.yaml",
-		DeploymentAsset:     "csidriveroperators/shared-resource/09_deployment.yaml",
-		ImageReplacer:       strings.NewReplacer(pairs...),
-		AllowDisabled:       false,
-		RequireFeatureGate:  "CSIDriverSharedResource",
+	csiDriverConfig := CSIOperatorConfig{
+		CSIDriverName:      SharedResourceDriverName,
+		ConditionPrefix:    "SHARES",
+		Platform:           AllPlatforms,
+		ImageReplacer:      strings.NewReplacer(pairs...),
+		AllowDisabled:      false,
+		RequireFeatureGate: "CSIDriverSharedResource",
 	}
+
+	if !isHypershift {
+		csiDriverConfig.StaticAssets = []string{
+			"csidriveroperators/shared-resource/standalone/02_sa.yaml",
+			"csidriveroperators/shared-resource/standalone/03_role.yaml",
+			"csidriveroperators/shared-resource/standalone/04_rolebinding.yaml",
+			"csidriveroperators/shared-resource/standalone/05_clusterrole.yaml",
+			"csidriveroperators/shared-resource/standalone/06_clusterrolebinding.yaml",
+			"csidriveroperators/shared-resource/standalone/07_role_config.yaml",
+			"csidriveroperators/shared-resource/standalone/08_rolebinding_config.yaml",
+			"csidriveroperators/shared-resource/standalone/11_metrics_service.yaml",
+		}
+		csiDriverConfig.ServiceMonitorAsset = "csidriveroperators/shared-resource/standalone/12_servicemonitor.yaml"
+		csiDriverConfig.CRAsset = "csidriveroperators/shared-resource/standalone/10_cr.yaml"
+		csiDriverConfig.DeploymentAsset = "csidriveroperators/shared-resource/standalone/09_deployment.yaml"
+	} else {
+		csiDriverConfig.MgmtStaticAssets = []string{
+			"csidriveroperators/shared-resource/hypershift/mgmt/02_sa.yaml",
+		}
+		csiDriverConfig.DeploymentAsset = "csidriveroperators/shared-resource/hypershift/mgmt/09_deployment.yaml"
+		csiDriverConfig.CRAsset = "csidriveroperators/shared-resource/hypershift/guest/10_cr.yaml"
+	}
+
+	return csiDriverConfig
 }
