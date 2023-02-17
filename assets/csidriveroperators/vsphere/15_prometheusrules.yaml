@@ -28,3 +28,20 @@ spec:
             including its Deployment, DaemonSet and CSIDriver objects and OpenShift will
             automatically install a supported version of the CSI driver.
           message: "An unsupported version of vSphere CSI driver installation detected."
+      - alert: VSphereTopologyMisconfiguration
+        # min() takes minimum over both source="infrastructure" and source="clustercsidriver"
+        # dimensions and only when both are above zero the alert is triggered.
+        expr:  min(vsphere_topology_tags{source=~"infrastructure|clustercsidriver"}) > 0
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "vSphere topology is erroneously configured both in ClusterCSIDriver and Infrastructure."
+          description: |
+            vSphere topology is configured both in vSphere ClusterCSIDriver and Infrastructure
+            objects. The topology in ClusterCSIDriver is ignored and only the one in
+            Infrastructure object is used to configure the vSphere CSI driver. Please delete
+            topology in ClusterCSIDriver, for example by
+            "oc edit clustercsidriver csi.vsphere.vmware.com" and removing the whole
+            "topologyCategories" section.
+          message: "vSphere topology is erroneously configured both in ClusterCSIDriver and Infrastructure objects, only the one in Infrastructure is used."
