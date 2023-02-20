@@ -68,6 +68,7 @@ func populateConfigs(clients *csoclients.Clients, recorder events.Recorder, isHy
 	if isHypershift {
 		return []csioperatorclient.CSIOperatorConfig{
 			csioperatorclient.GetAWSEBSCSIOperatorConfig(isHypershift),
+			csioperatorclient.GetPowerVSBlockCSIOperatorConfig(isHypershift),
 		}
 	}
 	return []csioperatorclient.CSIOperatorConfig{
@@ -82,6 +83,6 @@ func populateConfigs(clients *csoclients.Clients, recorder events.Recorder, isHy
 		csioperatorclient.GetSharedResourceCSIOperatorConfig(),
 		csioperatorclient.GetAlibabaDiskCSIOperatorConfig(),
 		csioperatorclient.GetIBMVPCBlockCSIOperatorConfig(),
-		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(),
+		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(isHypershift),
 	}
 }
