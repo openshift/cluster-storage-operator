@@ -37,6 +37,10 @@ spec:
       serviceAccountName: cluster-storage-operator
       securityContext:
         runAsNonRoot: true
+        # Force a specific UID, just in case this Pod matches a custom SCC with "runAsUser: type: runAsNonRoot".
+        # The UID value was chosen by a fair `echo $RANDOM` call.
+        # TODO: remove cluster-admin from the operator, then a specific UID won't be needed.
+        runAsUser: 11411
         seccompProfile:
           type: RuntimeDefault
       containers:
