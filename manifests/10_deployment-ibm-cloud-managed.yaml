@@ -127,6 +127,7 @@ spec:
       priorityClassName: system-cluster-critical
       securityContext:
         runAsNonRoot: true
+        runAsUser: 11411
         seccompProfile:
           type: RuntimeDefault
       serviceAccountName: cluster-storage-operator
