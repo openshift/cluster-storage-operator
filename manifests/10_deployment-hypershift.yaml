@@ -125,6 +125,7 @@ spec:
           name: guest-kubeconfig
       securityContext:
         runAsNonRoot: true
+        runAsUser: 11411
         seccompProfile:
           type: RuntimeDefault
       serviceAccountName: cluster-storage-operator
