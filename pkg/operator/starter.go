@@ -2,10 +2,11 @@ package operator
 
 import (
 	"context"
+	"time"
+
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/component-base/metrics"
 	"k8s.io/component-base/metrics/legacyregistry"
-	"time"
 
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/controller/factory"
@@ -69,6 +70,7 @@ func populateConfigs(clients *csoclients.Clients, recorder events.Recorder, isHy
 		return []csioperatorclient.CSIOperatorConfig{
 			csioperatorclient.GetAWSEBSCSIOperatorConfig(isHypershift),
 			csioperatorclient.GetPowerVSBlockCSIOperatorConfig(isHypershift),
+			csioperatorclient.GetSharedResourceCSIOperatorConfig(isHypershift),
 		}
 	}
 	return []csioperatorclient.CSIOperatorConfig{
@@ -80,7 +82,7 @@ func populateConfigs(clients *csoclients.Clients, recorder events.Recorder, isHy
 		csioperatorclient.GetVMwareVSphereCSIOperatorConfig(),
 		csioperatorclient.GetAzureDiskCSIOperatorConfig(),
 		csioperatorclient.GetAzureFileCSIOperatorConfig(),
-		csioperatorclient.GetSharedResourceCSIOperatorConfig(),
+		csioperatorclient.GetSharedResourceCSIOperatorConfig(isHypershift),
 		csioperatorclient.GetAlibabaDiskCSIOperatorConfig(),
 		csioperatorclient.GetIBMVPCBlockCSIOperatorConfig(),
 		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(isHypershift),
