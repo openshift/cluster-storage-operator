@@ -3,3 +3,5 @@ kind: ServiceAccount
 metadata:
   name: aws-ebs-csi-driver-operator
   namespace: ${CONTROLPLANE_NAMESPACE}
+imagePullSecrets:
+- name: pull-secret
