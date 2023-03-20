@@ -16,6 +16,42 @@ spec:
       labels:
         name: aws-ebs-csi-driver-operator
     spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - preference:
+                matchExpressions:
+                  - key: hypershift.openshift.io/control-plane
+                    operator: In
+                    values:
+                      - "true"
+              weight: 50
+            - preference:
+                matchExpressions:
+                  - key: hypershift.openshift.io/cluster
+                    operator: In
+                    values:
+                      - ${CONTROLPLANE_NAMESPACE}
+              weight: 100
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    hypershift.openshift.io/hosted-control-plane: ${CONTROLPLANE_NAMESPACE}
+                topologyKey: kubernetes.io/hostname
+              weight: 100
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: "NoSchedule"
+        - key: hypershift.openshift.io/control-plane
+          operator: Exists
+        - key: hypershift.openshift.io/cluster
+          operator: Equal
+          value: ${CONTROLPLANE_NAMESPACE}
       containers:
       - args:
         - start
@@ -56,12 +92,6 @@ spec:
           name: guest-kubeconfig
       priorityClassName: hypershift-control-plane
       serviceAccountName: aws-ebs-csi-driver-operator
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: "NoSchedule"
       volumes:
       - name: guest-kubeconfig
         secret:
