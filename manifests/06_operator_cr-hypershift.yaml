@@ -7,3 +7,4 @@ spec:
   logLevel: Normal
   managementState: Managed
   operatorLogLevel: Normal
+  vsphereStorageDriver: CSIWithMigrationDriver
