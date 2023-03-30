@@ -340,3 +340,11 @@ rules:
   - "tokenreviews"
   verbs:
   - "create"
+- apiGroups:
+  - operator.openshift.io
+  resources:
+  - storages
+  verbs:
+  - get
+  - list
+  - watch
