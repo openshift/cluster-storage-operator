@@ -12,6 +12,8 @@ import (
 	fakeextapi "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	apiextinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/dynamic/fake"
 	fakecore "k8s.io/client-go/kubernetes/fake"
 )
 
@@ -42,7 +44,9 @@ func NewFakeClients(initialObjects *FakeTestObjects) *Clients {
 	monitoringClient := fakemonitoring.NewSimpleClientset(initialObjects.MonitoringObjects...)
 	monitoringInformer := prominformer.NewSharedInformerFactory(monitoringClient, 0)
 
-	//dynamicClient := fake.NewSimpleDynamicClient()
+	scheme := runtime.NewScheme()
+	dynamicClient := fake.NewSimpleDynamicClient(scheme)
+	dynamicInformer := dynamicinformer.NewDynamicSharedInformerFactory(dynamicClient, 0)
 
 	opClient := operatorclient.OperatorClient{
 		Client:    operatorClient,
@@ -61,6 +65,7 @@ func NewFakeClients(initialObjects *FakeTestObjects) *Clients {
 		ConfigInformers:    configInformerFactory,
 		MonitoringClient:   monitoringClient,
 		MonitoringInformer: monitoringInformer,
-		//		DynamicClient:      dynamicClient,
+		DynamicClient:      dynamicClient,
+		DynamicInformer:    dynamicInformer,
 	}
 }

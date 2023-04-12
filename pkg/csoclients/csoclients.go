@@ -2,9 +2,11 @@ package csoclients
 
 import (
 	"fmt"
-	"github.com/openshift/library-go/pkg/config/client"
-	"k8s.io/client-go/rest"
 	"time"
+
+	"github.com/openshift/library-go/pkg/config/client"
+	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/rest"
 
 	apiextclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
@@ -53,8 +55,9 @@ type Clients struct {
 	// informer for prometheus-operator APIs
 	MonitoringInformer prominformer.SharedInformerFactory
 
-	// Dynamic client for OLM and old CSI operator APIs
-	DynamicClient dynamic.Interface
+	// Dynamic client for OLM, old CSI operator APIs and HyperShift
+	DynamicClient   dynamic.Interface
+	DynamicInformer dynamicinformer.DynamicSharedInformerFactory
 
 	// Rest Mapper for mapping GVK to GVR
 	RestMapper       *restmapper.DeferredDiscoveryRESTMapper
@@ -95,6 +98,7 @@ func NewClients(controllerConfig *controllercmd.ControllerContext, resync time.D
 	if err != nil {
 		return nil, err
 	}
+	c.DynamicInformer = dynamicinformer.NewDynamicSharedInformerFactory(c.DynamicClient, resync)
 
 	// operator.openshift.io client, used to manipulate the operator CR
 	c.OperatorClientSet, err = opclient.NewForConfig(controllerConfig.KubeConfig)
@@ -153,6 +157,7 @@ func NewHypershiftMgmtClients(controllerConfig *controllercmd.ControllerContext,
 	if err != nil {
 		return nil, err
 	}
+	c.DynamicInformer = dynamicinformer.NewFilteredDynamicSharedInformerFactory(c.DynamicClient, resync, controlNamespace, nil)
 
 	// config.openshift.io client, used to get Infrastructure
 	c.ConfigClientSet, err = cfgclientset.NewForConfig(controllerConfig.KubeConfig)
@@ -197,6 +202,7 @@ func NewHypershiftGuestClients(
 	if err != nil {
 		return nil, err
 	}
+	c.DynamicInformer = dynamicinformer.NewDynamicSharedInformerFactory(c.DynamicClient, resync)
 
 	// operator.openshift.io client, used to manipulate the operator CR
 	c.OperatorClientSet, err = opclient.NewForConfig(kubeRestConfig)
@@ -248,6 +254,7 @@ func StartInformers(clients *Clients, stopCh <-chan struct{}) {
 		clients.ConfigInformers,
 		clients.ExtensionInformer,
 		clients.MonitoringInformer,
+		clients.DynamicInformer,
 	} {
 		informer.Start(stopCh)
 	}
@@ -262,6 +269,7 @@ func StartGuestInformers(clients *Clients, stopCh <-chan struct{}) {
 		clients.ConfigInformers,
 		clients.ExtensionInformer,
 		clients.MonitoringInformer,
+		clients.DynamicInformer,
 	} {
 		informer.Start(stopCh)
 	}
@@ -273,6 +281,7 @@ func StartMgmtInformers(clients *Clients, stopCh <-chan struct{}) {
 	}{
 		clients.KubeInformers,
 		clients.ConfigInformers,
+		clients.DynamicInformer,
 	} {
 		informer.Start(stopCh)
 	}
