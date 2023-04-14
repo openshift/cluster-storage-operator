@@ -1,6 +1,6 @@
 module github.com/openshift/cluster-storage-operator
 
-go 1.19
+go 1.20
 
 require (
 	github.com/go-logr/logr v1.2.4 // indirect
@@ -9,8 +9,9 @@ require (
 	github.com/openshift/api v0.0.0-20230605112531-6a9f31b2146c
 	github.com/openshift/build-machinery-go v0.0.0-20220913142420-e25cf57ea46d
 	github.com/openshift/client-go v0.0.0-20230503144108-75015d2347cb
-	github.com/openshift/library-go v0.0.0-20230508110756-9b7abe2c9cbf
+	github.com/openshift/library-go v0.0.0-20230523150659-ab179469ba38
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.64.0
+	github.com/prometheus-operator/prometheus-operator/pkg/client v0.64.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/spf13/cobra v1.6.1
 	golang.org/x/net v0.9.0 // indirect
@@ -26,7 +27,6 @@ require (
 )
 
 require (
-	github.com/prometheus-operator/prometheus-operator/pkg/client v0.64.0
 	github.com/stretchr/testify v1.8.2
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -119,4 +119,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace k8s.io/client-go => k8s.io/client-go v0.27.0
+replace k8s.io/client-go => k8s.io/client-go v0.27.1
