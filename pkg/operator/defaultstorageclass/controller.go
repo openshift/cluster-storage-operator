@@ -7,10 +7,13 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	operatorapi "github.com/openshift/api/operator/v1"
 	openshiftv1 "github.com/openshift/client-go/config/listers/config/v1"
+	oplisters "github.com/openshift/client-go/operator/listers/operator/v1"
+	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
+	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -23,6 +26,7 @@ import (
 const (
 	conditionsPrefix      = "DefaultStorageClassController"
 	infraConfigName       = "cluster"
+	storageOperatorName   = "cluster"
 	disabledConditionType = "Disabled"
 )
 
@@ -41,6 +45,7 @@ type Controller struct {
 	operatorClient     v1helpers.OperatorClient
 	kubeClient         kubernetes.Interface
 	infraLister        openshiftv1.InfrastructureLister
+	storageLister      oplisters.StorageLister
 	storageClassLister v1.StorageClassLister
 	eventRecorder      events.Recorder
 }
@@ -52,12 +57,14 @@ func NewController(
 		operatorClient:     clients.OperatorClient,
 		kubeClient:         clients.KubeClient,
 		infraLister:        clients.ConfigInformers.Config().V1().Infrastructures().Lister(),
+		storageLister:      clients.OperatorInformers.Operator().V1().Storages().Lister(),
 		storageClassLister: clients.KubeInformers.InformersFor("").Storage().V1().StorageClasses().Lister(),
 		eventRecorder:      eventRecorder,
 	}
 	return factory.New().WithSync(c.sync).WithSyncDegradedOnError(clients.OperatorClient).WithInformers(
 		clients.OperatorClient.Informer(),
 		clients.ConfigInformers.Config().V1().Infrastructures().Informer(),
+		clients.OperatorInformers.Operator().V1().Storages().Informer(),
 		clients.KubeInformers.InformersFor("").Storage().V1().StorageClasses().Informer(),
 	).ToController("DefaultStorageClassController", eventRecorder)
 }
@@ -153,13 +160,17 @@ func (c *Controller) syncStorageClass(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	storageOperator, err := c.storageLister.Get(storageOperatorName)
+	if err != nil {
+		return err
+	}
 	// Check to see if the PlatformStatus is nil. This has been seen on some
 	// UPI installs on baremetal platforms
 	if infrastructure.Status.PlatformStatus == nil {
 		return unsupportedPlatformError
 	}
 
-	expectedSC, err := newStorageClassForCluster(infrastructure)
+	expectedSC, err := newStorageClassForCluster(infrastructure, storageOperator)
 	if err != nil {
 		return err
 	}
@@ -183,15 +194,22 @@ func (c *Controller) syncStorageClass(ctx context.Context) error {
 	return err
 }
 
-// Returns an error indicating whether the StorageClass is provided by a CSI driver or an unsupported platform.
-func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storagev1.StorageClass, error) {
+// Returns either the StorageClass, if the PlatformType is supported, or an error
+// indicating whether the StorageClass is provided by a CSI driver or an unsupported platform
+func newStorageClassForCluster(infrastructure *configv1.Infrastructure, storageOperator *operatorapi.Storage) (*storagev1.StorageClass, error) {
+	var storageClassFile string
 	switch infrastructure.Status.PlatformStatus.Type {
 	case configv1.AWSPlatformType:
 		return nil, supportedByCSIError
 	case configv1.GCPPlatformType:
 		return nil, supportedByCSIError
 	case configv1.VSpherePlatformType:
-		return nil, supportedByCSIError
+		// Only create the in-tree SC if CSI migration is disabled
+		if storageOperator.Spec.VSphereStorageDriver != operatorapi.CSIWithMigrationDriver {
+			storageClassFile = "storageclasses/vsphere.yaml"
+		} else {
+			return nil, supportedByCSIError
+		}
 	case configv1.AlibabaCloudPlatformType:
 		return nil, supportedByCSIError
 	case configv1.AzurePlatformType:
@@ -205,6 +223,12 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 	default:
 		return nil, unsupportedPlatformError
 	}
+
+	scBytes, err := assets.ReadFile(storageClassFile)
+	if err != nil {
+		return nil, err
+	}
+	return resourceread.ReadStorageClassV1OrDie(scBytes), nil
 }
 
 // UpdateConditionFunc returns a func to update a condition.
