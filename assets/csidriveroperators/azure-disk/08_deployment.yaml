@@ -52,6 +52,10 @@ spec:
           requests:
             memory: 50Mi
             cpu: 10m
+        volumeMounts:
+        - name: bound-sa-token
+          mountPath: /var/run/secrets/openshift/serviceaccount
+          readOnly: true
       priorityClassName: system-cluster-critical
       serviceAccountName: azure-disk-csi-driver-operator
       nodeSelector:
@@ -62,3 +66,10 @@ spec:
       - key: node-role.kubernetes.io/master
         operator: Exists
         effect: "NoSchedule"
+      volumes:
+      - name: bound-sa-token
+        projected:
+          sources:
+          - serviceAccountToken:
+              path: token
+              audience: openshift
