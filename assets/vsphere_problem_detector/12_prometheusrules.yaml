@@ -12,7 +12,8 @@ spec:
       - alert: VSphereOpenshiftNodeHealthFail
         # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
         # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
-        expr:  min_over_time(vsphere_node_check_errors[5m]) == 1
+        # Using max to remove all labels and keep the highest metric.
+        expr:  max(min_over_time(vsphere_node_check_errors[5m])) > max(vsphere_problem_detector_disabled_alerts)
         for: 10m
         labels:
           severity: warning
@@ -30,7 +31,7 @@ spec:
       - alert: VSphereOpenshiftClusterHealthFail
         # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
         # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
-        expr: min_over_time(vsphere_cluster_check_errors[5m]) == 1
+        expr: max(min_over_time(vsphere_cluster_check_errors[5m])) > max(vsphere_problem_detector_disabled_alerts)
         for: 10m
         labels:
           severity: warning
@@ -48,7 +49,7 @@ spec:
       - alert: VSphereOpenshiftConnectionFailure
         # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
         # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
-        expr: min_over_time(vsphere_sync_errors{reason =~ "UsernameWithNewLine|PasswordWithNewLine|InvalidCredentials"}[5m]) == 1
+        expr: max(min_over_time(vsphere_sync_errors{reason =~ "UsernameWithNewLine|PasswordWithNewLine|InvalidCredentials"}[5m])) > max(vsphere_problem_detector_disabled_alerts)
         for: 10m
         labels:
           severity: warning
@@ -66,7 +67,7 @@ spec:
         # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
         # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
         expr: |
-          min_over_time(vsphere_node_hw_version_total{hw_version=~"vmx-(11|12|13|14)"}[5m]) > 0
+          max(min_over_time(vsphere_node_hw_version_total{hw_version=~"vmx-(11|12|13|14)"}[5m])) > max(vsphere_problem_detector_disabled_alerts)
         for: 10m
         labels:
           severity: info
@@ -80,7 +81,7 @@ spec:
         # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
         # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
         expr: |
-          min_over_time(vsphere_esxi_version_total{api_version=~"^7\\.0\\.[0-1].*|^6.*"}[5m]) > 0
+          max(min_over_time(vsphere_esxi_version_total{api_version=~"^7\\.0\\.[0-1].*|^6.*"}[5m])) > max(vsphere_problem_detector_disabled_alerts)
         for: 10m
         labels:
           severity: info
@@ -94,7 +95,7 @@ spec:
         # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
         # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
         expr: |
-          min_over_time(vsphere_vcenter_info{api_version=~"^7\\.0\\.[0-1].*|^6.*"}[5m]) > 0
+          max(min_over_time(vsphere_vcenter_info{api_version=~"^7\\.0\\.[0-1].*|^6.*"}[5m])) > max(vsphere_problem_detector_disabled_alerts)
         for: 10m
         labels:
           severity: info
