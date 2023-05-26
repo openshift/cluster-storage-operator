@@ -12,6 +12,7 @@ const (
 	envAzureDiskDriverOperatorImage = "AZURE_DISK_DRIVER_OPERATOR_IMAGE"
 	envAzureDiskDriverImage         = "AZURE_DISK_DRIVER_IMAGE"
 	envCCMOperatorImage             = "CLUSTER_CLOUD_CONTROLLER_MANAGER_OPERATOR_IMAGE"
+	envOperatorImageVersion         = "OPERATOR_IMAGE_VERSION"
 )
 
 func GetAzureDiskCSIOperatorConfig() CSIOperatorConfig {
@@ -19,6 +20,7 @@ func GetAzureDiskCSIOperatorConfig() CSIOperatorConfig {
 		"${OPERATOR_IMAGE}", os.Getenv(envAzureDiskDriverOperatorImage),
 		"${DRIVER_IMAGE}", os.Getenv(envAzureDiskDriverImage),
 		"${CLUSTER_CLOUD_CONTROLLER_MANAGER_OPERATOR_IMAGE}", os.Getenv(envCCMOperatorImage),
+		"${OPERATOR_IMAGE_VERSION}", os.Getenv(envOperatorImageVersion),
 	}
 
 	return CSIOperatorConfig{
