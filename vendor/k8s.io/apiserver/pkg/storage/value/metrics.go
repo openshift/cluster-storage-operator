@@ -51,7 +51,7 @@ var (
 			Buckets:        metrics.ExponentialBuckets(5e-6, 2, 25),
 			StabilityLevel: metrics.ALPHA,
 		},
-		[]string{"transformation_type", "transformer_prefix"},
+		[]string{"transformation_type"},
 	)
 
 	transformerOperationsTotal = metrics.NewCounterVec(
@@ -111,11 +111,12 @@ func RegisterMetrics() {
 
 // RecordTransformation records latencies and count of TransformFromStorage and TransformToStorage operations.
 // Note that transformation_failures_total metric is deprecated, use transformation_operations_total instead.
-func RecordTransformation(transformationType, transformerPrefix string, elapsed time.Duration, err error) {
+func RecordTransformation(transformationType, transformerPrefix string, start time.Time, err error) {
 	transformerOperationsTotal.WithLabelValues(transformationType, transformerPrefix, status.Code(err).String()).Inc()
 
-	if err == nil {
-		transformerLatencies.WithLabelValues(transformationType, transformerPrefix).Observe(elapsed.Seconds())
+	switch {
+	case err == nil:
+		transformerLatencies.WithLabelValues(transformationType).Observe(sinceInSeconds(start))
 	}
 }
 

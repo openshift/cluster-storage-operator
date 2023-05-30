@@ -20,35 +20,25 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 
-	"k8s.io/klog/v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/apiserver/pkg/admission/plugin/validatingadmissionpolicy/matching"
 
 	"k8s.io/api/admissionregistration/v1alpha1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	utiljson "k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apiserver/pkg/admission"
 	celmetrics "k8s.io/apiserver/pkg/admission/cel"
-	"k8s.io/apiserver/pkg/admission/plugin/cel"
 	"k8s.io/apiserver/pkg/admission/plugin/validatingadmissionpolicy/internal/generic"
-	"k8s.io/apiserver/pkg/admission/plugin/validatingadmissionpolicy/matching"
-	celconfig "k8s.io/apiserver/pkg/apis/cel"
-	"k8s.io/apiserver/pkg/authorization/authorizer"
-	"k8s.io/apiserver/pkg/cel/openapi/resolver"
-	"k8s.io/apiserver/pkg/warning"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 var _ CELPolicyEvaluator = &celAdmissionController{}
@@ -56,32 +46,44 @@ var _ CELPolicyEvaluator = &celAdmissionController{}
 // celAdmissionController is the top-level controller for admission control using CEL
 // it is responsible for watching policy definitions, bindings, and config param CRDs
 type celAdmissionController struct {
-	// Controller which manages book-keeping for the cluster's dynamic policy
-	// information.
-	policyController *policyController
+	// Context under which the controller runs
+	runningContext context.Context
 
-	// atomic []policyData
-	// list of every known policy definition, and all informatoin required to
-	// validate its bindings against an object.
-	// A snapshot of the current policy configuration is synced with this field
-	// asynchronously
-	definitions atomic.Value
-}
+	policyDefinitionsController generic.Controller[*v1alpha1.ValidatingAdmissionPolicy]
+	policyBindingController     generic.Controller[*v1alpha1.ValidatingAdmissionPolicyBinding]
 
-// Everything someone might need to validate a single ValidatingPolicyDefinition
-// against all of its registered bindings.
-type policyData struct {
-	definitionInfo
-	paramController generic.Controller[runtime.Object]
-	bindings        []bindingInfo
-}
+	// dynamicclient used to create informers to watch the param crd types
+	dynamicClient dynamic.Interface
+	restMapper    meta.RESTMapper
 
-// contains the cel PolicyDecisions along with the ValidatingAdmissionPolicy and ValidatingAdmissionPolicyBinding
-// that determined the decision
-type policyDecisionWithMetadata struct {
-	PolicyDecision
-	Definition *v1alpha1.ValidatingAdmissionPolicy
-	Binding    *v1alpha1.ValidatingAdmissionPolicyBinding
+	// Provided to the policy's Compile function as an injected dependency to
+	// assist with compiling its expressions to CEL
+	validatorCompiler ValidatorCompiler
+
+	// Lock which protects:
+	//	- definitionInfo
+	//  - bindingInfos
+	//  - paramCRDControllers
+	//  - definitionsToBindings
+	// All other fields should be assumed constant
+	mutex sync.RWMutex
+
+	// controller and metadata
+	paramsCRDControllers map[v1alpha1.ParamKind]*paramInfo
+
+	// Index for each definition namespace/name, contains all binding
+	// namespace/names known to exist for that definition
+	definitionInfo map[namespacedName]*definitionInfo
+
+	// Index for each bindings namespace/name. Contains compiled templates
+	// for the binding depending on the policy/param combination.
+	bindingInfos map[namespacedName]*bindingInfo
+
+	// Map from namespace/name of a definition to a set of namespace/name
+	// of bindings which depend on it.
+	// All keys must have at least one dependent binding
+	// All binding names MUST exist as a key bindingInfos
+	definitionsToBindings map[namespacedName]sets.Set[namespacedName]
 }
 
 // namespaceName is used as a key in definitionInfo and bindingInfos
@@ -102,7 +104,7 @@ type definitionInfo struct {
 
 type bindingInfo struct {
 	// Compiled CEL expression turned into an validator
-	validator Validator
+	validator atomic.Pointer[Validator]
 
 	// Last value seen by this controller to be used in policy enforcement
 	// May not be nil
@@ -111,7 +113,7 @@ type bindingInfo struct {
 
 type paramInfo struct {
 	// Controller which is watching this param CRD
-	controller generic.Controller[runtime.Object]
+	controller generic.Controller[*unstructured.Unstructured]
 
 	// Function to call to stop the informer and clean up the controller
 	stop func()
@@ -125,54 +127,67 @@ func NewAdmissionController(
 	informerFactory informers.SharedInformerFactory,
 	client kubernetes.Interface,
 	restMapper meta.RESTMapper,
-	schemaResolver resolver.SchemaResolver,
 	dynamicClient dynamic.Interface,
-	authz authorizer.Authorizer,
 ) CELPolicyEvaluator {
-	var typeChecker *TypeChecker
-	if schemaResolver != nil {
-		typeChecker = &TypeChecker{schemaResolver: schemaResolver, restMapper: restMapper}
+	matcher := matching.NewMatcher(informerFactory.Core().V1().Namespaces().Lister(), client)
+	validatorCompiler := &CELValidatorCompiler{
+		Matcher: matcher,
 	}
-	return &celAdmissionController{
-		definitions: atomic.Value{},
-		policyController: newPolicyController(
-			restMapper,
-			client,
-			dynamicClient,
-			typeChecker,
-			cel.NewFilterCompiler(),
-			NewMatcher(matching.NewMatcher(informerFactory.Core().V1().Namespaces().Lister(), client)),
-			generic.NewInformer[*v1alpha1.ValidatingAdmissionPolicy](
-				informerFactory.Admissionregistration().V1alpha1().ValidatingAdmissionPolicies().Informer()),
-			generic.NewInformer[*v1alpha1.ValidatingAdmissionPolicyBinding](
-				informerFactory.Admissionregistration().V1alpha1().ValidatingAdmissionPolicyBindings().Informer()),
-			authz,
-		),
+	c := &celAdmissionController{
+		definitionInfo:        make(map[namespacedName]*definitionInfo),
+		bindingInfos:          make(map[namespacedName]*bindingInfo),
+		paramsCRDControllers:  make(map[v1alpha1.ParamKind]*paramInfo),
+		definitionsToBindings: make(map[namespacedName]sets.Set[namespacedName]),
+		dynamicClient:         dynamicClient,
+		validatorCompiler:     validatorCompiler,
+		restMapper:            restMapper,
 	}
+
+	c.policyDefinitionsController = generic.NewController(
+		generic.NewInformer[*v1alpha1.ValidatingAdmissionPolicy](
+			informerFactory.Admissionregistration().V1alpha1().ValidatingAdmissionPolicies().Informer()),
+		c.reconcilePolicyDefinition,
+		generic.ControllerOptions{
+			Workers: 1,
+			Name:    "cel-policy-definitions",
+		},
+	)
+	c.policyBindingController = generic.NewController(
+		generic.NewInformer[*v1alpha1.ValidatingAdmissionPolicyBinding](
+			informerFactory.Admissionregistration().V1alpha1().ValidatingAdmissionPolicyBindings().Informer()),
+		c.reconcilePolicyBinding,
+		generic.ControllerOptions{
+			Workers: 1,
+			Name:    "cel-policy-bindings",
+		},
+	)
+	return c
 }
 
 func (c *celAdmissionController) Run(stopCh <-chan struct{}) {
+	if c.runningContext != nil {
+		return
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
+
+	c.runningContext = ctx
+	defer func() {
+		c.runningContext = nil
+	}()
+
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		c.policyController.Run(ctx)
+		c.policyDefinitionsController.Run(ctx)
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-
-		// Wait indefinitely until policies/bindings are listed & handled before
-		// allowing policies to be refreshed
-		if !cache.WaitForNamedCacheSync("cel-admission-controller", ctx.Done(), c.policyController.HasSynced) {
-			return
-		}
-
-		// Loop every 1 second until context is cancelled, refreshing policies
-		wait.Until(c.refreshPolicies, 1*time.Second, ctx.Done())
+		c.policyBindingController.Run(ctx)
 	}()
 
 	<-stopCh
@@ -180,16 +195,13 @@ func (c *celAdmissionController) Run(stopCh <-chan struct{}) {
 	wg.Wait()
 }
 
-const maxAuditAnnotationValueLength = 10 * 1024
-
 func (c *celAdmissionController) Validate(
 	ctx context.Context,
 	a admission.Attributes,
 	o admission.ObjectInterfaces,
 ) (err error) {
-	if !c.HasSynced() {
-		return admission.NewForbidden(a, fmt.Errorf("not yet ready to handle request"))
-	}
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 
 	var deniedDecisions []policyDecisionWithMetadata
 
@@ -215,29 +227,27 @@ func (c *celAdmissionController) Validate(
 				message = fmt.Errorf("failed to configure binding: %w", err).Error()
 			}
 			deniedDecisions = append(deniedDecisions, policyDecisionWithMetadata{
-				PolicyDecision: PolicyDecision{
-					Action:  ActionDeny,
-					Message: message,
+				policyDecision: policyDecision{
+					action:  actionDeny,
+					message: message,
 				},
-				Definition: definition,
-				Binding:    binding,
+				definition: definition,
+				binding:    binding,
 			})
 		default:
 			deniedDecisions = append(deniedDecisions, policyDecisionWithMetadata{
-				PolicyDecision: PolicyDecision{
-					Action:  ActionDeny,
-					Message: fmt.Errorf("unrecognized failure policy: '%v'", policy).Error(),
+				policyDecision: policyDecision{
+					action:  actionDeny,
+					message: fmt.Errorf("unrecognized failure policy: '%v'", policy).Error(),
 				},
-				Definition: definition,
-				Binding:    binding,
+				definition: definition,
+				binding:    binding,
 			})
 		}
 	}
-	policyDatas := c.definitions.Load().([]policyData)
-
-	for _, definitionInfo := range policyDatas {
+	for definitionNamespacedName, definitionInfo := range c.definitionInfo {
 		definition := definitionInfo.lastReconciledValue
-		matches, matchKind, err := c.policyController.matcher.DefinitionMatches(a, o, definition)
+		matches, matchKind, err := c.validatorCompiler.DefinitionMatches(a, o, definition)
 		if err != nil {
 			// Configuration error.
 			addConfigError(err, definition, nil)
@@ -252,12 +262,17 @@ func (c *celAdmissionController) Validate(
 			continue
 		}
 
-		auditAnnotationCollector := newAuditAnnotationCollector()
-		for _, bindingInfo := range definitionInfo.bindings {
+		dependentBindings := c.definitionsToBindings[definitionNamespacedName]
+		if len(dependentBindings) == 0 {
+			continue
+		}
+
+		for namespacedBindingName := range dependentBindings {
 			// If the key is inside dependentBindings, there is guaranteed to
 			// be a bindingInfo for it
+			bindingInfo := c.bindingInfos[namespacedBindingName]
 			binding := bindingInfo.lastReconciledValue
-			matches, err := c.policyController.matcher.BindingMatches(a, o, binding)
+			matches, err := c.validatorCompiler.BindingMatches(a, o, binding)
 			if err != nil {
 				// Configuration error.
 				addConfigError(err, definition, binding)
@@ -267,21 +282,18 @@ func (c *celAdmissionController) Validate(
 				continue
 			}
 
-			var param runtime.Object
-
-			// versionedAttributes will be set to non-nil inside of the loop, but
-			// is scoped outside of the param loop so we only convert once. We defer
-			// conversion so that it is only performed when we know a policy matches,
-			// saving the cost of converting non-matching requests.
-			var versionedAttr *admission.VersionedAttributes
+			var param *unstructured.Unstructured
 
 			// If definition has paramKind, paramRef is required in binding.
 			// If definition has no paramKind, paramRef set in binding will be ignored.
 			paramKind := definition.Spec.ParamKind
 			paramRef := binding.Spec.ParamRef
 			if paramKind != nil && paramRef != nil {
-				paramController := definitionInfo.paramController
-				if paramController == nil {
+
+				// Find the params referred by the binding by looking its name up
+				// in our informer for its CRD
+				paramInfo, ok := c.paramsCRDControllers[*paramKind]
+				if !ok {
 					addConfigError(fmt.Errorf("paramKind kind `%v` not known",
 						paramKind.String()), definition, binding)
 					continue
@@ -290,19 +302,18 @@ func (c *celAdmissionController) Validate(
 				// If the param informer for this admission policy has not yet
 				// had time to perform an initial listing, don't attempt to use
 				// it.
-				timeoutCtx, cancel := context.WithTimeout(c.policyController.context, 1*time.Second)
-				defer cancel()
-
-				if !cache.WaitForCacheSync(timeoutCtx.Done(), paramController.HasSynced) {
+				//!TOOD(alexzielenski): add a wait for a very short amount of
+				// time for the cache to sync
+				if !paramInfo.controller.HasSynced() {
 					addConfigError(fmt.Errorf("paramKind kind `%v` not yet synced to use for admission",
 						paramKind.String()), definition, binding)
 					continue
 				}
 
 				if len(paramRef.Namespace) == 0 {
-					param, err = paramController.Informer().Get(paramRef.Name)
+					param, err = paramInfo.controller.Informer().Get(paramRef.Name)
 				} else {
-					param, err = paramController.Informer().Namespaced(paramRef.Namespace).Get(paramRef.Name)
+					param, err = paramInfo.controller.Informer().Namespaced(paramRef.Namespace).Get(paramRef.Name)
 				}
 
 				if err != nil {
@@ -325,17 +336,16 @@ func (c *celAdmissionController) Validate(
 				}
 			}
 
-			if versionedAttr == nil {
-				va, err := admission.NewVersionedAttributes(a, matchKind, o)
-				if err != nil {
-					wrappedErr := fmt.Errorf("failed to convert object version: %w", err)
-					addConfigError(wrappedErr, definition, binding)
-					continue
-				}
-				versionedAttr = va
+			validator := bindingInfo.validator.Load()
+			if validator == nil {
+				// Compile policy definition using binding
+				newValidator := c.validatorCompiler.Compile(definition)
+				validator = &newValidator
+
+				bindingInfo.validator.Store(validator)
 			}
 
-			validationResult := bindingInfo.validator.Validate(ctx, versionedAttr, param, celconfig.RuntimeCELCostBudget)
+			decisions, err := (*validator).Validate(a, o, param, matchKind)
 			if err != nil {
 				// runtime error. Apply failure policy
 				wrappedError := fmt.Errorf("failed to evaluate CEL expression: %w", err)
@@ -343,77 +353,38 @@ func (c *celAdmissionController) Validate(
 				continue
 			}
 
-			for i, decision := range validationResult.Decisions {
-				switch decision.Action {
-				case ActionAdmit:
-					if decision.Evaluation == EvalError {
-						celmetrics.Metrics.ObserveAdmissionWithError(ctx, decision.Elapsed, definition.Name, binding.Name, "active")
+			for _, decision := range decisions {
+				switch decision.action {
+				case actionAdmit:
+					if decision.evaluation == evalError {
+						celmetrics.Metrics.ObserveAdmissionWithError(ctx, decision.elapsed, definition.Name, binding.Name, "active")
 					}
-				case ActionDeny:
-					for _, action := range binding.Spec.ValidationActions {
-						switch action {
-						case v1alpha1.Deny:
-							deniedDecisions = append(deniedDecisions, policyDecisionWithMetadata{
-								Definition:     definition,
-								Binding:        binding,
-								PolicyDecision: decision,
-							})
-							celmetrics.Metrics.ObserveRejection(ctx, decision.Elapsed, definition.Name, binding.Name, "active")
-						case v1alpha1.Audit:
-							c.publishValidationFailureAnnotation(binding, i, decision, versionedAttr)
-							celmetrics.Metrics.ObserveAudit(ctx, decision.Elapsed, definition.Name, binding.Name, "active")
-						case v1alpha1.Warn:
-							warning.AddWarning(ctx, "", fmt.Sprintf("Validation failed for ValidatingAdmissionPolicy '%s' with binding '%s': %s", definition.Name, binding.Name, decision.Message))
-							celmetrics.Metrics.ObserveWarn(ctx, decision.Elapsed, definition.Name, binding.Name, "active")
-						}
-					}
+				case actionDeny:
+					deniedDecisions = append(deniedDecisions, policyDecisionWithMetadata{
+						definition:     definition,
+						binding:        binding,
+						policyDecision: decision,
+					})
+					celmetrics.Metrics.ObserveRejection(ctx, decision.elapsed, definition.Name, binding.Name, "active")
 				default:
 					return fmt.Errorf("unrecognized evaluation decision '%s' for ValidatingAdmissionPolicyBinding '%s' with ValidatingAdmissionPolicy '%s'",
-						decision.Action, binding.Name, definition.Name)
-				}
-			}
-
-			for _, auditAnnotation := range validationResult.AuditAnnotations {
-				switch auditAnnotation.Action {
-				case AuditAnnotationActionPublish:
-					value := auditAnnotation.Value
-					if len(auditAnnotation.Value) > maxAuditAnnotationValueLength {
-						value = value[:maxAuditAnnotationValueLength]
-					}
-					auditAnnotationCollector.add(auditAnnotation.Key, value)
-				case AuditAnnotationActionError:
-					// When failurePolicy=fail, audit annotation errors result in deny
-					deniedDecisions = append(deniedDecisions, policyDecisionWithMetadata{
-						Definition: definition,
-						Binding:    binding,
-						PolicyDecision: PolicyDecision{
-							Action:     ActionDeny,
-							Evaluation: EvalError,
-							Message:    auditAnnotation.Error,
-							Elapsed:    auditAnnotation.Elapsed,
-						},
-					})
-					celmetrics.Metrics.ObserveRejection(ctx, auditAnnotation.Elapsed, definition.Name, binding.Name, "active")
-				case AuditAnnotationActionExclude: // skip it
-				default:
-					return fmt.Errorf("unsupported AuditAnnotation Action: %s", auditAnnotation.Action)
+						decision.action, binding.Name, definition.Name)
 				}
 			}
 		}
-		auditAnnotationCollector.publish(definition.Name, a)
 	}
 
 	if len(deniedDecisions) > 0 {
 		// TODO: refactor admission.NewForbidden so the name extraction is reusable but the code/reason is customizable
 		var message string
 		deniedDecision := deniedDecisions[0]
-		if deniedDecision.Binding != nil {
-			message = fmt.Sprintf("ValidatingAdmissionPolicy '%s' with binding '%s' denied request: %s", deniedDecision.Definition.Name, deniedDecision.Binding.Name, deniedDecision.Message)
+		if deniedDecision.binding != nil {
+			message = fmt.Sprintf("ValidatingAdmissionPolicy '%s' with binding '%s' denied request: %s", deniedDecision.definition.Name, deniedDecision.binding.Name, deniedDecision.message)
 		} else {
-			message = fmt.Sprintf("ValidatingAdmissionPolicy '%s' denied request: %s", deniedDecision.Definition.Name, deniedDecision.Message)
+			message = fmt.Sprintf("ValidatingAdmissionPolicy '%s' denied request: %s", deniedDecision.definition.Name, deniedDecision.message)
 		}
 		err := admission.NewForbidden(a, errors.New(message)).(*k8serrors.StatusError)
-		reason := deniedDecision.Reason
+		reason := deniedDecision.reason
 		if len(reason) == 0 {
 			reason = metav1.StatusReasonInvalid
 		}
@@ -425,78 +396,11 @@ func (c *celAdmissionController) Validate(
 	return nil
 }
 
-func (c *celAdmissionController) publishValidationFailureAnnotation(binding *v1alpha1.ValidatingAdmissionPolicyBinding, expressionIndex int, decision PolicyDecision, attributes admission.Attributes) {
-	key := "validation.policy.admission.k8s.io/validation_failure"
-	// Marshal to a list of failures since, in the future, we may need to support multiple failures
-	valueJson, err := utiljson.Marshal([]validationFailureValue{{
-		ExpressionIndex:   expressionIndex,
-		Message:           decision.Message,
-		ValidationActions: binding.Spec.ValidationActions,
-		Binding:           binding.Name,
-		Policy:            binding.Spec.PolicyName,
-	}})
-	if err != nil {
-		klog.Warningf("Failed to set admission audit annotation %s for ValidatingAdmissionPolicy %s and ValidatingAdmissionPolicyBinding %s: %v", key, binding.Spec.PolicyName, binding.Name, err)
-	}
-	value := string(valueJson)
-	if err := attributes.AddAnnotation(key, value); err != nil {
-		klog.Warningf("Failed to set admission audit annotation %s to %s for ValidatingAdmissionPolicy %s and ValidatingAdmissionPolicyBinding %s: %v", key, value, binding.Spec.PolicyName, binding.Name, err)
-	}
-}
-
 func (c *celAdmissionController) HasSynced() bool {
-	return c.policyController.HasSynced() && c.definitions.Load() != nil
+	return c.policyBindingController.HasSynced() &&
+		c.policyDefinitionsController.HasSynced()
 }
 
 func (c *celAdmissionController) ValidateInitialization() error {
-	return c.policyController.matcher.ValidateInitialization()
-}
-
-func (c *celAdmissionController) refreshPolicies() {
-	c.definitions.Store(c.policyController.latestPolicyData())
-}
-
-// validationFailureValue defines the JSON format of a "validation.policy.admission.k8s.io/validation_failure" audit
-// annotation value.
-type validationFailureValue struct {
-	Message           string                      `json:"message"`
-	Policy            string                      `json:"policy"`
-	Binding           string                      `json:"binding"`
-	ExpressionIndex   int                         `json:"expressionIndex"`
-	ValidationActions []v1alpha1.ValidationAction `json:"validationActions"`
-}
-
-type auditAnnotationCollector struct {
-	annotations map[string][]string
-}
-
-func newAuditAnnotationCollector() auditAnnotationCollector {
-	return auditAnnotationCollector{annotations: map[string][]string{}}
-}
-
-func (a auditAnnotationCollector) add(key, value string) {
-	// If multiple bindings produces the exact same key and value for an audit annotation,
-	// ignore the duplicates.
-	for _, v := range a.annotations[key] {
-		if v == value {
-			return
-		}
-	}
-	a.annotations[key] = append(a.annotations[key], value)
-}
-
-func (a auditAnnotationCollector) publish(policyName string, attributes admission.Attributes) {
-	for key, bindingAnnotations := range a.annotations {
-		var value string
-		if len(bindingAnnotations) == 1 {
-			value = bindingAnnotations[0]
-		} else {
-			// Multiple distinct values can exist when binding params are used in the valueExpression of an auditAnnotation.
-			// When this happens, the values are concatenated into a comma-separated list.
-			value = strings.Join(bindingAnnotations, ", ")
-		}
-		if err := attributes.AddAnnotation(policyName+"/"+key, value); err != nil {
-			klog.Warningf("Failed to set admission audit annotation %s to %s for ValidatingAdmissionPolicy %s: %v", key, value, policyName, err)
-		}
-	}
+	return c.validatorCompiler.ValidateInitialization()
 }

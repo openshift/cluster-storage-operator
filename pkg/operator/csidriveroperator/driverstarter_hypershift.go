@@ -3,8 +3,6 @@ package csidriveroperator
 import (
 	"bytes"
 	"context"
-	"time"
-
 	configv1 "github.com/openshift/api/config/v1"
 	operatorapi "github.com/openshift/api/operator/v1"
 	openshiftv1 "github.com/openshift/client-go/config/listers/config/v1"
@@ -13,7 +11,6 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/controller/manager"
-	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
@@ -22,6 +19,7 @@ import (
 	storagelister "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/klog/v2"
+	"time"
 )
 
 // This CSIDriverStarterController starts CSI driver controllers based on the
@@ -124,7 +122,6 @@ func (c *CSIDriverStarterControllerHyperShift) sync(ctx context.Context, syncCtx
 	if err != nil {
 		return err
 	}
-	featureGateAccessor := createOldIncompatibleFeatureGatesForHypershift(featureGate)
 
 	// Start controller managers for this platform
 	for i := range c.controllers {
@@ -140,7 +137,7 @@ func (c *CSIDriverStarterControllerHyperShift) sync(ctx context.Context, syncCtx
 		}
 
 		if !ctrl.running {
-			shouldRun, err := shouldRunController(ctrl.operatorConfig, infrastructure, featureGateAccessor, csiDriver)
+			shouldRun, err := shouldRunController(ctrl.operatorConfig, infrastructure, featureGate, csiDriver)
 			if err != nil {
 				return err
 			}
@@ -168,36 +165,6 @@ func (c *CSIDriverStarterControllerHyperShift) sync(ctx context.Context, syncCtx
 		}
 	}
 	return nil
-}
-
-// createOldIncompatibleFeatureGatesForHypershift takes a featuregate and uses 4.13 logic to stitch together the individual
-// featuregates.  Eventually hypershift will (hopefully) follow core OCP and produce a central list.
-func createOldIncompatibleFeatureGatesForHypershift(fg *configv1.FeatureGate) featuregates.FeatureGate {
-	if fg.Spec.FeatureSet == "" {
-		return nil
-	}
-	if fg.Spec.FeatureSet == configv1.CustomNoUpgrade {
-		enabled, disabled := []configv1.FeatureGateName{}, []configv1.FeatureGateName{}
-		if fg.Spec.CustomNoUpgrade != nil {
-			for _, curr := range fg.Spec.CustomNoUpgrade.Enabled {
-				enabled = append(enabled, curr)
-			}
-			for _, curr := range fg.Spec.CustomNoUpgrade.Disabled {
-				disabled = append(disabled, curr)
-			}
-		}
-		return featuregates.NewFeatureGate(enabled, disabled)
-	}
-
-	enabled, disabled := []configv1.FeatureGateName{}, []configv1.FeatureGateName{}
-	gates := configv1.FeatureSets[fg.Spec.FeatureSet]
-	for _, curr := range gates.Enabled {
-		enabled = append(enabled, curr.FeatureGateAttributes.Name)
-	}
-	for _, curr := range gates.Disabled {
-		disabled = append(disabled, curr.FeatureGateAttributes.Name)
-	}
-	return featuregates.NewFeatureGate(enabled, disabled)
 }
 
 func (c *CSIDriverStarterControllerHyperShift) createCSIControllerManager(
