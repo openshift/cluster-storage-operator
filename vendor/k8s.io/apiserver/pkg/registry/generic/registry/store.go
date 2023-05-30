@@ -25,7 +25,6 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/api/validation/path"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -110,9 +109,6 @@ type Store struct {
 	// This field is used if there is no request info present in the context.
 	// See qualifiedResourceFromContext for details.
 	DefaultQualifiedResource schema.GroupResource
-
-	// SingularQualifiedResource is the singular name of the resource.
-	SingularQualifiedResource schema.GroupResource
 
 	// KeyRootFunc returns the root etcd key for this resource; should not
 	// include trailing "/".  This is used for operations that work on the
@@ -232,8 +228,6 @@ type Store struct {
 var _ rest.StandardStorage = &Store{}
 var _ rest.TableConvertor = &Store{}
 var _ GenericStore = &Store{}
-
-var _ rest.SingularNameProvider = &Store{}
 
 const (
 	OptimisticLockErrorMsg        = "the object has been modified; please apply your changes to the latest version and try again"
@@ -365,16 +359,6 @@ func (e *Store) ListPredicate(ctx context.Context, p storage.SelectionPredicate,
 		Predicate:            p,
 		Recursive:            true,
 	}
-
-	// if we're not already namespace-scoped, see if the field selector narrows the scope of the watch
-	if requestNamespace, _ := genericapirequest.NamespaceFrom(ctx); len(requestNamespace) == 0 {
-		if selectorNamespace, ok := p.MatchesSingleNamespace(); ok {
-			if len(validation.ValidateNamespaceName(selectorNamespace, false)) == 0 {
-				ctx = genericapirequest.WithNamespace(ctx, selectorNamespace)
-			}
-		}
-	}
-
 	if name, ok := p.MatchesSingle(); ok {
 		if key, err := e.KeyFunc(ctx, name); err == nil {
 			storageOpts.Recursive = false
@@ -1138,6 +1122,11 @@ func (e *Store) DeleteReturnsDeletedObject() bool {
 // DeleteCollection is currently NOT atomic. It can happen that only subset of objects
 // will be deleted from storage, and then an error will be returned.
 // In case of success, the list of deleted objects will be returned.
+//
+// TODO: Currently, there is no easy way to remove 'directory' entry from storage (if we
+// are removing all objects of a given type) with the current API (it's technically
+// possibly with storage API, but watch is not delivered correctly then).
+// It will be possible to fix it with v3 etcd API.
 func (e *Store) DeleteCollection(ctx context.Context, deleteValidation rest.ValidateObjectFunc, options *metav1.DeleteOptions, listOptions *metainternalversion.ListOptions) (runtime.Object, error) {
 	if listOptions == nil {
 		listOptions = &metainternalversion.ListOptions{}
@@ -1173,6 +1162,23 @@ func (e *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 	toProcess := make(chan int, 2*workersNumber)
 	errs := make(chan error, workersNumber+1)
 	workersExited := make(chan struct{})
+	distributorExited := make(chan struct{})
+
+	go func() {
+		defer utilruntime.HandleCrash(func(panicReason interface{}) {
+			errs <- fmt.Errorf("DeleteCollection distributor panicked: %v", panicReason)
+		})
+		defer close(distributorExited)
+		for i := 0; i < len(items); i++ {
+			select {
+			case toProcess <- i:
+			case <-workersExited:
+				klog.V(4).InfoS("workers already exited, and there are some items waiting to be processed", "finished", i, "total", len(items))
+				return
+			}
+		}
+		close(toProcess)
+	}()
 
 	wg.Add(workersNumber)
 	for i := 0; i < workersNumber; i++ {
@@ -1201,31 +1207,10 @@ func (e *Store) DeleteCollection(ctx context.Context, deleteValidation rest.Vali
 			}
 		}()
 	}
-	// In case of all workers exit, notify distributor.
-	go func() {
-		defer utilruntime.HandleCrash(func(panicReason interface{}) {
-			errs <- fmt.Errorf("DeleteCollection workers closer panicked: %v", panicReason)
-		})
-		wg.Wait()
-		close(workersExited)
-	}()
-
-	func() {
-		defer close(toProcess)
-
-		for i := 0; i < len(items); i++ {
-			select {
-			case toProcess <- i:
-			case <-workersExited:
-				klog.V(4).InfoS("workers already exited, and there are some items waiting to be processed", "finished", i, "total", len(items))
-				return
-			}
-		}
-	}()
-
-	// Wait for all workers to exist.
-	<-workersExited
-
+	wg.Wait()
+	// notify distributor to exit
+	close(workersExited)
+	<-distributorExited
 	select {
 	case err := <-errs:
 		return nil, err
@@ -1283,21 +1268,12 @@ func (e *Store) Watch(ctx context.Context, options *metainternalversion.ListOpti
 		resourceVersion = options.ResourceVersion
 		predicate.AllowWatchBookmarks = options.AllowWatchBookmarks
 	}
-	return e.WatchPredicate(ctx, predicate, resourceVersion, options.SendInitialEvents)
+	return e.WatchPredicate(ctx, predicate, resourceVersion)
 }
 
 // WatchPredicate starts a watch for the items that matches.
-func (e *Store) WatchPredicate(ctx context.Context, p storage.SelectionPredicate, resourceVersion string, sendInitialEvents *bool) (watch.Interface, error) {
-	storageOpts := storage.ListOptions{ResourceVersion: resourceVersion, Predicate: p, Recursive: true, SendInitialEvents: sendInitialEvents}
-
-	// if we're not already namespace-scoped, see if the field selector narrows the scope of the watch
-	if requestNamespace, _ := genericapirequest.NamespaceFrom(ctx); len(requestNamespace) == 0 {
-		if selectorNamespace, ok := p.MatchesSingleNamespace(); ok {
-			if len(validation.ValidateNamespaceName(selectorNamespace, false)) == 0 {
-				ctx = genericapirequest.WithNamespace(ctx, selectorNamespace)
-			}
-		}
-	}
+func (e *Store) WatchPredicate(ctx context.Context, p storage.SelectionPredicate, resourceVersion string) (watch.Interface, error) {
+	storageOpts := storage.ListOptions{ResourceVersion: resourceVersion, Predicate: p, Recursive: true}
 
 	key := e.KeyRootFunc(ctx)
 	if name, ok := p.MatchesSingle(); ok {
@@ -1343,12 +1319,6 @@ func (e *Store) calculateTTL(obj runtime.Object, defaultTTL int64, update bool) 
 func (e *Store) CompleteWithOptions(options *generic.StoreOptions) error {
 	if e.DefaultQualifiedResource.Empty() {
 		return fmt.Errorf("store %#v must have a non-empty qualified resource", e)
-	}
-	if e.SingularQualifiedResource.Empty() {
-		return fmt.Errorf("store %#v must have a non-empty singular qualified resource", e)
-	}
-	if e.DefaultQualifiedResource.Group != e.SingularQualifiedResource.Group {
-		return fmt.Errorf("store for %#v, singular and plural qualified resource's group name's must match", e)
 	}
 	if e.NewFunc == nil {
 		return fmt.Errorf("store for %s must have NewFunc set", e.DefaultQualifiedResource.String())
@@ -1543,10 +1513,6 @@ func (e *Store) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 		return nil
 	}
 	return e.ResetFieldsStrategy.GetResetFields()
-}
-
-func (e *Store) GetSingularName() string {
-	return e.SingularQualifiedResource.Resource
 }
 
 // validateIndexers will check the prefix of indexers.

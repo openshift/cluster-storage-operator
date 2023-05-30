@@ -21,7 +21,6 @@ import (
 	"strconv"
 	"time"
 
-	endpointsrequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/server/httplog"
 	"k8s.io/apiserver/pkg/server/mux"
 	fq "k8s.io/apiserver/pkg/util/flowcontrol/fairqueuing"
@@ -162,7 +161,7 @@ func (cfgCtlr *configController) Handle(ctx context.Context, requestDigest Reque
 	queued := startWaitingTime != time.Time{}
 	if req == nil {
 		if queued {
-			observeQueueWaitTime(ctx, pl.Name, fs.Name, strconv.FormatBool(req != nil), cfgCtlr.clock.Since(startWaitingTime))
+			metrics.ObserveWaitingDuration(ctx, pl.Name, fs.Name, strconv.FormatBool(req != nil), time.Since(startWaitingTime))
 		}
 		klog.V(7).Infof("Handle(%#+v) => fsName=%q, distMethod=%#+v, plName=%q, isExempt=%v, reject", requestDigest, fs.Name, fs.Spec.DistinguisherMethod, pl.Name, isExempt)
 		return
@@ -179,26 +178,20 @@ func (cfgCtlr *configController) Handle(ctx context.Context, requestDigest Reque
 	}()
 	idle = req.Finish(func() {
 		if queued {
-			observeQueueWaitTime(ctx, pl.Name, fs.Name, strconv.FormatBool(req != nil), cfgCtlr.clock.Since(startWaitingTime))
+			metrics.ObserveWaitingDuration(ctx, pl.Name, fs.Name, strconv.FormatBool(req != nil), time.Since(startWaitingTime))
 		}
 		metrics.AddDispatch(ctx, pl.Name, fs.Name)
-		fqs.OnRequestDispatched(req)
 		executed = true
-		startExecutionTime := cfgCtlr.clock.Now()
+		startExecutionTime := time.Now()
 		defer func() {
-			executionTime := cfgCtlr.clock.Since(startExecutionTime)
+			executionTime := time.Since(startExecutionTime)
 			httplog.AddKeyValue(ctx, "apf_execution_time", executionTime)
 			metrics.ObserveExecutionDuration(ctx, pl.Name, fs.Name, executionTime)
 		}()
 		execFn()
 	})
 	if queued && !executed {
-		observeQueueWaitTime(ctx, pl.Name, fs.Name, strconv.FormatBool(req != nil), cfgCtlr.clock.Since(startWaitingTime))
+		metrics.ObserveWaitingDuration(ctx, pl.Name, fs.Name, strconv.FormatBool(req != nil), time.Since(startWaitingTime))
 	}
 	panicking = false
-}
-
-func observeQueueWaitTime(ctx context.Context, priorityLevelName, flowSchemaName, execute string, waitTime time.Duration) {
-	metrics.ObserveWaitingDuration(ctx, priorityLevelName, flowSchemaName, execute, waitTime)
-	endpointsrequest.TrackAPFQueueWaitLatency(ctx, waitTime)
 }

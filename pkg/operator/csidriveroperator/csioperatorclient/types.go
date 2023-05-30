@@ -64,7 +64,7 @@ type CSIOperatorConfig struct {
 	// OLMOptions configuration of migration from OLM to CSO
 	OLMOptions *OLMOptions
 	// Run the CSI driver operator only when given FeatureGate is enabled
-	RequireFeatureGate configv1.FeatureGateName
+	RequireFeatureGate string
 }
 
 // OLMOptions contains information that is necessary to remove old CSI driver

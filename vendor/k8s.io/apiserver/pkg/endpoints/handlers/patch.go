@@ -36,7 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/managedfields"
 	"k8s.io/apimachinery/pkg/util/mergepatch"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
@@ -298,7 +297,7 @@ type patchMechanism interface {
 type jsonPatcher struct {
 	*patcher
 
-	fieldManager *managedfields.FieldManager
+	fieldManager *fieldmanager.FieldManager
 }
 
 func (p *jsonPatcher) applyPatchToCurrentObject(requestContext context.Context, currentObject runtime.Object) (runtime.Object, error) {
@@ -418,7 +417,7 @@ type smpPatcher struct {
 
 	// Schema
 	schemaReferenceObj runtime.Object
-	fieldManager       *managedfields.FieldManager
+	fieldManager       *fieldmanager.FieldManager
 }
 
 func (p *smpPatcher) applyPatchToCurrentObject(requestContext context.Context, currentObject runtime.Object) (runtime.Object, error) {
@@ -456,7 +455,7 @@ type applyPatcher struct {
 	options             *metav1.PatchOptions
 	creater             runtime.ObjectCreater
 	kind                schema.GroupVersionKind
-	fieldManager        *managedfields.FieldManager
+	fieldManager        *fieldmanager.FieldManager
 	userAgent           string
 	validationDirective string
 }

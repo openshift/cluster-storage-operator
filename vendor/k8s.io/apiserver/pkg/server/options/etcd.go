@@ -17,7 +17,6 @@ limitations under the License.
 package options
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -34,7 +33,7 @@ import (
 	"k8s.io/apiserver/pkg/server"
 	"k8s.io/apiserver/pkg/server/healthz"
 	"k8s.io/apiserver/pkg/server/options/encryptionconfig"
-	encryptionconfigcontroller "k8s.io/apiserver/pkg/server/options/encryptionconfig/controller"
+	kmsconfigcontroller "k8s.io/apiserver/pkg/server/options/encryptionconfig/controller"
 	serverstorage "k8s.io/apiserver/pkg/server/storage"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
 	storagefactory "k8s.io/apiserver/pkg/storage/storagebackend/factory"
@@ -229,11 +228,10 @@ func (s *EtcdOptions) Complete(
 	}
 
 	if len(s.EncryptionProviderConfigFilepath) != 0 {
-		ctxServer := wait.ContextForChannel(stopCh)
-		// nolint:govet // The only code path where closeTransformers does not get called is when it gets stored in dynamicTransformers.
-		ctxTransformers, closeTransformers := context.WithCancel(ctxServer)
+		ctxTransformers, closeTransformers := wait.ContextForChannel(stopCh)
+		ctxServer, _ := wait.ContextForChannel(stopCh) // explicitly ignore cancel here because we do not own the server's lifecycle
 
-		encryptionConfiguration, err := encryptionconfig.LoadEncryptionConfig(ctxTransformers, s.EncryptionProviderConfigFilepath, s.EncryptionProviderConfigAutomaticReload)
+		encryptionConfiguration, err := encryptionconfig.LoadEncryptionConfig(s.EncryptionProviderConfigFilepath, s.EncryptionProviderConfigAutomaticReload, ctxTransformers.Done())
 		if err != nil {
 			// in case of error, we want to close partially initialized (if any) transformers
 			closeTransformers()
@@ -249,22 +247,25 @@ func (s *EtcdOptions) Complete(
 				return fmt.Errorf("failed to start kms encryption config hot reload controller. only 1 health check should be available when reload is enabled")
 			}
 
-			// Here the dynamic transformers take ownership of the transformers and their cancellation.
 			dynamicTransformers := encryptionconfig.NewDynamicTransformers(encryptionConfiguration.Transformers, encryptionConfiguration.HealthChecks[0], closeTransformers, encryptionConfiguration.KMSCloseGracePeriod)
+
+			s.resourceTransformers = dynamicTransformers
+			s.kmsPluginHealthzChecks = []healthz.HealthChecker{dynamicTransformers}
 
 			// add post start hook to start hot reload controller
 			// adding this hook here will ensure that it gets configured exactly once
 			err = addPostStartHook(
 				"start-encryption-provider-config-automatic-reload",
-				func(_ server.PostStartHookContext) error {
-					dynamicEncryptionConfigController := encryptionconfigcontroller.NewDynamicEncryptionConfiguration(
-						"encryption-provider-config-automatic-reload-controller",
+				func(hookContext server.PostStartHookContext) error {
+					kmsConfigController := kmsconfigcontroller.NewDynamicKMSEncryptionConfiguration(
+						"kms-encryption-config",
 						s.EncryptionProviderConfigFilepath,
 						dynamicTransformers,
 						encryptionConfiguration.EncryptionFileContentHash,
+						ctxServer.Done(),
 					)
 
-					go dynamicEncryptionConfigController.Run(ctxServer)
+					go kmsConfigController.Run(ctxServer)
 
 					return nil
 				},
@@ -274,9 +275,6 @@ func (s *EtcdOptions) Complete(
 				closeTransformers()
 				return fmt.Errorf("failed to add post start hook for kms encryption config hot reload controller: %w", err)
 			}
-
-			s.resourceTransformers = dynamicTransformers
-			s.kmsPluginHealthzChecks = []healthz.HealthChecker{dynamicTransformers}
 		} else {
 			s.resourceTransformers = encryptionconfig.StaticTransformers(encryptionConfiguration.Transformers)
 			s.kmsPluginHealthzChecks = encryptionConfiguration.HealthChecks
@@ -287,7 +285,6 @@ func (s *EtcdOptions) Complete(
 
 	s.complete = true
 
-	// nolint:govet // The only code path where closeTransformers does not get called is when it gets stored in dynamicTransformers.
 	return nil
 }
 

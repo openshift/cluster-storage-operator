@@ -7,7 +7,6 @@ import (
 
 	v1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
-	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,16 +15,10 @@ import (
 )
 
 func TestShouldRunController(t *testing.T) {
-	testingDefault := featuregates.NewFeatureGate(nil, []v1.FeatureGateName{v1.FeatureGateCSIDriverSharedResource})
-	testingTechPreview := featuregates.NewFeatureGate([]v1.FeatureGateName{v1.FeatureGateCSIDriverSharedResource}, nil)
-	customFeatureGate := featuregates.NewFeatureGate([]v1.FeatureGateName{"SomeOtherFeatureGate", v1.FeatureGateCSIDriverSharedResource, "YetAnotherGate"}, nil)
-	customWithJustOther := featuregates.NewFeatureGate([]v1.FeatureGateName{"SomeOtherFeatureGate"}, nil)
-	customWithNothing := featuregates.NewFeatureGate([]v1.FeatureGateName{}, nil)
-
 	tests := []struct {
 		name        string
 		platform    v1.PlatformType
-		featureGate featuregates.FeatureGate
+		featureGate *v1.FeatureGate
 		csiDriver   *storagev1.CSIDriver
 		config      csioperatorclient.CSIOperatorConfig
 		expectRun   bool
@@ -34,12 +27,12 @@ func TestShouldRunController(t *testing.T) {
 		{
 			"tech preview Shared Resource driver on AllPlatforms type",
 			v1.AWSPlatformType,
-			testingTechPreview,
+			featureSet("TechPreviewNoUpgrade"),
 			nil,
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           csioperatorclient.AllPlatforms,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: "CSIDriverSharedResource",
 			},
 			true,
 			false,
@@ -47,12 +40,12 @@ func TestShouldRunController(t *testing.T) {
 		{
 			"tech preview Shared Resource driver on AWSPlatformType",
 			v1.AWSPlatformType,
-			testingTechPreview,
+			featureSet("TechPreviewNoUpgrade"),
 			nil,
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: "CSIDriverSharedResource",
 			},
 			true,
 			false,
@@ -60,12 +53,12 @@ func TestShouldRunController(t *testing.T) {
 		{
 			"tech preview Shared Resource driver on GCPPlatformType",
 			v1.GCPPlatformType,
-			testingTechPreview,
+			featureSet("TechPreviewNoUpgrade"),
 			nil,
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           v1.GCPPlatformType,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: "CSIDriverSharedResource",
 			},
 			true,
 			false,
@@ -73,12 +66,12 @@ func TestShouldRunController(t *testing.T) {
 		{
 			"tech preview Shared Resource driver on GCPPlatformType",
 			v1.VSpherePlatformType,
-			testingTechPreview,
+			featureSet("TechPreviewNoUpgrade"),
 			nil,
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           v1.VSpherePlatformType,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: "CSIDriverSharedResource",
 			},
 			true,
 			false,
@@ -86,7 +79,7 @@ func TestShouldRunController(t *testing.T) {
 		{
 			"GA CSI driver on matching platform",
 			v1.AWSPlatformType,
-			testingDefault,
+			featureSet(""),
 			nil,
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "ebs.csi.aws.com",
@@ -99,7 +92,7 @@ func TestShouldRunController(t *testing.T) {
 		{
 			"GA CSI driver on non-matching platform",
 			v1.GCPPlatformType,
-			testingDefault,
+			featureSet(""),
 			nil,
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "ebs.csi.aws.com",
@@ -112,7 +105,7 @@ func TestShouldRunController(t *testing.T) {
 		{
 			"GA CSI driver with StatusFilter returning true",
 			v1.IBMCloudPlatformType,
-			testingDefault,
+			featureSet(""),
 			nil,
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "vpc.block.csi.ibm.io",
@@ -128,7 +121,7 @@ func TestShouldRunController(t *testing.T) {
 		{
 			"GA CSI driver with StatusFilter returning false",
 			v1.IBMCloudPlatformType,
-			testingDefault,
+			featureSet(""),
 			nil,
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "vpc.block.csi.ibm.io",
@@ -144,12 +137,12 @@ func TestShouldRunController(t *testing.T) {
 		{
 			"tech preview Shared Resource driver with positive custom featureGate",
 			v1.AWSPlatformType,
-			customFeatureGate,
+			customSet("SomeOtherFeatureGate", "CSIDriverSharedResource", "YetAnotherGate"),
 			nil,
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: "CSIDriverSharedResource",
 			},
 			true,
 			false,
@@ -157,12 +150,12 @@ func TestShouldRunController(t *testing.T) {
 		{
 			"tech preview Shared Resource driver with negative custom featureGate",
 			v1.AWSPlatformType,
-			customWithJustOther,
+			customSet("SomeOtherFeatureGate"),
 			nil,
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: "CSIDriverSharedResource",
 			},
 			false,
 			false,
@@ -170,12 +163,12 @@ func TestShouldRunController(t *testing.T) {
 		{
 			"tech preview Shared Resource driver with empty custom featureGate",
 			v1.AWSPlatformType,
-			customWithNothing,
+			customSet(),
 			nil,
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: "CSIDriverSharedResource",
 			},
 			false,
 			false,
@@ -183,12 +176,12 @@ func TestShouldRunController(t *testing.T) {
 		{
 			"tech preview Shared Resource driver with nil custom featureGate",
 			v1.AWSPlatformType,
-			customWithNothing,
+			customNilSet(),
 			nil,
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: "CSIDriverSharedResource",
 			},
 			false,
 			false,
@@ -214,6 +207,40 @@ func TestShouldRunController(t *testing.T) {
 				t.Errorf("Expected error %t, got %t: %s", test.expectError, res, err)
 			}
 		})
+	}
+}
+
+func featureSet(set v1.FeatureSet) *v1.FeatureGate {
+	return &v1.FeatureGate{
+		Spec: v1.FeatureGateSpec{
+			FeatureGateSelection: v1.FeatureGateSelection{
+				FeatureSet: set,
+			},
+		},
+	}
+}
+
+func customSet(gates ...string) *v1.FeatureGate {
+	return &v1.FeatureGate{
+		Spec: v1.FeatureGateSpec{
+			FeatureGateSelection: v1.FeatureGateSelection{
+				FeatureSet: v1.CustomNoUpgrade,
+				CustomNoUpgrade: &v1.CustomFeatureGates{
+					Enabled: gates,
+				},
+			},
+		},
+	}
+}
+
+func customNilSet() *v1.FeatureGate {
+	return &v1.FeatureGate{
+		Spec: v1.FeatureGateSpec{
+			FeatureGateSelection: v1.FeatureGateSelection{
+				FeatureSet:      v1.CustomNoUpgrade,
+				CustomNoUpgrade: nil,
+			},
+		},
 	}
 }
 

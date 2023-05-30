@@ -15,7 +15,6 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/controller/factory"
-	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/operator/loglevel"
 	"github.com/openshift/library-go/pkg/operator/management"
 	"github.com/openshift/library-go/pkg/operator/managementstatecontroller"
@@ -23,7 +22,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog/v2"
-	"time"
 )
 
 func startControllerStandAlone(ctx context.Context, controllerConfig *controllercmd.ControllerContext) error {
@@ -34,31 +32,6 @@ func startControllerStandAlone(ctx context.Context, controllerConfig *controller
 
 	versionGetter := status.NewVersionGetter()
 	versionGetter.SetVersion("operator", status.VersionForOperatorFromEnv())
-
-	desiredVersion := status.VersionForOperatorFromEnv()
-	missingVersion := "0.0.1-snapshot"
-
-	// By default, this will exit(0) the process if the featuregates ever change to a different set of values.
-	featureGateAccessor := featuregates.NewFeatureGateAccess(
-		desiredVersion, missingVersion,
-		clients.ConfigInformers.Config().V1().ClusterVersions(), clients.ConfigInformers.Config().V1().FeatureGates(),
-		controllerConfig.EventRecorder,
-	)
-	go featureGateAccessor.Run(ctx)
-	go clients.ConfigInformers.Start(ctx.Done())
-
-	select {
-	case <-featureGateAccessor.InitialFeatureGatesObserved():
-		featureGates, _ := featureGateAccessor.CurrentFeatureGates()
-		klog.Infof("FeatureGates initialized: knownFeatureGates=%v", featureGates.KnownFeatures())
-	case <-time.After(1 * time.Minute):
-		klog.Errorf("timed out waiting for FeatureGate detection")
-		return fmt.Errorf("timed out waiting for FeatureGate detection")
-	}
-	featureGates, err := featureGateAccessor.CurrentFeatureGates()
-	if err != nil {
-		return err
-	}
 
 	storageClassController := defaultstorageclass.NewController(
 		clients,
@@ -94,7 +67,6 @@ func startControllerStandAlone(ctx context.Context, controllerConfig *controller
 	csiDriverConfigs := populateConfigs(clients, controllerConfig.EventRecorder, false /* not a hypershift cluster */)
 	csiDriverController := csidriveroperator.NewCSIDriverStarterController(
 		clients,
-		featureGates,
 		resync,
 		versionGetter,
 		status.VersionForOperandFromEnv(),

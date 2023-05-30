@@ -35,7 +35,8 @@ import (
 //   - Replies with 304 Not Modified, if If-None-Match header matches hash
 //
 // hash should be the value of calculateETag on object. If hash is empty, then
-// the object is simply serialized without E-Tag functionality
+//
+//	the object is simply serialized without E-Tag functionality
 func ServeHTTPWithETag(
 	object runtime.Object,
 	hash string,
@@ -54,7 +55,7 @@ func ServeHTTPWithETag(
 	// Otherwise, we delegate to the handler for actual content
 	//
 	// According to documentation, An Etag within an If-None-Match
-	// header will be enclosed within double quotes:
+	// header will be enclosed within doule quotes:
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match#directives
 	if clientCachedHash := req.Header.Get("If-None-Match"); quotedHash == clientCachedHash {
 		w.WriteHeader(http.StatusNotModified)
