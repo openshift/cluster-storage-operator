@@ -291,6 +291,8 @@ rules:
   resources:
   - infrastructures
   - proxies
+  - clusterversions
+  - featuregates
   verbs:
   - get
   - list
