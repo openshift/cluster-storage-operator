@@ -1,0 +1,15 @@
+- op: add
+  path: "/rules/-"
+  value:
+    apiGroups:
+      - cloudcredential.openshift.io
+    resources:
+      - credentialsrequests
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete

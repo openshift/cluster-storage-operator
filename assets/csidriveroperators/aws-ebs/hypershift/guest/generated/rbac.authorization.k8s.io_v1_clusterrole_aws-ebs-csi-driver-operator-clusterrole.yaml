@@ -19,7 +19,6 @@ rules:
   - get
   - list
   - watch
-  # The Config Observer controller updates the CR's spec
   - update
   - patch
 - apiGroups:
@@ -33,7 +32,7 @@ rules:
   - update
   - patch
 - apiGroups:
-  - ''
+  - ""
   resourceNames:
   - extension-apiserver-authentication
   - aws-ebs-csi-driver-operator-lock
@@ -63,7 +62,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - ''
+  - ""
   resources:
   - serviceaccounts
   verbs:
@@ -97,7 +96,7 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - ''
+  - ""
   resources:
   - nodes
   verbs:
@@ -109,7 +108,7 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - ''
+  - ""
   resources:
   - secrets
   verbs:
@@ -117,7 +116,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - namespaces
   verbs:
@@ -129,7 +128,7 @@ rules:
   - delete
   - update
 - apiGroups:
-  - ''
+  - ""
   resources:
   - persistentvolumes
   verbs:
@@ -141,7 +140,7 @@ rules:
   - update
   - patch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - persistentvolumeclaims
   verbs:
@@ -150,7 +149,7 @@ rules:
   - watch
   - update
 - apiGroups:
-  - ''
+  - ""
   resources:
   - pods
   verbs:
@@ -158,7 +157,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - persistentvolumeclaims/status
   verbs:
@@ -279,18 +278,6 @@ rules:
   - update
   - delete
 - apiGroups:
-  - cloudcredential.openshift.io
-  resources:
-  - credentialsrequests
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
   - config.openshift.io
   resources:
   - infrastructures
@@ -299,10 +286,9 @@ rules:
   - get
   - list
   - watch
-# Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
 - apiGroups:
-  - "authentication.k8s.io"
+  - authentication.k8s.io
   resources:
-  - "tokenreviews"
+  - tokenreviews
   verbs:
-  - "create"
+  - create

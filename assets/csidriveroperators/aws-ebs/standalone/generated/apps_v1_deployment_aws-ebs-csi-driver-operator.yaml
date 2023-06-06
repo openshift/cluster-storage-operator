@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aws-ebs-csi-driver-operator
-  namespace: openshift-cluster-csi-drivers
   annotations:
     config.openshift.io/inject-proxy: aws-ebs-csi-driver-operator
+  name: aws-ebs-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
 spec:
   replicas: 1
   selector:
@@ -48,15 +48,15 @@ spec:
         name: aws-ebs-csi-driver-operator
         resources:
           requests:
-            memory: 50Mi
             cpu: 10m
-      priorityClassName: system-cluster-critical
-      serviceAccountName: aws-ebs-csi-driver-operator
+            memory: 50Mi
       nodeSelector:
         node-role.kubernetes.io/master: ""
+      priorityClassName: system-cluster-critical
+      serviceAccountName: aws-ebs-csi-driver-operator
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
-      - key: node-role.kubernetes.io/master
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
         operator: Exists
-        effect: "NoSchedule"

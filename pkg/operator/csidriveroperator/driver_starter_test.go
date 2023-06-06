@@ -1,13 +1,21 @@
 package csidriveroperator
 
 import (
+	"context"
 	"io/fs"
 	"os"
 	"testing"
+	"time"
 
+	cfgv1 "github.com/openshift/api/config/v1"
 	v1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
+
+	"github.com/openshift/library-go/pkg/controller/factory"
+	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/status"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -297,5 +305,64 @@ func TestIsNoMatchError(t *testing.T) {
 			}
 		})
 	}
+}
 
+func getInfrastructure(platformType cfgv1.PlatformType) *cfgv1.Infrastructure {
+	return &cfgv1.Infrastructure{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: infraConfigName,
+		},
+		Status: cfgv1.InfrastructureStatus{
+			PlatformStatus: &cfgv1.PlatformStatus{
+				Type: platformType,
+			},
+		},
+	}
+}
+
+func getDefaultFeatureGate() *cfgv1.FeatureGate {
+	return &cfgv1.FeatureGate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cluster",
+		},
+		Spec: cfgv1.FeatureGateSpec{},
+	}
+}
+
+func TestStandAloneStarter(t *testing.T) {
+	initialObjects := &csoclients.FakeTestObjects{}
+	initialObjects.OperatorObjects = append(initialObjects.OperatorObjects, csoclients.GetCR())
+	initialObjects.ConfigObjects = append(initialObjects.ConfigObjects, getInfrastructure(cfgv1.AWSPlatformType))
+	initialObjects.ConfigObjects = append(initialObjects.ConfigObjects, getDefaultFeatureGate())
+
+	finish, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	clients := csoclients.NewFakeClients(initialObjects)
+
+	storageInformer := clients.OperatorInformers.Operator().V1().Storages().Informer()
+	storageInformer.GetStore().Add(csoclients.GetCR())
+
+	infrInformer := clients.ConfigInformers.Config().V1().Infrastructures().Informer()
+	infrInformer.GetStore().Add(getInfrastructure(cfgv1.AWSPlatformType))
+	testingDefault := featuregates.NewFeatureGate(nil, []v1.FeatureGateName{v1.FeatureGateCSIDriverSharedResource})
+
+	csoclients.StartInformers(clients, finish.Done())
+	csoclients.WaitForSync(clients, finish.Done())
+
+	awsConfig := []csioperatorclient.CSIOperatorConfig{csioperatorclient.GetAWSEBSCSIOperatorConfig(false)}
+
+	standAloneStarter := NewStandaloneDriverStarter(clients,
+		testingDefault,
+		20*time.Minute,
+		status.NewVersionGetter(),
+		"",
+		events.NewInMemoryRecorder(csiDriverControllerName),
+		awsConfig)
+	t.Logf("standAloneDriverStarter is: %+v", standAloneStarter)
+	err := standAloneStarter.Sync(context.TODO(), factory.NewSyncContext("foobar", events.NewInMemoryRecorder(csiDriverControllerName)))
+
+	if err != nil {
+		t.Logf("got error running sync: %+v", err)
+	}
 }

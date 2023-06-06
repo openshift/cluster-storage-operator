@@ -1,4 +1,4 @@
-all: build
+all:  build
 .PHONY: all
 
 # Include the library makefile
@@ -33,6 +33,11 @@ $(call build-image,cluster-storage-operator,$(IMAGE_REGISTRY)/ocp/4.6:cluster-st
 # $2 - patches directory
 # $3 - manifests directory
 $(call add-profile-manifests,manifests,./profile-patches,./manifests)
+
+update: generate-kustomize-manifests
+
+generate-kustomize-manifests:
+	./hack/generate-manifests.sh
 
 clean:
 	$(RM) cluster-storage-operator

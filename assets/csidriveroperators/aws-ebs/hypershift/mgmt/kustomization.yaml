@@ -1,0 +1,50 @@
+resources:
+  - ../../base
+namespace: ${CONTROLPLANE_NAMESPACE}
+patches:
+  - path: 02sa.patch.yaml
+    target:
+      kind: ServiceAccount
+      version: v1
+  - path: lease_role.patch.yaml
+    target:
+      kind: Role
+      version: v1
+  - path: configmap_role.patch.yaml
+    target:
+      kind: Role
+      version: v1
+  - path: hypershift_role.patch.yaml
+    target:
+      kind: Role
+      version: v1
+  - path: deployment.patch.yaml
+    target:
+      kind: Deployment
+      version: v1
+  - patch: |-
+      - op: "add"
+        path: "/spec/template/spec/containers/0/args/-"
+        value: --guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig
+    target:
+      kind: Deployment
+  - patch: |- 
+      $patch: delete
+      apiVersion: operator.openshift.io/v1
+      kind: ClusterCSIDriver
+      metadata:
+        name: ebs.csi.aws.com
+  - patch: |-
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: aws-ebs-csi-driver-operator-clusterrole
+  - patch: |-
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: aws-ebs-csi-driver-operator-clusterrolebinding
+        
+      

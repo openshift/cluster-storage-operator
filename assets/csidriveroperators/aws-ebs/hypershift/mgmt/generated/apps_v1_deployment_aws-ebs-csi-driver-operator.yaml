@@ -19,45 +19,36 @@ spec:
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-            - preference:
-                matchExpressions:
-                  - key: hypershift.openshift.io/control-plane
-                    operator: In
-                    values:
-                      - "true"
-              weight: 50
-            - preference:
-                matchExpressions:
-                  - key: hypershift.openshift.io/cluster
-                    operator: In
-                    values:
-                      - ${CONTROLPLANE_NAMESPACE}
-              weight: 100
+          - preference:
+              matchExpressions:
+              - key: hypershift.openshift.io/control-plane
+                operator: In
+                values:
+                - "true"
+            weight: 50
+          - preference:
+              matchExpressions:
+              - key: hypershift.openshift.io/cluster
+                operator: In
+                values:
+                - ${CONTROLPLANE_NAMESPACE}
+            weight: 100
         podAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-            - podAffinityTerm:
-                labelSelector:
-                  matchLabels:
-                    hypershift.openshift.io/hosted-control-plane: ${CONTROLPLANE_NAMESPACE}
-                topologyKey: kubernetes.io/hostname
-              weight: 100
-      tolerations:
-        - key: CriticalAddonsOnly
-          operator: Exists
-        - key: node-role.kubernetes.io/master
-          operator: Exists
-          effect: "NoSchedule"
-        - key: hypershift.openshift.io/control-plane
-          operator: Exists
-        - key: hypershift.openshift.io/cluster
-          operator: Equal
-          value: ${CONTROLPLANE_NAMESPACE}
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  hypershift.openshift.io/hosted-control-plane: ${CONTROLPLANE_NAMESPACE}
+              topologyKey: kubernetes.io/hostname
+            weight: 100
       containers:
       - args:
         - start
         - -v=${LOG_LEVEL}
         - --guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig
         env:
+        - name: HYPERSHIFT_IMAGE
+          value: ${HYPERSHIFT_IMAGE}
         - name: DRIVER_IMAGE
           value: ${DRIVER_IMAGE}
         - name: PROVISIONER_IMAGE
@@ -74,8 +65,6 @@ spec:
           value: ${LIVENESS_PROBE_IMAGE}
         - name: KUBE_RBAC_PROXY_IMAGE
           value: ${KUBE_RBAC_PROXY_IMAGE}
-        - name: HYPERSHIFT_IMAGE
-          value: ${HYPERSHIFT_IMAGE}
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -85,13 +74,24 @@ spec:
         name: aws-ebs-csi-driver-operator
         resources:
           requests:
-            memory: 50Mi
             cpu: 10m
+            memory: 50Mi
         volumeMounts:
         - mountPath: /etc/guest-kubeconfig
           name: guest-kubeconfig
       priorityClassName: hypershift-control-plane
       serviceAccountName: aws-ebs-csi-driver-operator
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - key: hypershift.openshift.io/control-plane
+        operator: Exists
+      - key: hypershift.openshift.io/cluster
+        operator: Equal
+        value: ${CONTROLPLANE_NAMESPACE}
       volumes:
       - name: guest-kubeconfig
         secret:

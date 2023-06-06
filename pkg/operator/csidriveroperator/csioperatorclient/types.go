@@ -34,10 +34,6 @@ type CSIOperatorConfig struct {
 	// driver operator in standalone OCP clusters
 	StaticAssets []string
 
-	// GuestStaticAssets returns a list of bindata assets to create in guest cluster
-	// when starting the driver in hypershift clusters
-	GuestStaticAssets []string
-
 	// MgmtStaticAssets returns a list of bindata assets to create in mgmt cluster
 	// when starting the driver in hypershift clusters
 	MgmtStaticAssets []string
