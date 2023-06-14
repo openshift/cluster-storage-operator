@@ -3,6 +3,8 @@ package csidriveroperator
 import (
 	"bytes"
 	"context"
+	"time"
+
 	configv1 "github.com/openshift/api/config/v1"
 	operatorapi "github.com/openshift/api/operator/v1"
 	openshiftv1 "github.com/openshift/client-go/config/listers/config/v1"
@@ -11,6 +13,7 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/controller/manager"
+	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
@@ -19,7 +22,6 @@ import (
 	storagelister "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/klog/v2"
-	"time"
 )
 
 // This CSIDriverStarterController starts CSI driver controllers based on the
@@ -32,7 +34,7 @@ type CSIDriverStarterControllerHyperShift struct {
 	mgmtClient         *csoclients.Clients
 	controlNamespace   string
 	infraLister        openshiftv1.InfrastructureLister
-	featureGateLister  openshiftv1.FeatureGateLister
+	featureGates       featuregates.FeatureGate
 	csiDriverLister    storagelister.CSIDriverLister
 	restMapper         *restmapper.DeferredDiscoveryRESTMapper
 	versionGetter      status.VersionGetter
@@ -55,6 +57,7 @@ func NewCSIDriverStarterControllerHypershift(
 	guestClients *csoclients.Clients,
 	mgmtClients *csoclients.Clients,
 	controlNamespace string,
+	featureGates featuregates.FeatureGate,
 	resyncInterval time.Duration,
 	versionGetter status.VersionGetter,
 	targetVersion string,
@@ -67,7 +70,7 @@ func NewCSIDriverStarterControllerHypershift(
 		mgmtClient:         mgmtClients,
 		controlNamespace:   controlNamespace,
 		infraLister:        guestClients.ConfigInformers.Config().V1().Infrastructures().Lister(),
-		featureGateLister:  guestClients.ConfigInformers.Config().V1().FeatureGates().Lister(),
+		featureGates:       featureGates,
 		csiDriverLister:    guestClients.KubeInformers.InformersFor("").Storage().V1().CSIDrivers().Lister(),
 		restMapper:         guestClients.RestMapper,
 		versionGetter:      versionGetter,
@@ -118,10 +121,6 @@ func (c *CSIDriverStarterControllerHyperShift) sync(ctx context.Context, syncCtx
 	if err != nil {
 		return err
 	}
-	featureGate, err := c.featureGateLister.Get(featureGateConfigName)
-	if err != nil {
-		return err
-	}
 
 	// Start controller managers for this platform
 	for i := range c.controllers {
@@ -137,7 +136,7 @@ func (c *CSIDriverStarterControllerHyperShift) sync(ctx context.Context, syncCtx
 		}
 
 		if !ctrl.running {
-			shouldRun, err := shouldRunController(ctrl.operatorConfig, infrastructure, featureGate, csiDriver)
+			shouldRun, err := shouldRunController(ctrl.operatorConfig, infrastructure, c.featureGates, csiDriver)
 			if err != nil {
 				return err
 			}
