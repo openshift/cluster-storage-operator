@@ -18,6 +18,7 @@ func GetAzureFileCSIOperatorConfig() CSIOperatorConfig {
 		"${OPERATOR_IMAGE}", os.Getenv(envAzureFileDriverOperatorImage),
 		"${DRIVER_IMAGE}", os.Getenv(envAzureFileDriverImage),
 		"${CLUSTER_CLOUD_CONTROLLER_MANAGER_OPERATOR_IMAGE}", os.Getenv(envCCMOperatorImage),
+		"${OPERATOR_IMAGE_VERSION}", os.Getenv(envOperatorImageVersion),
 	}
 
 	return CSIOperatorConfig{
