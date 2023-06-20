@@ -132,7 +132,7 @@ func initCommonDeploymentParams(
 // <CSI driver name>CSIDriverOperatorDeploymentDegraded
 // This controller doesn't set the Available condition to avoid prematurely cascading
 // up to the clusteroperator CR a potential Available=false. On the other hand it
-// does a better in making sure the Degraded condition is properly set if the
+// does a better in making sure the Degraded condition is properly set if
 // Deployment isn't healthy.
 type CSIDriverOperatorDeploymentController struct {
 	CommonCSIDeploymentController
@@ -185,8 +185,6 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 	if c.csiOperatorConfig.ImageReplacer != nil {
 		replacers = append(replacers, c.csiOperatorConfig.ImageReplacer)
 	}
-
-	klog.Infof("path for deployment is: %s", c.csiOperatorConfig.DeploymentAsset)
 
 	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nil, replacers...)
 	if err != nil {

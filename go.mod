@@ -27,6 +27,7 @@ require (
 
 require (
 	github.com/prometheus-operator/prometheus-operator/pkg/client v0.64.0
+	github.com/stretchr/testify v1.8.2
 	gopkg.in/yaml.v2 v2.4.0
 )
 

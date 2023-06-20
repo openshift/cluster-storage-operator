@@ -105,7 +105,6 @@ func initCommonStarterParams(
 
 func (dsrc *driverStarterCommon) createInformers() {
 	dsrc.infraLister = dsrc.commonClients.ConfigInformers.Config().V1().Infrastructures().Lister()
-	dsrc.featureGateLister = dsrc.commonClients.ConfigInformers.Config().V1().FeatureGates().Lister()
 	dsrc.csiDriverLister = dsrc.commonClients.KubeInformers.InformersFor("").Storage().V1().CSIDrivers().Lister()
 	dsrc.restMapper = dsrc.commonClients.RestMapper
 }
@@ -198,7 +197,7 @@ func (dsrc *driverStarterCommon) sync(ctx context.Context, syncCtx factory.SyncC
 		}
 
 		if !ctrl.running {
-			shouldRun, err := shouldRunController(ctrl.operatorConfig, infrastructure, c.featureGates, csiDriver)
+			shouldRun, err := shouldRunController(ctrl.operatorConfig, infrastructure, dsrc.featureGates, csiDriver)
 			if err != nil {
 				return err
 			}
@@ -235,13 +234,13 @@ func NewStandaloneDriverStarter(
 	versionGetter status.VersionGetter,
 	targetVersion string,
 	eventRecorder events.Recorder,
-	driverConfigs []csioperatorclient.CSIOperatorConfig) factory.Controller {
+	driverConfigs []csioperatorclient.CSIOperatorConfig) (factory.Controller, *standAloneDriverStarter) {
 
 	c := &standAloneDriverStarter{
 		initCommonStarterParams(clients, featureGates, resyncInterval, versionGetter, targetVersion, eventRecorder),
 	}
 
-	return c.initController(driverConfigs, c)
+	return c.initController(driverConfigs, c), c
 }
 
 func (s *standAloneDriverStarter) addExtraControllersToManager(manager manager.ControllerManager, cfg csioperatorclient.CSIOperatorConfig) {
@@ -285,7 +284,7 @@ func NewHypershiftDriverStarter(
 	targetVersion string,
 	eventRecorder events.Recorder,
 	mgmtEventRecorder events.Recorder,
-	driverConfigs []csioperatorclient.CSIOperatorConfig) factory.Controller {
+	driverConfigs []csioperatorclient.CSIOperatorConfig) (factory.Controller, *hypershiftDriverStarter) {
 
 	c := &hypershiftDriverStarter{
 		initCommonStarterParams(clients, fg, resyncInterval, versionGetter, targetVersion, eventRecorder),
@@ -294,7 +293,7 @@ func NewHypershiftDriverStarter(
 		controlNamespace,
 	}
 
-	return c.initController(driverConfigs, c)
+	return c.initController(driverConfigs, c), c
 }
 
 func (h *hypershiftDriverStarter) addExtraControllersToManager(manager manager.ControllerManager, cfg csioperatorclient.CSIOperatorConfig) {

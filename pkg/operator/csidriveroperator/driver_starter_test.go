@@ -13,9 +13,9 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 
-	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/status"
+	"github.com/stretchr/testify/assert"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -352,17 +352,23 @@ func TestStandAloneStarter(t *testing.T) {
 
 	awsConfig := []csioperatorclient.CSIOperatorConfig{csioperatorclient.GetAWSEBSCSIOperatorConfig(false)}
 
-	standAloneStarter := NewStandaloneDriverStarter(clients,
+	fc, standAloneStarter := NewStandaloneDriverStarter(clients,
 		testingDefault,
 		20*time.Minute,
 		status.NewVersionGetter(),
 		"",
 		events.NewInMemoryRecorder(csiDriverControllerName),
 		awsConfig)
-	t.Logf("standAloneDriverStarter is: %+v", standAloneStarter)
-	err := standAloneStarter.Sync(context.TODO(), factory.NewSyncContext("foobar", events.NewInMemoryRecorder(csiDriverControllerName)))
 
-	if err != nil {
-		t.Logf("got error running sync: %+v", err)
+	if fc == nil {
+		t.Errorf("error creating the controller, gotl for the controller")
 	}
+	if len(standAloneStarter.controllers) != 1 {
+		t.Errorf("expected at least one configured controller got %d", len(standAloneStarter.controllers))
+	}
+
+	csiController := standAloneStarter.controllers[0]
+	assert.Equal(t, csiController.operatorConfig.CSIDriverName, "ebs.csi.aws.com")
+	assert.Equal(t, csiController.operatorConfig.DeploymentAsset, "csidriveroperators/aws-ebs/standalone/generated/apps_v1_deployment_aws-ebs-csi-driver-operator.yaml")
+	assert.NotEmpty(t, csiController.operatorConfig.StaticAssets)
 }

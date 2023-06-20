@@ -43,19 +43,9 @@ type commonStarter struct {
 	commonClients *csoclients.Clients
 	// array of controllers that needs to be started.
 	controllers []factory.Controller
-
-	// Only used for testing purposes
-	// clientsInitialized if set to true means clients have already been initialized
-	clientsInitialized bool
-	// disableControllerStart if set to true means don't start the controllers
-	disableControllerStart bool
 }
 
 func (csr *commonStarter) initClient(ctx context.Context) error {
-	if csr.clientsInitialized {
-		return nil
-	}
-
 	clients, err := csoclients.NewClients(csr.controllerConfig, resync)
 	if err != nil {
 		return err
@@ -141,10 +131,6 @@ func (csr *commonStarter) CreateControllers() error {
 }
 
 func (csr *commonStarter) startControllers(ctx context.Context) {
-	if csr.disableControllerStart {
-		return
-	}
-
 	klog.Info("Starting the controllers")
 	for _, c := range csr.controllers {
 		go func(ctrl factory.Controller) {
@@ -185,7 +171,7 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 	countStorageClasses(ssr.commonClients)
 
 	csiDriverConfigs := ssr.populateConfigs(ssr.commonClients)
-	csiDriverController := csidriveroperator.NewStandaloneDriverStarter(
+	csiDriverController, _ := csidriveroperator.NewStandaloneDriverStarter(
 		ssr.commonClients,
 		ssr.featureGates,
 		resync,
@@ -242,9 +228,6 @@ func NewHyperShiftStarter(controllerConfig *controllercmd.ControllerContext, gue
 }
 
 func (hsr *HyperShiftStarter) initClient(ctx context.Context) error {
-	if hsr.clientsInitialized {
-		return nil
-	}
 	controlPlaneNamespace := hsr.controllerConfig.OperatorNamespace
 
 	mgmtClients, err := csoclients.NewHypershiftMgmtClients(hsr.controllerConfig, controlPlaneNamespace, resync)
@@ -291,7 +274,7 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 		return err
 	}
 
-	csiDriverController := csidriveroperator.NewHypershiftDriverStarter(
+	csiDriverController, _ := csidriveroperator.NewHypershiftDriverStarter(
 		hsr.commonClients,
 		hsr.mgmtClient,
 		hsr.featureGates,
