@@ -20,23 +20,11 @@ patches:
         value: --guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig
     target:
       kind: Deployment
-  - patch: |- 
+  - target:
+      annotationSelector: "storage.openshift.io/remove-from=mgmt"
+    patch: |
       $patch: delete
-      apiVersion: operator.openshift.io/v1
-      kind: ClusterCSIDriver
+      kind: Kustomization
       metadata:
-        name: ebs.csi.aws.com
-  - patch: |-
-      $patch: delete
-      apiVersion: rbac.authorization.k8s.io/v1
-      kind: ClusterRole
-      metadata:
-        name: aws-ebs-csi-driver-operator-clusterrole
-  - patch: |-
-      $patch: delete
-      apiVersion: rbac.authorization.k8s.io/v1
-      kind: ClusterRoleBinding
-      metadata:
-        name: aws-ebs-csi-driver-operator-clusterrolebinding
+        name: PLACEHOLDER
         
-      
