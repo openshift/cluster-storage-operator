@@ -309,7 +309,7 @@ func (h *hypershiftDriverStarter) addExtraControllersToManager(manager manager.C
 
 	manager = manager.WithController(mgmtStaticResourceController, 1)
 
-	manager = manager.WithController(NewHyperShiftControllerDeployment(
+	manager.WithController(NewHyperShiftControllerDeployment(
 		h.mgmtClient,
 		h.commonClients,
 		h.controllerNamespace,

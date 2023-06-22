@@ -55,7 +55,7 @@ func (csr *commonStarter) initClient(ctx context.Context) error {
 	return nil
 }
 
-func (csr *commonStarter) getFeatureGate(ctx context.Context, recorder events.Recorder) error {
+func (csr *commonStarter) getFeatureGate(ctx context.Context) error {
 	desiredVersion := status.VersionForOperatorFromEnv()
 	missingVersion := "0.0.1-snapshot"
 
@@ -63,7 +63,7 @@ func (csr *commonStarter) getFeatureGate(ctx context.Context, recorder events.Re
 	featureGateAccessor := featuregates.NewFeatureGateAccess(
 		desiredVersion, missingVersion,
 		csr.commonClients.ConfigInformers.Config().V1().ClusterVersions(), csr.commonClients.ConfigInformers.Config().V1().FeatureGates(),
-		recorder,
+		csr.eventRecorder,
 	)
 	go featureGateAccessor.Run(ctx)
 	go csr.commonClients.ConfigInformers.Start(ctx.Done())
@@ -84,7 +84,7 @@ func (csr *commonStarter) getFeatureGate(ctx context.Context, recorder events.Re
 	return nil
 }
 
-func (csr *commonStarter) CreateControllers() error {
+func (csr *commonStarter) CreateCommonControllers() error {
 	csr.versionGetter = status.NewVersionGetter()
 	csr.versionGetter.SetVersion("operator", status.VersionForOperatorFromEnv())
 
@@ -158,12 +158,12 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = ssr.commonStarter.CreateControllers()
+	err = ssr.commonStarter.CreateCommonControllers()
 	if err != nil {
 		return err
 	}
 
-	err = ssr.commonStarter.getFeatureGate(ctx, ssr.eventRecorder)
+	err = ssr.commonStarter.getFeatureGate(ctx)
 	if err != nil {
 		return err
 	}
@@ -261,7 +261,7 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = hsr.commonStarter.CreateControllers()
+	err = hsr.commonStarter.CreateCommonControllers()
 	if err != nil {
 		return err
 	}
@@ -269,7 +269,7 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	controlPlaneNamespace := hsr.controllerConfig.OperatorNamespace
 	csiDriverConfigs := hsr.populateConfigs(hsr.mgmtClient)
 
-	err = hsr.commonStarter.getFeatureGate(ctx, hsr.controllerConfig.EventRecorder)
+	err = hsr.commonStarter.getFeatureGate(ctx)
 	if err != nil {
 		return err
 	}

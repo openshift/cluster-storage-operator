@@ -1,4 +1,4 @@
-all:  build
+all: build
 .PHONY: all
 
 # Include the library makefile

@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	cfgv1 "github.com/openshift/api/config/v1"
 	v1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
@@ -307,32 +306,32 @@ func TestIsNoMatchError(t *testing.T) {
 	}
 }
 
-func getInfrastructure(platformType cfgv1.PlatformType) *cfgv1.Infrastructure {
-	return &cfgv1.Infrastructure{
+func getInfrastructure(platformType v1.PlatformType) *v1.Infrastructure {
+	return &v1.Infrastructure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: infraConfigName,
 		},
-		Status: cfgv1.InfrastructureStatus{
-			PlatformStatus: &cfgv1.PlatformStatus{
+		Status: v1.InfrastructureStatus{
+			PlatformStatus: &v1.PlatformStatus{
 				Type: platformType,
 			},
 		},
 	}
 }
 
-func getDefaultFeatureGate() *cfgv1.FeatureGate {
-	return &cfgv1.FeatureGate{
+func getDefaultFeatureGate() *v1.FeatureGate {
+	return &v1.FeatureGate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "cluster",
 		},
-		Spec: cfgv1.FeatureGateSpec{},
+		Spec: v1.FeatureGateSpec{},
 	}
 }
 
 func TestStandAloneStarter(t *testing.T) {
 	initialObjects := &csoclients.FakeTestObjects{}
 	initialObjects.OperatorObjects = append(initialObjects.OperatorObjects, csoclients.GetCR())
-	initialObjects.ConfigObjects = append(initialObjects.ConfigObjects, getInfrastructure(cfgv1.AWSPlatformType))
+	initialObjects.ConfigObjects = append(initialObjects.ConfigObjects, getInfrastructure(v1.AWSPlatformType))
 	initialObjects.ConfigObjects = append(initialObjects.ConfigObjects, getDefaultFeatureGate())
 
 	finish, cancel := context.WithCancel(context.TODO())
@@ -344,7 +343,7 @@ func TestStandAloneStarter(t *testing.T) {
 	storageInformer.GetStore().Add(csoclients.GetCR())
 
 	infrInformer := clients.ConfigInformers.Config().V1().Infrastructures().Informer()
-	infrInformer.GetStore().Add(getInfrastructure(cfgv1.AWSPlatformType))
+	infrInformer.GetStore().Add(getInfrastructure(v1.AWSPlatformType))
 	testingDefault := featuregates.NewFeatureGate(nil, []v1.FeatureGateName{v1.FeatureGateCSIDriverSharedResource})
 
 	csoclients.StartInformers(clients, finish.Done())

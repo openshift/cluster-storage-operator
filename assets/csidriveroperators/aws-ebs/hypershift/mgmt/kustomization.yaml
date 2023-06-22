@@ -6,14 +6,6 @@ patches:
     target:
       kind: ServiceAccount
       version: v1
-  - path: lease_role.patch.yaml
-    target:
-      kind: Role
-      version: v1
-  - path: configmap_role.patch.yaml
-    target:
-      kind: Role
-      version: v1
   - path: hypershift_role.patch.yaml
     target:
       kind: Role
