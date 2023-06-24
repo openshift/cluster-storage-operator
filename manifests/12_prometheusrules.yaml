@@ -18,7 +18,7 @@ spec:
         expr:  max_over_time(default_storage_class_count[5m]) > 1
         for: 10m
         labels:
-          severity: critical
+          severity: warning
         annotations:
           summary: "More than one default StorageClass detected."
           description: |
