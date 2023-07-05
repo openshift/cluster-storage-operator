@@ -34,6 +34,11 @@ $(call build-image,cluster-storage-operator,$(IMAGE_REGISTRY)/ocp/4.6:cluster-st
 # $3 - manifests directory
 $(call add-profile-manifests,manifests,./profile-patches,./manifests)
 
+update: generate-kustomize-manifests
+
+generate-kustomize-manifests:
+	./hack/generate-manifests.sh
+
 clean:
 	$(RM) cluster-storage-operator
 .PHONY: clean
