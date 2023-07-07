@@ -152,6 +152,7 @@ func TestSync(t *testing.T) {
 				storage: csoclients.GetCR(
 					withTrueConditions(conditionsPrefix+"Disabled", conditionsPrefix+opv1.OperatorStatusTypeAvailable),
 					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
+					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeUpgradeable),
 				),
 			},
 			expectErr: false,
