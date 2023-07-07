@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/util"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
@@ -16,23 +17,12 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/status"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
-)
-
-var _ factory.Controller = &HyperShiftDeploymentController{}
-
-var (
-	envHyperShiftImage = os.Getenv("HYPERSHIFT_IMAGE")
-
-	hostedControlPlaneGVR = schema.GroupVersionResource{
-		Group:    "hypershift.openshift.io",
-		Version:  "v1beta1",
-		Resource: "hostedcontrolplanes",
-	}
 )
 
 // This HyperShiftDeploymentController installs and syncs CSI driver operator Deployment.
@@ -46,11 +36,30 @@ var (
 // does a better in making sure the Degraded condition is properly set if the
 // Deployment isn't healthy.
 type HyperShiftDeploymentController struct {
-	CommonCSIDeploymentController
+	name                     string
+	guestClient              *csoclients.Clients
 	mgmtClient               *csoclients.Clients
 	controlNamespace         string
+	operatorClient           v1helpers.OperatorClient
+	csiOperatorConfig        csioperatorclient.CSIOperatorConfig
+	versionGetter            status.VersionGetter
+	targetVersion            string
+	eventRecorder            events.Recorder
 	hostedControlPlaneLister cache.GenericLister
+	factory                  *factory.Factory
 }
+
+var _ factory.Controller = &HyperShiftDeploymentController{}
+
+var (
+	envHyperShiftImage = os.Getenv("HYPERSHIFT_IMAGE")
+
+	hostedControlPlaneGVR = schema.GroupVersionResource{
+		Group:    "hypershift.openshift.io",
+		Version:  "v1beta1",
+		Resource: "hostedcontrolplanes",
+	}
+)
 
 func NewHyperShiftControllerDeployment(
 	mgtClient *csoclients.Clients,
@@ -63,26 +72,35 @@ func NewHyperShiftControllerDeployment(
 	resyncInterval time.Duration,
 ) factory.Controller {
 	hostedControlPlaneInformer := mgtClient.DynamicInformer.ForResource(hostedControlPlaneGVR)
+	f := factory.New()
+	f = f.ResyncEvery(resyncInterval)
+	f = f.WithSyncDegradedOnError(guestClient.OperatorClient)
+	// Necessary to do initial Sync after the controller starts.
+	f = f.WithPostStartHooks(initalSync)
+	// Add informers to the factory now, but the actual event handlers
+	// are added later in CSIDriverOperatorDeploymentController.Run(),
+	// when we're 100% sure the controller is going to start (because it
+	// depends on the platform).
+	// If we added the event handlers now, all events would pile up in the
+	// controller queue, without anything reading it.
+	f = f.WithInformers(
+		guestClient.OperatorClient.Informer(),
+		mgtClient.KubeInformers.InformersFor(controlNamespace).Apps().V1().Deployments().Informer(),
+		hostedControlPlaneInformer.Informer())
+
 	c := &HyperShiftDeploymentController{
-		CommonCSIDeploymentController: initCommonDeploymentParams(
-			guestClient,
-			csiOperatorConfig,
-			resyncInterval,
-			versionGetter,
-			targetVersion,
-			eventRecorder,
-		),
+		name:                     csiOperatorConfig.ConditionPrefix,
 		mgmtClient:               mgtClient,
+		guestClient:              guestClient,
 		controlNamespace:         controlNamespace,
+		operatorClient:           guestClient.OperatorClient,
+		csiOperatorConfig:        csiOperatorConfig,
+		versionGetter:            versionGetter,
+		targetVersion:            targetVersion,
+		eventRecorder:            eventRecorder.WithComponentSuffix(csiOperatorConfig.ConditionPrefix),
+		factory:                  f,
 		hostedControlPlaneLister: hostedControlPlaneInformer.Lister(),
 	}
-	f := c.initController(func(f *factory.Factory) {
-		f.WithInformers(
-			c.mgmtClient.KubeInformers.InformersFor(controlNamespace).Apps().V1().Deployments().Informer(),
-			hostedControlPlaneInformer.Informer(),
-		)
-	})
-	c.factory = f
 	return c
 }
 
@@ -90,12 +108,11 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 	klog.V(4).Infof("CSIDriverOperatorDeploymentController sync started")
 	defer klog.V(4).Infof("CSIDriverOperatorDeploymentController sync finished")
 
-	runSync, opStatus, opSpec, err := c.preCheckSync(ctx, syncCtx)
+	opSpec, opStatus, _, err := c.operatorClient.GetOperatorState()
 	if err != nil {
 		return err
 	}
-
-	if !runSync {
+	if opSpec.ManagementState != operatorv1.Managed {
 		return nil
 	}
 
@@ -129,7 +146,30 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 	if err != nil {
 		return err
 	}
-	err = c.postSync(ctx, deployment)
+
+	progressingCondition := operatorv1.OperatorCondition{
+		Type:   c.name + operatorv1.OperatorStatusTypeProgressing,
+		Status: operatorv1.ConditionFalse,
+	}
+
+	if ok, msg := isProgressing(deployment); ok {
+		progressingCondition.Status = operatorv1.ConditionTrue
+		progressingCondition.Message = msg
+		progressingCondition.Reason = "Deploying"
+	}
+
+	updateStatusFn := func(newStatus *operatorv1.OperatorStatus) error {
+		resourcemerge.SetDeploymentGeneration(&newStatus.Generations, deployment)
+		return nil
+	}
+
+	_, _, err = v1helpers.UpdateStatus(
+		ctx,
+		c.operatorClient,
+		updateStatusFn,
+		v1helpers.UpdateConditionFn(progressingCondition),
+	)
+
 	if err != nil {
 		return err
 	}

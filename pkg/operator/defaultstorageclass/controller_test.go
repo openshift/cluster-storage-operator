@@ -10,6 +10,7 @@ import (
 	opv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
+	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
@@ -109,7 +110,25 @@ func getAzureStackHubInfrastructure() *cfgv1.Infrastructure {
 	}
 }
 
-func withTrueConditions(conditions ...string) csoclients.CrModifier {
+type crModifier func(cr *opv1.Storage) *opv1.Storage
+
+func getCR(modifiers ...crModifier) *opv1.Storage {
+	cr := &opv1.Storage{
+		ObjectMeta: metav1.ObjectMeta{Name: operatorclient.GlobalConfigName},
+		Spec: opv1.StorageSpec{
+			OperatorSpec: opv1.OperatorSpec{
+				ManagementState: opv1.Managed,
+			},
+		},
+		Status: opv1.StorageStatus{},
+	}
+	for _, modifier := range modifiers {
+		cr = modifier(cr)
+	}
+	return cr
+}
+
+func withTrueConditions(conditions ...string) crModifier {
 	return func(i *opv1.Storage) *opv1.Storage {
 		if i.Status.Conditions == nil {
 			i.Status.Conditions = []opv1.OperatorCondition{}
@@ -124,7 +143,7 @@ func withTrueConditions(conditions ...string) csoclients.CrModifier {
 	}
 }
 
-func withFalseConditions(conditions ...string) csoclients.CrModifier {
+func withFalseConditions(conditions ...string) crModifier {
 	return func(i *opv1.Storage) *opv1.Storage {
 		if i.Status.Conditions == nil {
 			i.Status.Conditions = []opv1.OperatorCondition{}
@@ -145,11 +164,11 @@ func TestSync(t *testing.T) {
 			// The controller reports Disable on unsupported platforms
 			name: "initial unsupported platform deployment",
 			initialObjects: testObjects{
-				storage:        csoclients.GetCR(),
+				storage:        getCR(),
 				infrastructure: getInfrastructure(cfgv1.BareMetalPlatformType),
 			},
 			expectedObjects: testObjects{
-				storage: csoclients.GetCR(
+				storage: getCR(
 					withTrueConditions(conditionsPrefix+"Disabled", conditionsPrefix+opv1.OperatorStatusTypeAvailable),
 					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
@@ -160,10 +179,10 @@ func TestSync(t *testing.T) {
 			// The controller returns error - missing Available is added
 			name: "infrastructure not found",
 			initialObjects: testObjects{
-				storage: csoclients.GetCR(),
+				storage: getCR(),
 			},
 			expectedObjects: testObjects{
-				storage: csoclients.GetCR(
+				storage: getCR(
 					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
 					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
 				),
@@ -174,13 +193,13 @@ func TestSync(t *testing.T) {
 			// The controller returns error + Available is True -> not flipped to False
 			name: "available not false after error",
 			initialObjects: testObjects{
-				storage: csoclients.GetCR(
+				storage: getCR(
 					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
 					withFalseConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),
 			},
 			expectedObjects: testObjects{
-				storage: csoclients.GetCR(
+				storage: getCR(
 					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeAvailable),
 					withTrueConditions(conditionsPrefix+opv1.OperatorStatusTypeProgressing),
 				),

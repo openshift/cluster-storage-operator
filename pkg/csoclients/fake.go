@@ -1,7 +1,6 @@
 package csoclients
 
 import (
-	opv1 "github.com/openshift/api/operator/v1"
 	fakeconfig "github.com/openshift/client-go/config/clientset/versioned/fake"
 	cfginformers "github.com/openshift/client-go/config/informers/externalversions"
 	fakeop "github.com/openshift/client-go/operator/clientset/versioned/fake"
@@ -12,13 +11,10 @@ import (
 	fakemonitoring "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned/fake"
 	fakeextapi "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	apiextinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/dynamic/fake"
 	fakecore "k8s.io/client-go/kubernetes/fake"
-	"k8s.io/client-go/restmapper"
 )
 
 type FakeTestObjects struct {
@@ -30,24 +26,6 @@ func WaitForSync(clients *Clients, stopCh <-chan struct{}) {
 	clients.ExtensionInformer.WaitForCacheSync(stopCh)
 	clients.KubeInformers.InformersFor("").WaitForCacheSync(stopCh)
 	clients.ConfigInformers.WaitForCacheSync(stopCh)
-}
-
-type CrModifier func(cr *opv1.Storage) *opv1.Storage
-
-func GetCR(modifiers ...CrModifier) *opv1.Storage {
-	cr := &opv1.Storage{
-		ObjectMeta: metav1.ObjectMeta{Name: operatorclient.GlobalConfigName},
-		Spec: opv1.StorageSpec{
-			OperatorSpec: opv1.OperatorSpec{
-				ManagementState: opv1.Managed,
-			},
-		},
-		Status: opv1.StorageStatus{},
-	}
-	for _, modifier := range modifiers {
-		cr = modifier(cr)
-	}
-	return cr
 }
 
 func NewFakeClients(initialObjects *FakeTestObjects) *Clients {
@@ -70,9 +48,6 @@ func NewFakeClients(initialObjects *FakeTestObjects) *Clients {
 	dynamicClient := fake.NewSimpleDynamicClient(scheme)
 	dynamicInformer := dynamicinformer.NewDynamicSharedInformerFactory(dynamicClient, 0)
 
-	categoryExpander := restmapper.NewDiscoveryCategoryExpander(kubeClient.Discovery())
-	restMapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(kubeClient.Discovery()))
-
 	opClient := operatorclient.OperatorClient{
 		Client:    operatorClient,
 		Informers: operatorInformerFactory,
@@ -92,28 +67,5 @@ func NewFakeClients(initialObjects *FakeTestObjects) *Clients {
 		MonitoringInformer: monitoringInformer,
 		DynamicClient:      dynamicClient,
 		DynamicInformer:    dynamicInformer,
-		CategoryExpander:   categoryExpander,
-		RestMapper:         restMapper,
-	}
-}
-
-func NewFakeMgmtClients(initialObjects *FakeTestObjects) *Clients {
-	kubeClient := fakecore.NewSimpleClientset(initialObjects.CoreObjects...)
-	kubeInformers := v1helpers.NewKubeInformersForNamespaces(kubeClient, informerNamespaces...)
-
-	configClient := fakeconfig.NewSimpleClientset(initialObjects.ConfigObjects...)
-	configInformerFactory := cfginformers.NewSharedInformerFactory(configClient, 0)
-
-	scheme := runtime.NewScheme()
-	dynamicClient := fake.NewSimpleDynamicClient(scheme)
-	dynamicInformer := dynamicinformer.NewDynamicSharedInformerFactory(dynamicClient, 0)
-
-	return &Clients{
-		KubeClient:      kubeClient,
-		KubeInformers:   kubeInformers,
-		ConfigClientSet: configClient,
-		ConfigInformers: configInformerFactory,
-		DynamicClient:   dynamicClient,
-		DynamicInformer: dynamicInformer,
 	}
 }
