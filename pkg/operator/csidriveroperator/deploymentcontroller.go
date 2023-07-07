@@ -26,104 +26,6 @@ import (
 	csoutils "github.com/openshift/cluster-storage-operator/pkg/utils"
 )
 
-const (
-	deploymentControllerName = "CSIDriverOperatorDeployment"
-)
-
-type CommonCSIDeploymentController struct {
-	name              string
-	operatorClient    v1helpers.OperatorClient
-	commonClients     *csoclients.Clients
-	csiOperatorConfig csioperatorclient.CSIOperatorConfig
-	kubeClient        kubernetes.Interface
-	versionGetter     status.VersionGetter
-	targetVersion     string
-	eventRecorder     events.Recorder
-	infraLister       configv1listers.InfrastructureLister
-	resyncInterval    time.Duration
-	factory           *factory.Factory
-}
-
-func (c *CommonCSIDeploymentController) initController(factoryHookFunc func(*factory.Factory)) *factory.Factory {
-	f := factory.New()
-	f = f.ResyncEvery(c.resyncInterval)
-	f = f.WithSyncDegradedOnError(c.operatorClient)
-	// Necessary to do initial Sync after the controller starts.
-	f = f.WithPostStartHooks(initalSync)
-	// Add informers to the factory now, but the actual event handlers
-	// are added later in CSIDriverOperatorDeploymentController.Run(),
-	// when we're 100% sure the controller is going to start (because it
-	// depends on the platform).
-	// If we added the event handlers now, all events would pile up in the
-	// controller queue, without anything reading it.
-	f = f.WithInformers(
-		c.commonClients.OperatorClient.Informer())
-	factoryHookFunc(f)
-	return f
-}
-
-func (c *CommonCSIDeploymentController) preCheckSync(
-	ctx context.Context,
-	syncCtx factory.SyncContext) (bool, *operatorv1.OperatorStatus, *operatorv1.OperatorSpec, error) {
-
-	opSpec, opStatus, _, err := c.operatorClient.GetOperatorState()
-	if err != nil {
-		return false, opStatus, opSpec, err
-	}
-	if opSpec.ManagementState != operatorv1.Managed {
-		return false, opStatus, opSpec, nil
-	}
-	return true, opStatus, opSpec, nil
-}
-
-func (c *CommonCSIDeploymentController) postSync(ctx context.Context, deployment *appsv1.Deployment) error {
-	progressingCondition := operatorv1.OperatorCondition{
-		Type:   c.name + operatorv1.OperatorStatusTypeProgressing,
-		Status: operatorv1.ConditionFalse,
-	}
-
-	if ok, msg := isProgressing(deployment); ok {
-		progressingCondition.Status = operatorv1.ConditionTrue
-		progressingCondition.Message = msg
-		progressingCondition.Reason = "Deploying"
-	}
-
-	updateStatusFn := func(newStatus *operatorv1.OperatorStatus) error {
-		resourcemerge.SetDeploymentGeneration(&newStatus.Generations, deployment)
-		return nil
-	}
-
-	_, _, err := v1helpers.UpdateStatus(
-		ctx,
-		c.operatorClient,
-		updateStatusFn,
-		v1helpers.UpdateConditionFn(progressingCondition),
-	)
-	return err
-}
-
-func initCommonDeploymentParams(
-	client *csoclients.Clients,
-	csiOperatorConfig csioperatorclient.CSIOperatorConfig,
-	resyncInterval time.Duration,
-	versionGetter status.VersionGetter,
-	targetVersion string,
-	eventRecorder events.Recorder) CommonCSIDeploymentController {
-	c := CommonCSIDeploymentController{
-		name:              csiOperatorConfig.ConditionPrefix,
-		operatorClient:    client.OperatorClient,
-		kubeClient:        client.KubeClient,
-		csiOperatorConfig: csiOperatorConfig,
-		commonClients:     client,
-		versionGetter:     versionGetter,
-		targetVersion:     targetVersion,
-		resyncInterval:    resyncInterval,
-		eventRecorder:     eventRecorder.WithComponentSuffix(csiOperatorConfig.ConditionPrefix),
-		infraLister:       client.ConfigInformers.Config().V1().Infrastructures().Lister(),
-	}
-	return c
-}
-
 // This CSIDriverStarterController installs and syncs CSI driver operator Deployment.
 // It replace ${LOG_LEVEL} in the Deployment with current log level.
 // It replaces images in the Deployment using  CSIOperatorConfig.ImageReplacer.
@@ -132,13 +34,25 @@ func initCommonDeploymentParams(
 // <CSI driver name>CSIDriverOperatorDeploymentDegraded
 // This controller doesn't set the Available condition to avoid prematurely cascading
 // up to the clusteroperator CR a potential Available=false. On the other hand it
-// does a better in making sure the Degraded condition is properly set if
+// does a better in making sure the Degraded condition is properly set if the
 // Deployment isn't healthy.
 type CSIDriverOperatorDeploymentController struct {
-	CommonCSIDeploymentController
+	name              string
+	operatorClient    v1helpers.OperatorClient
+	csiOperatorConfig csioperatorclient.CSIOperatorConfig
+	kubeClient        kubernetes.Interface
+	versionGetter     status.VersionGetter
+	targetVersion     string
+	eventRecorder     events.Recorder
+	infraLister       configv1listers.InfrastructureLister
+	factory           *factory.Factory
 }
 
 var _ factory.Controller = &CSIDriverOperatorDeploymentController{}
+
+const (
+	deploymentControllerName = "CSIDriverOperatorDeployment"
+)
 
 func NewCSIDriverOperatorDeploymentController(
 	clients *csoclients.Clients,
@@ -148,15 +62,33 @@ func NewCSIDriverOperatorDeploymentController(
 	eventRecorder events.Recorder,
 	resyncInterval time.Duration,
 ) factory.Controller {
+	f := factory.New()
+	f = f.ResyncEvery(resyncInterval)
+	f = f.WithSyncDegradedOnError(clients.OperatorClient)
+	// Necessary to do initial Sync after the controller starts.
+	f = f.WithPostStartHooks(initalSync)
+	// Add informers to the factory now, but the actual event handlers
+	// are added later in CSIDriverOperatorDeploymentController.Run(),
+	// when we're 100% sure the controller is going to start (because it
+	// depends on the platform).
+	// If we added the event handlers now, all events would pile up in the
+	// controller queue, without anything reading it.
+	f = f.WithInformers(
+		clients.OperatorClient.Informer(),
+		clients.KubeInformers.InformersFor(csoclients.CSIOperatorNamespace).Apps().V1().Deployments().Informer(),
+		clients.ConfigInformers.Config().V1().Infrastructures().Informer())
+
 	c := &CSIDriverOperatorDeploymentController{
-		CommonCSIDeploymentController: initCommonDeploymentParams(clients, csiOperatorConfig, resyncInterval, versionGetter, targetVersion, eventRecorder),
+		name:              csiOperatorConfig.ConditionPrefix,
+		operatorClient:    clients.OperatorClient,
+		csiOperatorConfig: csiOperatorConfig,
+		kubeClient:        clients.KubeClient,
+		versionGetter:     versionGetter,
+		targetVersion:     targetVersion,
+		eventRecorder:     eventRecorder.WithComponentSuffix(csiOperatorConfig.ConditionPrefix),
+		factory:           f,
+		infraLister:       clients.ConfigInformers.Config().V1().Infrastructures().Lister(),
 	}
-	f := c.initController(func(f *factory.Factory) {
-		f.WithInformers(
-			c.commonClients.KubeInformers.InformersFor(csoclients.CSIOperatorNamespace).Apps().V1().Deployments().Informer(),
-			c.commonClients.ConfigInformers.Config().V1().Infrastructures().Informer())
-	})
-	c.factory = f
 	return c
 }
 
@@ -164,12 +96,11 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 	klog.V(4).Infof("CSIDriverOperatorDeploymentController sync started")
 	defer klog.V(4).Infof("CSIDriverOperatorDeploymentController sync finished")
 
-	runSync, opStatus, opSpec, err := c.preCheckSync(ctx, syncCtx)
+	opSpec, opStatus, _, err := c.operatorClient.GetOperatorState()
 	if err != nil {
 		return err
 	}
-
-	if !runSync {
+	if opSpec.ManagementState != operatorv1.Managed {
 		return nil
 	}
 
@@ -210,10 +141,33 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 		return err
 	}
 
-	err = c.postSync(ctx, deployment)
+	progressingCondition := operatorv1.OperatorCondition{
+		Type:   c.name + operatorv1.OperatorStatusTypeProgressing,
+		Status: operatorv1.ConditionFalse,
+	}
+
+	if ok, msg := isProgressing(deployment); ok {
+		progressingCondition.Status = operatorv1.ConditionTrue
+		progressingCondition.Message = msg
+		progressingCondition.Reason = "Deploying"
+	}
+
+	updateStatusFn := func(newStatus *operatorv1.OperatorStatus) error {
+		resourcemerge.SetDeploymentGeneration(&newStatus.Generations, deployment)
+		return nil
+	}
+
+	_, _, err = v1helpers.UpdateStatus(
+		ctx,
+		c.operatorClient,
+		updateStatusFn,
+		v1helpers.UpdateConditionFn(progressingCondition),
+	)
+
 	if err != nil {
 		return err
 	}
+
 	return checkDeploymentHealth(ctx, c.kubeClient.AppsV1(), deployment)
 }
 

@@ -9,9 +9,12 @@ import (
 	"k8s.io/component-base/metrics/legacyregistry"
 
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
+	"github.com/openshift/library-go/pkg/controller/factory"
+	"github.com/openshift/library-go/pkg/operator/events"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 )
 
 const (
@@ -30,16 +33,14 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		isHyperShift = true
 	}
 
-	starter := NewStandaloneStarter(controllerConfig)
-
-	if isHyperShift {
-		starter = NewHyperShiftStarter(controllerConfig, *guestKubeConfig)
+	if !isHyperShift {
+		return startControllerStandAlone(ctx, controllerConfig)
 	}
-	return starter.StartOperator(ctx)
+	return startHyperShiftController(ctx, controllerConfig, *guestKubeConfig)
 }
 
-func countStorageClasses(clients *csoclients.Clients) {
-	klog.Infof("Registering default StorageClass count metric for controller")
+func countStorageClasses(storageClassController factory.Controller, clients *csoclients.Clients) {
+	klog.Infof("Registering default StorageClass count metric for controller %s", storageClassController.Name())
 	legacyregistry.RawMustRegister(metrics.NewGaugeFunc(
 		&metrics.GaugeOpts{
 			Name:           "default_storage_class_count",
@@ -62,4 +63,28 @@ func countStorageClasses(clients *csoclients.Clients) {
 			return float64(defaultSCCount)
 		},
 	))
+}
+
+func populateConfigs(clients *csoclients.Clients, recorder events.Recorder, isHypershift bool) []csioperatorclient.CSIOperatorConfig {
+	if isHypershift {
+		return []csioperatorclient.CSIOperatorConfig{
+			csioperatorclient.GetAWSEBSCSIOperatorConfig(isHypershift),
+			csioperatorclient.GetPowerVSBlockCSIOperatorConfig(isHypershift),
+			csioperatorclient.GetSharedResourceCSIOperatorConfig(isHypershift),
+		}
+	}
+	return []csioperatorclient.CSIOperatorConfig{
+		csioperatorclient.GetAWSEBSCSIOperatorConfig(isHypershift),
+		csioperatorclient.GetGCPPDCSIOperatorConfig(),
+		csioperatorclient.GetOpenStackCinderCSIOperatorConfig(clients, recorder),
+		csioperatorclient.GetOVirtCSIOperatorConfig(clients, recorder),
+		csioperatorclient.GetManilaOperatorConfig(clients, recorder),
+		csioperatorclient.GetVMwareVSphereCSIOperatorConfig(),
+		csioperatorclient.GetAzureDiskCSIOperatorConfig(),
+		csioperatorclient.GetAzureFileCSIOperatorConfig(),
+		csioperatorclient.GetSharedResourceCSIOperatorConfig(isHypershift),
+		csioperatorclient.GetAlibabaDiskCSIOperatorConfig(),
+		csioperatorclient.GetIBMVPCBlockCSIOperatorConfig(),
+		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(isHypershift),
+	}
 }
