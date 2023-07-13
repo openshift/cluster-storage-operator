@@ -93,7 +93,13 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 				Reason:  "UnsupportedPlatform",
 				Message: syncErr.Error(),
 			}
-			// Set Available=true, Progressing=false - everything is OK and
+
+			upgradeableCnt := operatorapi.OperatorCondition{
+				Type:   conditionsPrefix + operatorapi.OperatorStatusTypeUpgradeable,
+				Status: operatorapi.ConditionTrue,
+			}
+
+			// Set Available=true, Progressing=false, Upgradeable=true - everything is OK and
 			// there is nothing to do. ClusterOperatorStatusController needs
 			// at least one Available/Pogressing condition set to mark the
 			// overall ClusterOperator as Available + notPogressing.
@@ -104,6 +110,7 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 				v1helpers.UpdateConditionFn(disabledCnd),
 				v1helpers.UpdateConditionFn(availableCnd),
 				v1helpers.UpdateConditionFn(progressingCnd),
+				v1helpers.UpdateConditionFn(upgradeableCnt),
 			)
 			return updateErr
 		} else if syncErr == supportedByCSIError {
