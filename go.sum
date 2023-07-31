@@ -445,8 +445,8 @@ github.com/openshift/build-machinery-go v0.0.0-20220913142420-e25cf57ea46d h1:RR
 github.com/openshift/build-machinery-go v0.0.0-20220913142420-e25cf57ea46d/go.mod h1:b1BuldmJlbA/xYtdZvKi+7j5YGB44qJUJDZ9zwiNCfE=
 github.com/openshift/client-go v0.0.0-20230503144108-75015d2347cb h1:Nij5OnaECrkmcRQMAE9LMbQXPo95aqFnf+12B7SyFVI=
 github.com/openshift/client-go v0.0.0-20230503144108-75015d2347cb/go.mod h1:Rhb3moCqeiTuGHAbXBOlwPubUMlOZEkrEWTRjIF3jzs=
-github.com/openshift/library-go v0.0.0-20230508110756-9b7abe2c9cbf h1:ZpFAN2qprgp7jEhGPrOAwP8mmuYC9BRYzvDefg+k4GM=
-github.com/openshift/library-go v0.0.0-20230508110756-9b7abe2c9cbf/go.mod h1:PJVatR/oS/EaFciwylyAr9hORSqQHrC+5bXf4L0wsBY=
+github.com/openshift/library-go v0.0.0-20230523150659-ab179469ba38 h1:rKEpSwRxeQ6eN915GbcuyikwyWu//V61w5zIUWD9b2U=
+github.com/openshift/library-go v0.0.0-20230523150659-ab179469ba38/go.mod h1:PJVatR/oS/EaFciwylyAr9hORSqQHrC+5bXf4L0wsBY=
 github.com/pborman/uuid v1.2.0/go.mod h1:X/NO0urCmaxf9VXbdlT7C2Yzkj2IKimNn4k+gtPdI/k=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/peterbourgon/diskv v2.0.1+incompatible/go.mod h1:uqqh8zWWbv1HBMNONnaR/tNboyR3/BZd58JJSHlUSCU=
@@ -1036,7 +1036,6 @@ honnef.co/go/tools v0.0.1-2020.1.3/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9
 honnef.co/go/tools v0.0.1-2020.1.4/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
 k8s.io/api v0.17.0/go.mod h1:npsyOePkeP0CPwyGfXDHxvypiYMJxBWAMpQxCaJ4ZxI=
 k8s.io/api v0.18.0-beta.2/go.mod h1:2oeNnWEqcSmaM/ibSh3t7xcIqbkGXhzZdn4ezV9T4m0=
-k8s.io/api v0.27.0/go.mod h1:Wl+QRvQlh+T8SK5f4F6YBhhyH6hrFO08nl74xZb1MUE=
 k8s.io/api v0.27.1 h1:Z6zUGQ1Vd10tJ+gHcNNNgkV5emCyW+v2XTmn+CLjSd0=
 k8s.io/api v0.27.1/go.mod h1:z5g/BpAiD+f6AArpqNjkY+cji8ueZDU/WV1jcj5Jk4E=
 k8s.io/apiextensions-apiserver v0.17.0/go.mod h1:XiIFUakZywkUl54fVXa7QTEHcqQz9HG55nHd1DCoHj8=
@@ -1045,15 +1044,14 @@ k8s.io/apiextensions-apiserver v0.27.1 h1:Hp7B3KxKHBZ/FxmVFVpaDiXI6CCSr49P1OJjxK
 k8s.io/apiextensions-apiserver v0.27.1/go.mod h1:8jEvRDtKjVtWmdkhOqE84EcNWJt/uwF8PC4627UZghY=
 k8s.io/apimachinery v0.17.0/go.mod h1:b9qmWdKlLuU9EBh+06BtLcSf/Mu89rWL33naRxs1uZg=
 k8s.io/apimachinery v0.18.0-beta.2/go.mod h1:9SnR/e11v5IbyPCGbvJViimtJ0SwHG4nfZFjU77ftcA=
-k8s.io/apimachinery v0.27.0/go.mod h1:5ikh59fK3AJ287GUvpUsryoMFtH9zj/ARfWCo3AyXTM=
 k8s.io/apimachinery v0.27.1 h1:EGuZiLI95UQQcClhanryclaQE6xjg1Bts6/L3cD7zyc=
 k8s.io/apimachinery v0.27.1/go.mod h1:5ikh59fK3AJ287GUvpUsryoMFtH9zj/ARfWCo3AyXTM=
 k8s.io/apiserver v0.17.0/go.mod h1:ABM+9x/prjINN6iiffRVNCBR2Wk7uY4z+EtEGZD48cg=
 k8s.io/apiserver v0.18.0-beta.2/go.mod h1:bnblMkMoCFnIfVnVftd0SXJPzyvrk3RtaqSbblphF/A=
 k8s.io/apiserver v0.27.1 h1:phY+BtXjjzd+ta3a4kYbomC81azQSLa1K8jo9RBw7Lg=
 k8s.io/apiserver v0.27.1/go.mod h1:UGrOjLY2KsieA9Fw6lLiTObxTb8Z1xEba4uqSuMY0WU=
-k8s.io/client-go v0.27.0 h1:DyZS1fJkv73tEy7rWv4VF6NwGeJ7SKvNaLRXZBYLA+4=
-k8s.io/client-go v0.27.0/go.mod h1:XVEmpNnM+4JYO3EENoFV/ZDv3KxKVJUnzGo70avk+C4=
+k8s.io/client-go v0.27.1 h1:oXsfhW/qncM1wDmWBIuDzRHNS2tLhK3BZv512Nc59W8=
+k8s.io/client-go v0.27.1/go.mod h1:f8LHMUkVb3b9N8bWturc+EDtVVVwZ7ueTVquFAJb2vA=
 k8s.io/code-generator v0.17.0/go.mod h1:DVmfPQgxQENqDIzVR2ddLXMH34qeszkKSdH/N+s+38s=
 k8s.io/code-generator v0.18.0-beta.2/go.mod h1:+UHX5rSbxmR8kzS+FAv7um6dtYrZokQvjHpDSYRVkTc=
 k8s.io/component-base v0.17.0/go.mod h1:rKuRAokNMY2nn2A6LP/MiwpoaMRHpfRnrPaUJJj1Yoc=

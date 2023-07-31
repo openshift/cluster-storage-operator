@@ -110,7 +110,8 @@ func (csr *commonStarter) CreateCommonControllers() error {
 		csr.commonClients.OperatorClient,
 		csr.versionGetter,
 		csr.eventRecorder,
-	)
+	).WithVersionRemoval()
+
 	clusterOperatorStatus.WithRelatedObjectsFunc(csidriveroperator.RelatedObjectFunc())
 	csr.controllers = append(csr.controllers, clusterOperatorStatus)
 
