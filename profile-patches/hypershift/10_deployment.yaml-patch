@@ -36,6 +36,16 @@
   value:
     name: HYPERSHIFT_IMAGE
     value: quay.io/openshift/origin-control-plane:latest
+- op: add
+  path: /spec/template/spec/containers/0/env/40
+  value:
+    name: AWS_EBS_DRIVER_CONTROL_PLANE_IMAGE
+    value: quay.io/openshift/origin-aws-ebs-csi-driver:latest
+- op: add
+  path: /spec/template/spec/containers/0/env/41
+  value:
+    name: LIVENESS_PROBE_CONTROL_PLANE_IMAGE
+    value: quay.io/openshift/origin-csi-livenessprobe:latest
 # Add cmdline args
 - op: add
   path: /spec/template/spec/containers/0/args/-
