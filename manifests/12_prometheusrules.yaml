@@ -33,7 +33,7 @@ spec:
         # Focus on attach and mount operations - they have the same diagnostic steps and are the most common.
         expr: |
           increase(storage_operation_duration_seconds_count{status != "success", operation_name =~"volume_attach|volume_mount"}[5m]) > 0
-          and on() increase(storage_operation_duration_seconds_count{status = "success", operation_name =~"volume_attach|volume_mount"}[5m]) == 0
+          and ignoring(status) increase(storage_operation_duration_seconds_count{status = "success", operation_name =~"volume_attach|volume_mount"}[5m]) == 0
         for: 5m
         labels:
           severity: info
