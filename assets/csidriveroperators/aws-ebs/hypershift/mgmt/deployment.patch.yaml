@@ -46,6 +46,10 @@ spec:
         env:
           - name: HYPERSHIFT_IMAGE
             value: ${HYPERSHIFT_IMAGE}
+          - name: DRIVER_CONTROL_PLANE_IMAGE
+            value: ${DRIVER_CONTROL_PLANE_IMAGE}
+          - name: LIVENESS_PROBE_CONTROL_PLANE_IMAGE
+            value: ${LIVENESS_PROBE_CONTROL_PLANE_IMAGE}
         volumeMounts:
           - mountPath: /etc/guest-kubeconfig
             name: guest-kubeconfig

@@ -11,12 +11,15 @@ const (
 	AWSEBSCSIDriverName          = "ebs.csi.aws.com"
 	envAWSEBSDriverOperatorImage = "AWS_EBS_DRIVER_OPERATOR_IMAGE"
 	envAWSEBSDriverImage         = "AWS_EBS_DRIVER_IMAGE"
+
+	envAWSEBSDriverControlPlaneImage = "AWS_EBS_DRIVER_CONTROL_PLANE_IMAGE"
 )
 
 func GetAWSEBSCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 	pairs := []string{
 		"${OPERATOR_IMAGE}", os.Getenv(envAWSEBSDriverOperatorImage),
 		"${DRIVER_IMAGE}", os.Getenv(envAWSEBSDriverImage),
+		"${DRIVER_CONTROL_PLANE_IMAGE}", os.Getenv(envAWSEBSDriverControlPlaneImage),
 	}
 
 	csiDriverConfig := CSIOperatorConfig{
