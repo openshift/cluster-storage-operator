@@ -21,6 +21,8 @@ spec:
       containers:
       - args:
         - start
+        - --terminate-on-files=/etc/secrets/tls.crt
+        - --terminate-on-files=/etc/secrets/tls.key
         env:
         - name: DRIVER_IMAGE
           value: ${DRIVER_IMAGE}

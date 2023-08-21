@@ -50,6 +50,8 @@ spec:
           args:
           - start
           - -v=2
+          - --terminate-on-files=/var/run/secrets/serving-cert/tls.crt
+          - --terminate-on-files=/var/run/secrets/serving-cert/tls.key
           ports:
           - containerPort: 8443
             name: metrics

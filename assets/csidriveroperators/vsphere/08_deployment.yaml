@@ -23,6 +23,8 @@ spec:
         - start
         - --listen=0.0.0.0:8445
         - -v=${LOG_LEVEL}
+        - --terminate-on-files=/var/run/secrets/serving-cert/tls.crt
+        - --terminate-on-files=/var/run/secrets/serving-cert/tls.key
         env:
         - name: DRIVER_IMAGE
           value: ${DRIVER_IMAGE}
