@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 
+	cfgv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/stretchr/testify/assert"
@@ -22,6 +23,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/errors"
 )
 
+type RunControllerTest struct {
+	name           string
+	platformStatus *v1.PlatformStatus
+	featureGate    featuregates.FeatureGate
+	csiDriver      *storagev1.CSIDriver
+	config         csioperatorclient.CSIOperatorConfig
+	expectRun      bool
+	expectError    bool
+}
+
 func TestShouldRunController(t *testing.T) {
 	testingDefault := featuregates.NewFeatureGate(nil, []v1.FeatureGateName{v1.FeatureGateCSIDriverSharedResource})
 	testingTechPreview := featuregates.NewFeatureGate([]v1.FeatureGateName{v1.FeatureGateCSIDriverSharedResource}, nil)
@@ -29,31 +40,23 @@ func TestShouldRunController(t *testing.T) {
 	customWithJustOther := featuregates.NewFeatureGate([]v1.FeatureGateName{"SomeOtherFeatureGate"}, nil)
 	customWithNothing := featuregates.NewFeatureGate([]v1.FeatureGateName{}, nil)
 
-	tests := []struct {
-		name        string
-		platform    v1.PlatformType
-		featureGate featuregates.FeatureGate
-		csiDriver   *storagev1.CSIDriver
-		config      csioperatorclient.CSIOperatorConfig
-		expectRun   bool
-		expectError bool
-	}{
+	tests := []RunControllerTest{
 		{
-			"tech preview Shared Resource driver on AllPlatforms type",
-			v1.AWSPlatformType,
-			testingTechPreview,
-			nil,
-			csioperatorclient.CSIOperatorConfig{
+			name:           "tech preview Shared Resource driver on AllPlatforms type",
+			platformStatus: &v1.PlatformStatus{Type: v1.AWSPlatformType},
+			featureGate:    testingTechPreview,
+			csiDriver:      nil,
+			config: csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           csioperatorclient.AllPlatforms,
 				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
 			},
-			true,
-			false,
+			expectRun:   true,
+			expectError: false,
 		},
 		{
 			"tech preview Shared Resource driver on AWSPlatformType",
-			v1.AWSPlatformType,
+			&v1.PlatformStatus{Type: v1.AWSPlatformType},
 			testingTechPreview,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
@@ -66,7 +69,7 @@ func TestShouldRunController(t *testing.T) {
 		},
 		{
 			"tech preview Shared Resource driver on GCPPlatformType",
-			v1.GCPPlatformType,
+			&v1.PlatformStatus{Type: v1.GCPPlatformType},
 			testingTechPreview,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
@@ -79,7 +82,7 @@ func TestShouldRunController(t *testing.T) {
 		},
 		{
 			"tech preview Shared Resource driver on GCPPlatformType",
-			v1.VSpherePlatformType,
+			&v1.PlatformStatus{Type: v1.VSpherePlatformType},
 			testingTechPreview,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
@@ -92,7 +95,7 @@ func TestShouldRunController(t *testing.T) {
 		},
 		{
 			"GA CSI driver on matching platform",
-			v1.AWSPlatformType,
+			&v1.PlatformStatus{Type: v1.AWSPlatformType},
 			testingDefault,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
@@ -105,7 +108,7 @@ func TestShouldRunController(t *testing.T) {
 		},
 		{
 			"GA CSI driver on non-matching platform",
-			v1.GCPPlatformType,
+			&v1.PlatformStatus{Type: v1.GCPPlatformType},
 			testingDefault,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
@@ -118,7 +121,7 @@ func TestShouldRunController(t *testing.T) {
 		},
 		{
 			"GA CSI driver with StatusFilter returning true",
-			v1.IBMCloudPlatformType,
+			&v1.PlatformStatus{Type: v1.IBMCloudPlatformType},
 			testingDefault,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
@@ -134,7 +137,7 @@ func TestShouldRunController(t *testing.T) {
 		},
 		{
 			"GA CSI driver with StatusFilter returning false",
-			v1.IBMCloudPlatformType,
+			&v1.PlatformStatus{Type: v1.IBMCloudPlatformType},
 			testingDefault,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
@@ -150,7 +153,7 @@ func TestShouldRunController(t *testing.T) {
 		},
 		{
 			"tech preview Shared Resource driver with positive custom featureGate",
-			v1.AWSPlatformType,
+			&v1.PlatformStatus{Type: v1.AWSPlatformType},
 			customFeatureGate,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
@@ -163,7 +166,7 @@ func TestShouldRunController(t *testing.T) {
 		},
 		{
 			"tech preview Shared Resource driver with negative custom featureGate",
-			v1.AWSPlatformType,
+			&v1.PlatformStatus{Type: v1.AWSPlatformType},
 			customWithJustOther,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
@@ -176,7 +179,7 @@ func TestShouldRunController(t *testing.T) {
 		},
 		{
 			"tech preview Shared Resource driver with empty custom featureGate",
-			v1.AWSPlatformType,
+			&v1.PlatformStatus{Type: v1.AWSPlatformType},
 			customWithNothing,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
@@ -189,7 +192,7 @@ func TestShouldRunController(t *testing.T) {
 		},
 		{
 			"tech preview Shared Resource driver with nil custom featureGate",
-			v1.AWSPlatformType,
+			&v1.PlatformStatus{Type: v1.AWSPlatformType},
 			customWithNothing,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
@@ -205,13 +208,8 @@ func TestShouldRunController(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 
-			infra := &v1.Infrastructure{
-				Status: v1.InfrastructureStatus{
-					PlatformStatus: &v1.PlatformStatus{
-						Type: test.platform,
-					},
-				},
-			}
+			infra := NewTestInfra().WithStatus(test.platformStatus)
+
 			res, err := shouldRunController(test.config, infra, test.featureGate, test.csiDriver)
 			if res != test.expectRun {
 				t.Errorf("Expected run %t, got %t", test.expectRun, res)
@@ -222,6 +220,27 @@ func TestShouldRunController(t *testing.T) {
 			}
 		})
 	}
+}
+
+type TestInfra struct {
+	infra *v1.Infrastructure
+}
+
+func NewTestInfra() *TestInfra {
+	testInfra := TestInfra{}
+	testInfra.infra = &v1.Infrastructure{
+		Status: v1.InfrastructureStatus{},
+	}
+
+	return &testInfra
+}
+
+func (i *TestInfra) WithStatus(status ...*v1.PlatformStatus) *v1.Infrastructure {
+	if len(status) > 0 {
+		i.infra.Status.PlatformStatus = status[0]
+	}
+
+	return i.infra
 }
 
 func csiDriver(csiDriverName string, annotations map[string]string) *storagev1.CSIDriver {
