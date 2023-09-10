@@ -285,6 +285,8 @@ rules:
   - get
   - list
   - watch
+  - patch
+  - update
 - apiGroups:
   - apiextensions.k8s.io
   resources:
