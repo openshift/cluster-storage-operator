@@ -37,6 +37,7 @@ rules:
   resourceNames:
   - extension-apiserver-authentication
   - vmware-vsphere-csi-driver-operator-lock
+  - admin-gates
   resources:
   - configmaps
   verbs:
@@ -309,8 +310,6 @@ rules:
   - get
   - list
   - watch
-  - patch
-  - update
 - apiGroups:
   - apiextensions.k8s.io
   resources:
