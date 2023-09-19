@@ -34,7 +34,8 @@ import (
 const (
 	infraConfigName                     = "cluster"
 	vSphereProblemDetectorOperatorImage = "VSPHERE_PROBLEM_DETECTOR_OPERATOR_IMAGE"
-	secretName                          = "vsphere-cloud-credentials"
+	cloudCredSecretName                 = "vsphere-cloud-credentials"
+	metricsCertSecretName               = "vsphere-problem-detector-serving-cert"
 	cloudConfigNamespace                = "openshift-config"
 )
 
@@ -153,7 +154,13 @@ func (c *VSphereProblemDetectorStarter) createVSphereProblemDetectorManager(
 		// Restart when credentials change to get a quick retest
 		csidrivercontrollerservicecontroller.WithSecretHashAnnotationHook(
 			csoclients.OperatorNamespace,
-			secretName,
+			cloudCredSecretName,
+			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().Secrets(),
+		),
+		// Restart when serving-cert changes
+		csidrivercontrollerservicecontroller.WithSecretHashAnnotationHook(
+			csoclients.OperatorNamespace,
+			metricsCertSecretName,
 			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().Secrets(),
 		),
 		// Restart when cloud config changes to get a quick retest

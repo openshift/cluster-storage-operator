@@ -23,6 +23,8 @@ spec:
       - args:
         - start
         - -v=2
+        - --terminate-on-files=/var/run/secrets/serving-cert/tls.crt
+        - --terminate-on-files=/var/run/secrets/serving-cert/tls.key
         command:
         - cluster-storage-operator
         - start
