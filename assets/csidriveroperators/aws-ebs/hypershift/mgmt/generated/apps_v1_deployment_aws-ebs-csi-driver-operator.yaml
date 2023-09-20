@@ -1,6 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    hypershift.openshift.io/need-management-kas-access: "true"
   name: aws-ebs-csi-driver-operator
   namespace: ${CONTROLPLANE_NAMESPACE}
 spec:
