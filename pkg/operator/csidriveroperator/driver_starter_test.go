@@ -29,6 +29,7 @@ type RunControllerTest struct {
 	featureGate    featuregates.FeatureGate
 	csiDriver      *storagev1.CSIDriver
 	config         csioperatorclient.CSIOperatorConfig
+	isInstalled    bool
 	expectRun      bool
 	expectError    bool
 }
@@ -51,6 +52,7 @@ func TestShouldRunController(t *testing.T) {
 				Platform:           csioperatorclient.AllPlatforms,
 				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
 			},
+			isInstalled: false,
 			expectRun:   true,
 			expectError: false,
 		},
@@ -64,6 +66,7 @@ func TestShouldRunController(t *testing.T) {
 				Platform:           v1.AWSPlatformType,
 				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
 			},
+			false,
 			true,
 			false,
 		},
@@ -77,6 +80,7 @@ func TestShouldRunController(t *testing.T) {
 				Platform:           v1.GCPPlatformType,
 				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
 			},
+			false,
 			true,
 			false,
 		},
@@ -90,6 +94,7 @@ func TestShouldRunController(t *testing.T) {
 				Platform:           v1.VSpherePlatformType,
 				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
 			},
+			false,
 			true,
 			false,
 		},
@@ -103,6 +108,7 @@ func TestShouldRunController(t *testing.T) {
 				Platform:           v1.AWSPlatformType,
 				RequireFeatureGate: "",
 			},
+			false,
 			true,
 			false,
 		},
@@ -118,6 +124,7 @@ func TestShouldRunController(t *testing.T) {
 			},
 			false,
 			false,
+			false,
 		},
 		{
 			"GA CSI driver with StatusFilter returning true",
@@ -128,10 +135,11 @@ func TestShouldRunController(t *testing.T) {
 				CSIDriverName:      "vpc.block.csi.ibm.io",
 				Platform:           v1.IBMCloudPlatformType,
 				RequireFeatureGate: "",
-				StatusFilter: func(*v1.InfrastructureStatus) bool {
+				StatusFilter: func(*v1.InfrastructureStatus, bool) bool {
 					return true
 				},
 			},
+			false,
 			true,
 			false,
 		},
@@ -144,10 +152,11 @@ func TestShouldRunController(t *testing.T) {
 				CSIDriverName:      "vpc.block.csi.ibm.io",
 				Platform:           v1.IBMCloudPlatformType,
 				RequireFeatureGate: "",
-				StatusFilter: func(*v1.InfrastructureStatus) bool {
+				StatusFilter: func(*v1.InfrastructureStatus, bool) bool {
 					return false
 				},
 			},
+			false,
 			false,
 			false,
 		},
@@ -161,6 +170,7 @@ func TestShouldRunController(t *testing.T) {
 				Platform:           v1.AWSPlatformType,
 				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
 			},
+			false,
 			true,
 			false,
 		},
@@ -176,6 +186,7 @@ func TestShouldRunController(t *testing.T) {
 			},
 			false,
 			false,
+			false,
 		},
 		{
 			"tech preview Shared Resource driver with empty custom featureGate",
@@ -187,6 +198,7 @@ func TestShouldRunController(t *testing.T) {
 				Platform:           v1.AWSPlatformType,
 				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
 			},
+			false,
 			false,
 			false,
 		},
@@ -202,6 +214,37 @@ func TestShouldRunController(t *testing.T) {
 			},
 			false,
 			false,
+			false,
+		},
+		{
+			"Azure File driver should not run on Azure StackHub if not already installed",
+			&v1.PlatformStatus{Type: v1.AzurePlatformType, Azure: &v1.AzurePlatformStatus{CloudName: cfgv1.AzureStackCloud}},
+			customWithNothing,
+			nil,
+			csioperatorclient.CSIOperatorConfig{
+				CSIDriverName:      "file.csi.azure.com",
+				Platform:           v1.AzurePlatformType,
+				StatusFilter:       csioperatorclient.IsNotAzueStackCloud,
+				RequireFeatureGate: "",
+			},
+			false,
+			false,
+			false,
+		},
+		{
+			"Azure File driver should keep running on Azure StackHub if already installed",
+			&v1.PlatformStatus{Type: v1.AzurePlatformType, Azure: &v1.AzurePlatformStatus{CloudName: cfgv1.AzureStackCloud}},
+			customWithNothing,
+			nil,
+			csioperatorclient.CSIOperatorConfig{
+				CSIDriverName:      "file.csi.azure.com",
+				Platform:           v1.AzurePlatformType,
+				StatusFilter:       csioperatorclient.IsNotAzueStackCloud,
+				RequireFeatureGate: "",
+			},
+			true,
+			true,
+			false,
 		},
 	}
 
@@ -210,7 +253,7 @@ func TestShouldRunController(t *testing.T) {
 
 			infra := NewTestInfra().WithStatus(test.platformStatus)
 
-			res, err := shouldRunController(test.config, infra, test.featureGate, test.csiDriver)
+			res, err := shouldRunController(test.config, infra, test.featureGate, test.csiDriver, test.isInstalled)
 			if res != test.expectRun {
 				t.Errorf("Expected run %t, got %t", test.expectRun, res)
 			}

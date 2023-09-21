@@ -167,6 +167,18 @@ func (dsrc *driverStarterCommon) createCSIControllerManager(cfg csioperatorclien
 	return manager, ctrlRelatedObjects
 }
 
+func (dsrc *driverStarterCommon) isOperatorInstalled(name string) (bool, error) {
+	_, err := dsrc.commonClients.OperatorInformers.Operator().V1().ClusterCSIDrivers().Lister().Get(name)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (dsrc *driverStarterCommon) sync(ctx context.Context, syncCtx factory.SyncContext) error {
 	klog.V(4).Infof("CSIDriverStarterController.Sync started")
 	defer klog.V(4).Infof("CSIDriverStarterController.Sync finished")
@@ -197,7 +209,11 @@ func (dsrc *driverStarterCommon) sync(ctx context.Context, syncCtx factory.SyncC
 		}
 
 		if !ctrl.running {
-			shouldRun, err := shouldRunController(ctrl.operatorConfig, infrastructure, dsrc.featureGates, csiDriver)
+			isInstalled, err := dsrc.isOperatorInstalled(ctrl.operatorConfig.CSIDriverName)
+			if err != nil {
+				return err
+			}
+			shouldRun, err := shouldRunController(ctrl.operatorConfig, infrastructure, dsrc.featureGates, csiDriver, isInstalled)
 			if err != nil {
 				return err
 			}
@@ -333,7 +349,7 @@ func namespaceReplacer(assetFunc resourceapply.AssetFunc, placeholder, namespace
 }
 
 // shouldRunController returns true, if given CSI driver controller should run.
-func shouldRunController(cfg csioperatorclient.CSIOperatorConfig, infrastructure *configv1.Infrastructure, fg featuregates.FeatureGate, csiDriver *storagev1.CSIDriver) (bool, error) {
+func shouldRunController(cfg csioperatorclient.CSIOperatorConfig, infrastructure *configv1.Infrastructure, fg featuregates.FeatureGate, csiDriver *storagev1.CSIDriver, isInstalled bool) (bool, error) {
 	// Check the correct platform first, it will filter out most CSI driver operators
 	var platform configv1.PlatformType
 	if infrastructure.Status.PlatformStatus != nil {
@@ -344,7 +360,7 @@ func shouldRunController(cfg csioperatorclient.CSIOperatorConfig, infrastructure
 		return false, nil
 	}
 
-	if cfg.StatusFilter != nil && !cfg.StatusFilter(&infrastructure.Status) {
+	if cfg.StatusFilter != nil && !cfg.StatusFilter(&infrastructure.Status, isInstalled) {
 		klog.V(5).Infof("Not starting %s: StatusFilter returned false", cfg.CSIDriverName)
 		return false, nil
 	}

@@ -14,13 +14,13 @@ const (
 	envIBMVPCNodeLabelUpdaterImage    = "IBM_VPC_NODE_LABEL_UPDATER_IMAGE"
 )
 
-func isNotExternalTopologyMode(status *configv1.InfrastructureStatus) bool {
+func isNotExternalTopologyMode(status *configv1.InfrastructureStatus, isInstalled bool) bool {
 	if status == nil {
 		return false
 	}
 	// IBM ROKS installations use ExternalTopologyMode and DO NOT need
 	// CSO to deploy the VPC driver and operator like we do for IPI installs.
-	if status.ControlPlaneTopology == configv1.ExternalTopologyMode {
+	if status.ControlPlaneTopology == configv1.ExternalTopologyMode && !isInstalled {
 		return false
 	}
 	return true

@@ -29,7 +29,7 @@ type CSIOperatorConfig struct {
 	// Return false if the operator should NOT run based on InfrastructureStatus.
 	// If StatusFilter is nil, it is assumed to be true and will proceed like
 	// normal and run the usual checks.
-	StatusFilter func(*configv1.InfrastructureStatus) bool
+	StatusFilter func(*configv1.InfrastructureStatus, bool) bool
 	// StaticAssets is list of bindata assets to create when starting the CSI
 	// driver operator in standalone OCP clusters
 	StaticAssets []string
