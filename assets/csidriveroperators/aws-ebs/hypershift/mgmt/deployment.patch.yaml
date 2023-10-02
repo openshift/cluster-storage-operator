@@ -2,10 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: aws-ebs-csi-driver-operator
-  labels:
-    hypershift.openshift.io/need-management-kas-access: true
 spec:
   template:
+    metadata:
+      labels:
+        hypershift.openshift.io/need-management-kas-access: "true"
     spec:
       affinity:
         nodeAffinity:
