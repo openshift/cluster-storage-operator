@@ -37,6 +37,7 @@ rules:
   resourceNames:
   - extension-apiserver-authentication
   - vmware-vsphere-csi-driver-operator-lock
+  - admin-gates
   resources:
   - configmaps
   verbs:
