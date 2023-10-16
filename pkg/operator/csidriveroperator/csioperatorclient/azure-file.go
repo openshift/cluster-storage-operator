@@ -13,6 +13,19 @@ const (
 	envAzureFileDriverImage         = "AZURE_FILE_DRIVER_IMAGE"
 )
 
+func IsNotAzueStackCloud(status *configv1.InfrastructureStatus, isInstalled bool) bool {
+	if status == nil {
+		return false
+	}
+	// Azure File is not supported on Azure StackHub - skip it unless already installed.
+	// https://learn.microsoft.com/en-us/azure-stack/user/azure-stack-acs-differences?view=azs-2206#cheat-sheet-storage-differences
+	// TODO: remove this StatusFilter if Azure File gets support in the future
+	if status.PlatformStatus.Azure.CloudName == configv1.AzureStackCloud && !isInstalled {
+		return false
+	}
+	return true
+}
+
 func GetAzureFileCSIOperatorConfig() CSIOperatorConfig {
 	pairs := []string{
 		"${OPERATOR_IMAGE}", os.Getenv(envAzureFileDriverOperatorImage),
@@ -25,6 +38,7 @@ func GetAzureFileCSIOperatorConfig() CSIOperatorConfig {
 		CSIDriverName:   AzureFileDriverName,
 		ConditionPrefix: "AzureFile",
 		Platform:        configv1.AzurePlatformType,
+		StatusFilter:    IsNotAzueStackCloud,
 		StaticAssets: []string{
 			"csidriveroperators/azure-file/03_sa.yaml",
 			"csidriveroperators/azure-file/04_role.yaml",

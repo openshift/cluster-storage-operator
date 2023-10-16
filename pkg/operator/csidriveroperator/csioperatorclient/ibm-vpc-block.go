@@ -1,6 +1,7 @@
 package csioperatorclient
 
 import (
+	"k8s.io/klog/v2"
 	"os"
 	"strings"
 
@@ -14,13 +15,14 @@ const (
 	envIBMVPCNodeLabelUpdaterImage    = "IBM_VPC_NODE_LABEL_UPDATER_IMAGE"
 )
 
-func isNotExternalTopologyMode(status *configv1.InfrastructureStatus) bool {
+func isNotExternalTopologyMode(status *configv1.InfrastructureStatus, isInstalled bool) bool {
 	if status == nil {
 		return false
 	}
 	// IBM ROKS installations use ExternalTopologyMode and DO NOT need
 	// CSO to deploy the VPC driver and operator like we do for IPI installs.
-	if status.ControlPlaneTopology == configv1.ExternalTopologyMode {
+	if status.ControlPlaneTopology == configv1.ExternalTopologyMode && !isInstalled {
+		klog.Warningf("IBM ROKS infrastructure detected, skipping %v driver", IBMVPCBlockCSIDriverName)
 		return false
 	}
 	return true
