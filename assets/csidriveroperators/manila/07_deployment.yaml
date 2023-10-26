@@ -45,6 +45,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: CSI_FSGROUP_POLICY
+          value: None
         image: ${OPERATOR_IMAGE}
         imagePullPolicy: IfNotPresent
         name: manila-csi-driver-operator
