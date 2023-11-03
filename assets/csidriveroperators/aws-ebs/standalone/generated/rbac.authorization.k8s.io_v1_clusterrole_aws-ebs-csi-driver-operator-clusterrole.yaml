@@ -272,6 +272,7 @@ rules:
   resources:
   - infrastructures
   - proxies
+  - apiservers
   verbs:
   - get
   - list

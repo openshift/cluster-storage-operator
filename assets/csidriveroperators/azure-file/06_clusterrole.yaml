@@ -297,6 +297,7 @@ rules:
   - proxies
   - clusterversions
   - featuregates
+  - apiservers
   verbs:
   - get
   - list
