@@ -1,0 +1,8 @@
+apiVersion: operator.openshift.io/v1
+kind: ClusterCSIDriver
+metadata:
+  name: disk.csi.azure.com
+spec:
+  logLevel: Normal
+  managementState: Managed
+  operatorLogLevel: Normal

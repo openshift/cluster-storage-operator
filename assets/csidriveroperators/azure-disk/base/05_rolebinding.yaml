@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: azure-disk-csi-driver-operator-rolebinding
+  namespace: openshift-cluster-csi-drivers
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: azure-disk-csi-driver-operator-role
+subjects:
+- kind: ServiceAccount
+  name: azure-disk-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
