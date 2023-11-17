@@ -23,6 +23,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
 	"github.com/openshift/library-go/pkg/operator/status"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -49,16 +50,17 @@ type driverInterface interface {
 }
 
 type driverStarterCommon struct {
-	commonClients   *csoclients.Clients
-	resyncInterval  time.Duration
-	infraLister     openshiftv1.InfrastructureLister
-	featureGates    featuregates.FeatureGate
-	csiDriverLister storagelister.CSIDriverLister
-	restMapper      *restmapper.DeferredDiscoveryRESTMapper
-	versionGetter   status.VersionGetter
-	targetVersion   string
-	eventRecorder   events.Recorder
-	controllers     []csiDriverControllerManager
+	commonClients     *csoclients.Clients
+	resyncInterval    time.Duration
+	infraLister       openshiftv1.InfrastructureLister
+	featureGates      featuregates.FeatureGate
+	csiDriverLister   storagelister.CSIDriverLister
+	restMapper        *restmapper.DeferredDiscoveryRESTMapper
+	versionGetter     status.VersionGetter
+	targetVersion     string
+	eventRecorder     events.Recorder
+	controllers       []csiDriverControllerManager
+	controllerStarted bool // true if at least one controller has started
 }
 
 type standAloneDriverStarter struct {
@@ -93,12 +95,13 @@ func initCommonStarterParams(
 	targetVersion string,
 	eventRecorder events.Recorder) driverStarterCommon {
 	c := driverStarterCommon{
-		commonClients:  client,
-		versionGetter:  versionGetter,
-		targetVersion:  targetVersion,
-		resyncInterval: resyncInterval,
-		featureGates:   featureGates,
-		eventRecorder:  eventRecorder.WithComponentSuffix("CSIDriverStarter"),
+		commonClients:     client,
+		versionGetter:     versionGetter,
+		targetVersion:     targetVersion,
+		resyncInterval:    resyncInterval,
+		featureGates:      featureGates,
+		eventRecorder:     eventRecorder.WithComponentSuffix("CSIDriverStarter"),
+		controllerStarted: false,
 	}
 	return c
 }
@@ -167,6 +170,18 @@ func (dsrc *driverStarterCommon) createCSIControllerManager(cfg csioperatorclien
 	return manager, ctrlRelatedObjects
 }
 
+func (dsrc *driverStarterCommon) setUpgradeableTrue(ctx context.Context) error {
+	conditionPrefix := "StorageOperator"
+	upgradeableCnt := operatorapi.OperatorCondition{
+		Type:   conditionPrefix + operatorapi.OperatorStatusTypeUpgradeable,
+		Status: operatorapi.ConditionTrue,
+	}
+	_, _, err := v1helpers.UpdateStatus(ctx, dsrc.commonClients.OperatorClient,
+		v1helpers.UpdateConditionFn(upgradeableCnt),
+	)
+	return err
+}
+
 func (dsrc *driverStarterCommon) sync(ctx context.Context, syncCtx factory.SyncContext) error {
 	klog.V(4).Infof("CSIDriverStarterController.Sync started")
 	defer klog.V(4).Infof("CSIDriverStarterController.Sync finished")
@@ -222,6 +237,16 @@ func (dsrc *driverStarterCommon) sync(ctx context.Context, syncCtx factory.SyncC
 			klog.V(2).Infof("Starting ControllerManager for %s", ctrl.operatorConfig.ConditionPrefix)
 			go ctrl.mgr.Start(ctx)
 			ctrl.running = true
+			dsrc.controllerStarted = true
+		}
+	}
+
+	// If no controller has started, then CSIDriverOperatorCRController
+	// will not run and we have to set Upgradeable=true right now.
+	if !dsrc.controllerStarted {
+		err := dsrc.setUpgradeableTrue(ctx)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
