@@ -2,6 +2,8 @@ apiVersion: operator.openshift.io/v1
 kind: ClusterCSIDriver
 metadata:
   name: disk.csi.azure.com
+  annotations:
+    storage.openshift.io/remove-from: mgmt
 spec:
   logLevel: Normal
   managementState: Managed
