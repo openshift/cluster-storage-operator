@@ -206,7 +206,7 @@ func (ssr *StandaloneStarter) populateConfigs(clients *csoclients.Clients) []csi
 		csioperatorclient.GetOVirtCSIOperatorConfig(clients, ssr.eventRecorder),
 		csioperatorclient.GetManilaOperatorConfig(clients, ssr.eventRecorder),
 		csioperatorclient.GetVMwareVSphereCSIOperatorConfig(),
-		csioperatorclient.GetAzureDiskCSIOperatorConfig(),
+		csioperatorclient.GetAzureDiskCSIOperatorConfig(false),
 		csioperatorclient.GetAzureFileCSIOperatorConfig(),
 		csioperatorclient.GetSharedResourceCSIOperatorConfig(false),
 		csioperatorclient.GetAlibabaDiskCSIOperatorConfig(),
@@ -303,5 +303,6 @@ func (hsr *HyperShiftStarter) populateConfigs(clients *csoclients.Clients) []csi
 		csioperatorclient.GetAWSEBSCSIOperatorConfig(true),
 		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(true),
 		csioperatorclient.GetSharedResourceCSIOperatorConfig(true),
+		csioperatorclient.GetAzureDiskCSIOperatorConfig(true),
 	}
 }
