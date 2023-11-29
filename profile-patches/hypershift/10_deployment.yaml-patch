@@ -42,7 +42,7 @@
     name: AWS_EBS_DRIVER_CONTROL_PLANE_IMAGE
     value: quay.io/openshift/origin-aws-ebs-csi-driver:latest
 - op: add
-  path: /spec/template/spec/containers/0/env/40
+  path: /spec/template/spec/containers/0/env/41
   value:
     name: AZURE_DISK_DRIVER_CONTROL_PLANE_IMAGE
     value: quay.io/openshift/origin-azure-disk-csi-driver-operator:latest
