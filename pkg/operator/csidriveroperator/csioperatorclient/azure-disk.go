@@ -8,11 +8,12 @@ import (
 )
 
 const (
-	AzureDiskDriverName             = "disk.csi.azure.com"
-	envAzureDiskDriverOperatorImage = "AZURE_DISK_DRIVER_OPERATOR_IMAGE"
-	envAzureDiskDriverImage         = "AZURE_DISK_DRIVER_IMAGE"
-	envCCMOperatorImage             = "CLUSTER_CLOUD_CONTROLLER_MANAGER_OPERATOR_IMAGE"
-	envOperatorImageVersion         = "OPERATOR_IMAGE_VERSION"
+	AzureDiskDriverName                 = "disk.csi.azure.com"
+	envAzureDiskDriverOperatorImage     = "AZURE_DISK_DRIVER_OPERATOR_IMAGE"
+	envAzureDiskDriverImage             = "AZURE_DISK_DRIVER_IMAGE"
+	envCCMOperatorImage                 = "CLUSTER_CLOUD_CONTROLLER_MANAGER_OPERATOR_IMAGE"
+	envOperatorImageVersion             = "OPERATOR_IMAGE_VERSION"
+	envAzureDiskDriverControlPlaneImage = "AZURE_DISK_DRIVER_CONTROL_PLANE_IMAGE"
 )
 
 func GetAzureDiskCSIOperatorConfig(isHyperShift bool) CSIOperatorConfig {
@@ -21,6 +22,7 @@ func GetAzureDiskCSIOperatorConfig(isHyperShift bool) CSIOperatorConfig {
 		"${DRIVER_IMAGE}", os.Getenv(envAzureDiskDriverImage),
 		"${CLUSTER_CLOUD_CONTROLLER_MANAGER_OPERATOR_IMAGE}", os.Getenv(envCCMOperatorImage),
 		"${OPERATOR_IMAGE_VERSION}", os.Getenv(envOperatorImageVersion),
+		"${DRIVER_CONTROL_PLANE_IMAGE}", os.Getenv(envAzureDiskDriverControlPlaneImage),
 	}
 
 	csiDriverConfig := CSIOperatorConfig{
