@@ -44,3 +44,18 @@ spec:
             from starting for past 5 minutes.
             Please investigate Pods that are "ContainerCreating" on the node: "oc get pod --field-selector=spec.nodeName={{ $labels.node }} --all-namespaces | grep ContainerCreating".
             Events of the Pods should contain exact error message: "oc describe pod -n <pod namespace> <pod name>".
+
+    - name: storage-selinux.rules
+      rules:
+      # Two containers in a single pod have different contexts.
+      - expr: sum(volume_manager_selinux_pod_context_mismatch_warnings_total) + sum(volume_manager_selinux_pod_context_mismatch_errors_total)
+        record: cluster:volume_manager_selinux_pod_context_mismatch_total
+      # Two pods use the same RWO / RWX volume, each with a different context.
+      - expr: sum by(volume_plugin) (volume_manager_selinux_volume_context_mismatch_warnings_total{volume_plugin !~".*-e2e-.*"})
+        record: cluster:volume_manager_selinux_volume_context_mismatch_warnings_total
+      # Two pods use the same RWOP volume, each with a different context.
+      - expr: sum by(volume_plugin) (volume_manager_selinux_volume_context_mismatch_errors_total{volume_plugin !~".*-e2e-.*"})
+        record: cluster:volume_manager_selinux_volume_context_mismatch_errors_total
+      # Pod with set SELinux context successfuly uses a volume (i.e. "mount -o context" would work).
+      - expr: sum by(volume_plugin) (volume_manager_selinux_volumes_admitted_total{volume_plugin !~".*-e2e-.*"})
+        record: cluster:volume_manager_selinux_volumes_admitted_total
