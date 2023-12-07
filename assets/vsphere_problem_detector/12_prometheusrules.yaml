@@ -48,7 +48,7 @@ spec:
       - alert: VSphereOpenshiftConnectionFailure
         # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
         # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
-        expr: min_over_time(vsphere_sync_errors{reason =~ "UsernameWithNewLine|PasswordWithNewLine|InvalidCredentials"}[5m]) == 1
+        expr: min_over_time(vsphere_sync_errors{reason =~ "UsernameWithoutDomain|UsernameWithNewLine|PasswordWithNewLine|InvalidCredentials"}[5m]) == 1
         for: 10m
         labels:
           severity: warning
