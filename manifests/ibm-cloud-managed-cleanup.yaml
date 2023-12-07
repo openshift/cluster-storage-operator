@@ -4,6 +4,7 @@ metadata:
   name: alibaba-disk-csi-driver-operator
   namespace: openshift-cloud-credential-operator
   annotations:
+    capability.openshift.io/name: CloudCredential
     include.release.openshift.io/ibm-cloud-managed: "true"
     release.openshift.io/delete: "true"
 ---
@@ -13,6 +14,7 @@ metadata:
   name: aws-ebs-csi-driver-operator
   namespace: openshift-cloud-credential-operator
   annotations:
+    capability.openshift.io/name: CloudCredential
     include.release.openshift.io/ibm-cloud-managed: "true"
     release.openshift.io/delete: "true"
 ---
@@ -22,6 +24,7 @@ metadata:
   name: azure-disk-csi-driver-operator
   namespace: openshift-cloud-credential-operator
   annotations:
+    capability.openshift.io/name: CloudCredential
     include.release.openshift.io/ibm-cloud-managed: "true"
     release.openshift.io/delete: "true"
 ---
@@ -31,6 +34,7 @@ metadata:
   name: azure-file-csi-driver-operator
   namespace: openshift-cloud-credential-operator
   annotations:
+    capability.openshift.io/name: CloudCredential
     include.release.openshift.io/ibm-cloud-managed: "true"
     release.openshift.io/delete: "true"
 ---
@@ -40,6 +44,7 @@ metadata:
    name: ibm-vpc-block-csi-driver-operator
    namespace: openshift-cloud-credential-operator
    annotations:
+    capability.openshift.io/name: CloudCredential
     include.release.openshift.io/ibm-cloud-managed: "true"
     release.openshift.io/delete: "true"
 ---
@@ -49,6 +54,7 @@ metadata:
    name: powervs-block-csi-driver-operator
    namespace: openshift-cloud-credential-operator
    annotations:
+    capability.openshift.io/name: CloudCredential
     include.release.openshift.io/ibm-cloud-managed: "true"
     release.openshift.io/delete: "true"
 ---
@@ -58,6 +64,7 @@ metadata:
   name: manila-csi-driver-operator
   namespace: openshift-cloud-credential-operator
   annotations:
+    capability.openshift.io/name: CloudCredential
     include.release.openshift.io/ibm-cloud-managed: "true"
     release.openshift.io/delete: "true"
 ---
@@ -67,6 +74,7 @@ metadata:
   name: ovirt-csi-driver-operator
   namespace: openshift-cloud-credential-operator
   annotations:
+    capability.openshift.io/name: CloudCredential
     include.release.openshift.io/ibm-cloud-managed: "true"
     release.openshift.io/delete: "true"
 ---
@@ -76,6 +84,7 @@ metadata:
   name: openshift-vmware-vsphere-csi-driver-operator
   namespace: openshift-cloud-credential-operator
   annotations:
+    capability.openshift.io/name: CloudCredential
     include.release.openshift.io/ibm-cloud-managed: "true"
     release.openshift.io/delete: "true"
 ---
@@ -85,5 +94,6 @@ metadata:
   name: openshift-vsphere-problem-detector
   namespace: openshift-cloud-credential-operator
   annotations:
+    capability.openshift.io/name: CloudCredential
     include.release.openshift.io/ibm-cloud-managed: "true"
     release.openshift.io/delete: "true"
