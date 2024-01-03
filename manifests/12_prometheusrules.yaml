@@ -29,11 +29,19 @@ spec:
     - name: storage-operations.rules
       rules:
       - alert: PodStartupStorageOperationsFailing
-        # There was at least one failing operation in past 5 minutes *and* there was no successful one.
+        # There was at least one failing operation in past 5 minutes *and* there was no successful operation.
+        # To decide if there was no successful operation:
+        # - either `increase(status = "success")` must be zero, if the metric has data.
+        # - *or* if the metric has no data (= no operation for this volume plugin has even succeeded on this node),
+        #   `or increase(state != "success") * 0` will report zero successes. We know a failure metric exists,
+        #   so multiply it by zero to fill the gaps with zeroes.
         # Focus on attach and mount operations - they have the same diagnostic steps and are the most common.
         expr: |
           increase(storage_operation_duration_seconds_count{status != "success", operation_name =~"volume_attach|volume_mount"}[5m]) > 0
-          and ignoring(status) increase(storage_operation_duration_seconds_count{status = "success", operation_name =~"volume_attach|volume_mount"}[5m]) == 0
+            and ignoring(status) (sum without(status)
+              (increase(storage_operation_duration_seconds_count{status = "success", operation_name =~"volume_attach|volume_mount"}[5m]))
+                or increase(storage_operation_duration_seconds_count{status != "success", operation_name =~"volume_attach|volume_mount"}[5m]) * 0
+              ) == 0
         for: 5m
         labels:
           severity: info
