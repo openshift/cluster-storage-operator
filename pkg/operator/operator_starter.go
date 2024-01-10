@@ -195,7 +195,7 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 	csoclients.StartInformers(ssr.commonClients, ctx.Done())
 
 	ssr.startControllers(ctx)
-	return fmt.Errorf("stopped")
+	return nil
 }
 
 func (ssr *StandaloneStarter) populateConfigs(clients *csoclients.Clients) []csioperatorclient.CSIOperatorConfig {
@@ -295,7 +295,7 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	csoclients.StartMgmtInformers(hsr.mgmtClient, ctx.Done())
 
 	hsr.startControllers(ctx)
-	return fmt.Errorf("stopped")
+	return nil
 }
 
 func (hsr *HyperShiftStarter) populateConfigs(clients *csoclients.Clients) []csioperatorclient.CSIOperatorConfig {
