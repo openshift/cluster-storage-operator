@@ -209,7 +209,6 @@ func (ssr *StandaloneStarter) populateConfigs(clients *csoclients.Clients) []csi
 		csioperatorclient.GetAzureDiskCSIOperatorConfig(false),
 		csioperatorclient.GetAzureFileCSIOperatorConfig(),
 		csioperatorclient.GetSharedResourceCSIOperatorConfig(false),
-		csioperatorclient.GetAlibabaDiskCSIOperatorConfig(),
 		csioperatorclient.GetIBMVPCBlockCSIOperatorConfig(),
 		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(false),
 	}

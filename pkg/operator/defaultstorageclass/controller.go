@@ -199,8 +199,6 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 		return nil, supportedByCSIError
 	case configv1.VSpherePlatformType:
 		return nil, supportedByCSIError
-	case configv1.AlibabaCloudPlatformType:
-		return nil, supportedByCSIError
 	case configv1.AzurePlatformType:
 		return nil, supportedByCSIError
 	case configv1.IBMCloudPlatformType:
