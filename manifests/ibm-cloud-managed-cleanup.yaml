@@ -1,16 +1,6 @@
 apiVersion: cloudcredential.openshift.io/v1
 kind: CredentialsRequest
 metadata:
-  name: alibaba-disk-csi-driver-operator
-  namespace: openshift-cloud-credential-operator
-  annotations:
-    capability.openshift.io/name: CloudCredential
-    include.release.openshift.io/ibm-cloud-managed: "true"
-    release.openshift.io/delete: "true"
----
-apiVersion: cloudcredential.openshift.io/v1
-kind: CredentialsRequest
-metadata:
   name: aws-ebs-csi-driver-operator
   namespace: openshift-cloud-credential-operator
   annotations:

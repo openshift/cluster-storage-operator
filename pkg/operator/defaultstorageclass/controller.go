@@ -4,6 +4,13 @@ import (
 	"context"
 	"errors"
 
+	storagev1 "k8s.io/api/storage/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	errutil "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/client-go/kubernetes"
+	v1 "k8s.io/client-go/listers/storage/v1"
+	"k8s.io/klog/v2"
+
 	configv1 "github.com/openshift/api/config/v1"
 	operatorapi "github.com/openshift/api/operator/v1"
 	openshiftv1 "github.com/openshift/client-go/config/listers/config/v1"
@@ -12,12 +19,6 @@ import (
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
-	storagev1 "k8s.io/api/storage/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	errutil "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/listers/storage/v1"
-	"k8s.io/klog/v2"
 )
 
 const (
@@ -198,8 +199,6 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 	case configv1.GCPPlatformType:
 		return nil, supportedByCSIError
 	case configv1.VSpherePlatformType:
-		return nil, supportedByCSIError
-	case configv1.AlibabaCloudPlatformType:
 		return nil, supportedByCSIError
 	case configv1.AzurePlatformType:
 		return nil, supportedByCSIError

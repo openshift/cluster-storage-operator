@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	rbacv1 "k8s.io/api/rbac/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/klog/v2"
+
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/api/sharedresource"
@@ -23,9 +27,6 @@ import (
 	"github.com/openshift/library-go/pkg/operator/management"
 	"github.com/openshift/library-go/pkg/operator/managementstatecontroller"
 	"github.com/openshift/library-go/pkg/operator/status"
-	rbacv1 "k8s.io/api/rbac/v1"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/klog/v2"
 )
 
 type OperatorStarter interface {
@@ -209,7 +210,6 @@ func (ssr *StandaloneStarter) populateConfigs(clients *csoclients.Clients) []csi
 		csioperatorclient.GetAzureDiskCSIOperatorConfig(),
 		csioperatorclient.GetAzureFileCSIOperatorConfig(),
 		csioperatorclient.GetSharedResourceCSIOperatorConfig(false),
-		csioperatorclient.GetAlibabaDiskCSIOperatorConfig(),
 		csioperatorclient.GetIBMVPCBlockCSIOperatorConfig(),
 		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(false),
 	}
