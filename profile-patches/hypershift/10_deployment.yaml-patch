@@ -44,6 +44,11 @@
 - op: add
   path: /spec/template/spec/containers/0/env/41
   value:
+    name: AZURE_DISK_DRIVER_CONTROL_PLANE_IMAGE
+    value: quay.io/openshift/origin-azure-disk-csi-driver-operator:latest
+- op: add
+  path: /spec/template/spec/containers/0/env/41
+  value:
     name: LIVENESS_PROBE_CONTROL_PLANE_IMAGE
     value: quay.io/openshift/origin-csi-livenessprobe:latest
 # Add cmdline args

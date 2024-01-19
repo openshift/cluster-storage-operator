@@ -110,6 +110,8 @@ spec:
           value: quay.io/openshift/origin-aws-ebs-csi-driver:latest
         - name: LIVENESS_PROBE_CONTROL_PLANE_IMAGE
           value: quay.io/openshift/origin-csi-livenessprobe:latest
+        - name: AZURE_DISK_DRIVER_CONTROL_PLANE_IMAGE
+          value: quay.io/openshift/origin-azure-disk-csi-driver-operator:latest
         image: quay.io/openshift/origin-cluster-storage-operator:latest
         imagePullPolicy: IfNotPresent
         name: cluster-storage-operator
