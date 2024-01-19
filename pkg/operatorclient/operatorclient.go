@@ -144,3 +144,12 @@ func (c OperatorClient) RemoveFinalizer(ctx context.Context, finalizer string) e
 	return err
 
 }
+
+func (c OperatorClient) GetOperatorStateWithQuorum(ctx context.Context) (*operatorv1.OperatorSpec, *operatorv1.OperatorStatus, string, error) {
+	instance, err := c.Client.OperatorV1().Storages().Get(ctx, GlobalConfigName, metav1.GetOptions{})
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	return &instance.Spec.OperatorSpec, &instance.Status.OperatorStatus, instance.GetResourceVersion(), nil
+}
