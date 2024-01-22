@@ -1,5 +1,0 @@
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: alibaba-disk-csi-driver-operator
-  namespace: openshift-cluster-csi-drivers
