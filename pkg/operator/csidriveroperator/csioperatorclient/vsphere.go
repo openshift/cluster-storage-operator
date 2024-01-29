@@ -41,6 +41,6 @@ func GetVMwareVSphereCSIOperatorConfig() CSIOperatorConfig {
 		CRAsset:             "csidriveroperators/vsphere/09_cr.yaml",
 		DeploymentAsset:     "csidriveroperators/vsphere/08_deployment.yaml",
 		ImageReplacer:       strings.NewReplacer(pairs...),
-		AllowDisabled:       false,
+		AllowDisabled:       true,
 	}
 }
