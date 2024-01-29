@@ -39,8 +39,6 @@ spec:
           value: ${LIVENESS_PROBE_IMAGE}
         - name: KUBE_RBAC_PROXY_IMAGE
           value: ${KUBE_RBAC_PROXY_IMAGE}
-        - name: NODE_LABEL_IMAGE
-          value: ${NODE_LABEL_IMAGE}
         - name: POD_NAME
           valueFrom:
             fieldRef:
