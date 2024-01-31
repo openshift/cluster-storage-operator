@@ -1,9 +1,10 @@
 package csioperatorclient
 
 import (
-	"k8s.io/klog/v2"
 	"os"
 	"strings"
+
+	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
 )
@@ -12,7 +13,6 @@ const (
 	IBMVPCBlockCSIDriverName          = "vpc.block.csi.ibm.io"
 	envIBMVPCBlockDriverOperatorImage = "IBM_VPC_BLOCK_DRIVER_OPERATOR_IMAGE"
 	envIBMVPCBlockDriverImage         = "IBM_VPC_BLOCK_DRIVER_IMAGE"
-	envIBMVPCNodeLabelUpdaterImage    = "IBM_VPC_NODE_LABEL_UPDATER_IMAGE"
 )
 
 func isNotExternalTopologyMode(status *configv1.InfrastructureStatus, isInstalled bool) bool {
@@ -32,7 +32,6 @@ func GetIBMVPCBlockCSIOperatorConfig() CSIOperatorConfig {
 	pairs := []string{
 		"${OPERATOR_IMAGE}", os.Getenv(envIBMVPCBlockDriverOperatorImage),
 		"${DRIVER_IMAGE}", os.Getenv(envIBMVPCBlockDriverImage),
-		"${NODE_LABEL_IMAGE}", os.Getenv(envIBMVPCNodeLabelUpdaterImage),
 	}
 
 	return CSIOperatorConfig{

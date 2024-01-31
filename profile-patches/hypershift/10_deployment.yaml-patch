@@ -32,22 +32,22 @@
     - name: guest-kubeconfig
       mountPath: /etc/guest-kubeconfig
 - op: add
-  path: /spec/template/spec/containers/0/env/37
+  path: /spec/template/spec/containers/0/env/36
   value:
     name: HYPERSHIFT_IMAGE
     value: quay.io/openshift/origin-control-plane:latest
 - op: add
-  path: /spec/template/spec/containers/0/env/38
+  path: /spec/template/spec/containers/0/env/37
   value:
     name: AWS_EBS_DRIVER_CONTROL_PLANE_IMAGE
     value: quay.io/openshift/origin-aws-ebs-csi-driver:latest
 - op: add
-  path: /spec/template/spec/containers/0/env/39
+  path: /spec/template/spec/containers/0/env/38
   value:
     name: AZURE_DISK_DRIVER_CONTROL_PLANE_IMAGE
     value: quay.io/openshift/origin-azure-disk-csi-driver-operator:latest
 - op: add
-  path: /spec/template/spec/containers/0/env/40
+  path: /spec/template/spec/containers/0/env/39
   value:
     name: LIVENESS_PROBE_CONTROL_PLANE_IMAGE
     value: quay.io/openshift/origin-csi-livenessprobe:latest
