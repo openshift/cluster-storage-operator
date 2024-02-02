@@ -56,8 +56,6 @@ spec:
             cpu: 10m
       priorityClassName: system-cluster-critical
       serviceAccountName: azure-disk-csi-driver-operator
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists

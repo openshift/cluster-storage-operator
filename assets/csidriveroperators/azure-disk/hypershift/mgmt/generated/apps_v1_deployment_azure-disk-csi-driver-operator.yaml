@@ -88,8 +88,6 @@ spec:
         volumeMounts:
         - mountPath: /etc/guest-kubeconfig
           name: guest-kubeconfig
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
       priorityClassName: hypershift-control-plane
       serviceAccountName: azure-disk-csi-driver-operator
       tolerations:
