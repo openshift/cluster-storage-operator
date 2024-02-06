@@ -36,6 +36,7 @@ func GetVMwareVSphereCSIOperatorConfig() CSIOperatorConfig {
 			"csidriveroperators/vsphere/13_prometheus_role.yaml",
 			"csidriveroperators/vsphere/14_prometheus_rolebinding.yaml",
 			"csidriveroperators/vsphere/15_prometheusrules.yaml",
+			"csidriveroperators/vsphere/16_operator_pdb.yaml",
 		},
 		ServiceMonitorAsset: "csidriveroperators/vsphere/12_servicemonitor.yaml",
 		CRAsset:             "csidriveroperators/vsphere/09_cr.yaml",

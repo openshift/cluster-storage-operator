@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: vmware-vsphere-csi-driver-operator-pdb
+  namespace: openshift-cluster-storage-operator
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      name: vmware-vsphere-csi-driver-operator

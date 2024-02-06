@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: vsphere-problem-detector-pdb
+  namespace: openshift-cluster-storage-operator
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      name: vsphere-problem-detector-operator

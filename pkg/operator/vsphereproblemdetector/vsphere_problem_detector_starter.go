@@ -119,6 +119,7 @@ func (c *VSphereProblemDetectorStarter) createVSphereProblemDetectorManager(
 		"vsphere_problem_detector/04_clusterrole.yaml",
 		"vsphere_problem_detector/05_clusterrolebinding.yaml",
 		"vsphere_problem_detector/06_configmap.yaml",
+		"vsphere_problem_detector/08_deployment_pdb.yaml",
 		"vsphere_problem_detector/10_service.yaml",
 	}
 
