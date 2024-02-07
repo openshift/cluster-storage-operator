@@ -18,6 +18,7 @@ package v1
 
 import (
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -34,13 +35,13 @@ type PrometheusSpecApplyConfiguration struct {
 	DisableCompaction                        *bool                                           `json:"disableCompaction,omitempty"`
 	Rules                                    *RulesApplyConfiguration                        `json:"rules,omitempty"`
 	PrometheusRulesExcludedFromEnforce       []PrometheusRuleExcludeConfigApplyConfiguration `json:"prometheusRulesExcludedFromEnforce,omitempty"`
-	Query                                    *QuerySpecApplyConfiguration                    `json:"query,omitempty"`
 	RuleSelector                             *metav1.LabelSelector                           `json:"ruleSelector,omitempty"`
 	RuleNamespaceSelector                    *metav1.LabelSelector                           `json:"ruleNamespaceSelector,omitempty"`
+	Query                                    *QuerySpecApplyConfiguration                    `json:"query,omitempty"`
 	Alerting                                 *AlertingSpecApplyConfiguration                 `json:"alerting,omitempty"`
-	RemoteRead                               []RemoteReadSpecApplyConfiguration              `json:"remoteRead,omitempty"`
 	AdditionalAlertRelabelConfigs            *corev1.SecretKeySelector                       `json:"additionalAlertRelabelConfigs,omitempty"`
 	AdditionalAlertManagerConfigs            *corev1.SecretKeySelector                       `json:"additionalAlertManagerConfigs,omitempty"`
+	RemoteRead                               []RemoteReadSpecApplyConfiguration              `json:"remoteRead,omitempty"`
 	Thanos                                   *ThanosSpecApplyConfiguration                   `json:"thanos,omitempty"`
 	QueryLogFile                             *string                                         `json:"queryLogFile,omitempty"`
 	AllowOverlappingBlocks                   *bool                                           `json:"allowOverlappingBlocks,omitempty"`
@@ -109,6 +110,22 @@ func (b *PrometheusSpecApplyConfiguration) WithProbeSelector(value metav1.LabelS
 // If called multiple times, the ProbeNamespaceSelector field is set to the value of the last call.
 func (b *PrometheusSpecApplyConfiguration) WithProbeNamespaceSelector(value metav1.LabelSelector) *PrometheusSpecApplyConfiguration {
 	b.ProbeNamespaceSelector = &value
+	return b
+}
+
+// WithScrapeConfigSelector sets the ScrapeConfigSelector field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ScrapeConfigSelector field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithScrapeConfigSelector(value metav1.LabelSelector) *PrometheusSpecApplyConfiguration {
+	b.ScrapeConfigSelector = &value
+	return b
+}
+
+// WithScrapeConfigNamespaceSelector sets the ScrapeConfigNamespaceSelector field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ScrapeConfigNamespaceSelector field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithScrapeConfigNamespaceSelector(value metav1.LabelSelector) *PrometheusSpecApplyConfiguration {
+	b.ScrapeConfigNamespaceSelector = &value
 	return b
 }
 
@@ -294,6 +311,14 @@ func (b *PrometheusSpecApplyConfiguration) WithVolumeMounts(values ...corev1.Vol
 	return b
 }
 
+// WithPersistentVolumeClaimRetentionPolicy sets the PersistentVolumeClaimRetentionPolicy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the PersistentVolumeClaimRetentionPolicy field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithPersistentVolumeClaimRetentionPolicy(value appsv1.StatefulSetPersistentVolumeClaimRetentionPolicy) *PrometheusSpecApplyConfiguration {
+	b.PersistentVolumeClaimRetentionPolicy = &value
+	return b
+}
+
 // WithWeb sets the Web field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Web field is set to the value of the last call.
@@ -373,9 +398,12 @@ func (b *PrometheusSpecApplyConfiguration) WithTolerations(values ...corev1.Tole
 // WithTopologySpreadConstraints adds the given value to the TopologySpreadConstraints field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the TopologySpreadConstraints field.
-func (b *PrometheusSpecApplyConfiguration) WithTopologySpreadConstraints(values ...corev1.TopologySpreadConstraint) *PrometheusSpecApplyConfiguration {
+func (b *PrometheusSpecApplyConfiguration) WithTopologySpreadConstraints(values ...*TopologySpreadConstraintApplyConfiguration) *PrometheusSpecApplyConfiguration {
 	for i := range values {
-		b.TopologySpreadConstraints = append(b.TopologySpreadConstraints, values[i])
+		if values[i] == nil {
+			panic("nil value passed to WithTopologySpreadConstraints")
+		}
+		b.TopologySpreadConstraints = append(b.TopologySpreadConstraints, *values[i])
 	}
 	return b
 }
@@ -541,6 +569,14 @@ func (b *PrometheusSpecApplyConfiguration) WithEnforcedLabelValueLengthLimit(val
 	return b
 }
 
+// WithEnforcedKeepDroppedTargets sets the EnforcedKeepDroppedTargets field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the EnforcedKeepDroppedTargets field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithEnforcedKeepDroppedTargets(value uint64) *PrometheusSpecApplyConfiguration {
+	b.EnforcedKeepDroppedTargets = &value
+	return b
+}
+
 // WithEnforcedBodySizeLimit sets the EnforcedBodySizeLimit field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the EnforcedBodySizeLimit field is set to the value of the last call.
@@ -622,6 +658,86 @@ func (b *PrometheusSpecApplyConfiguration) WithPodTargetLabels(values ...string)
 	return b
 }
 
+// WithTracingConfig sets the TracingConfig field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the TracingConfig field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithTracingConfig(value *PrometheusTracingConfigApplyConfiguration) *PrometheusSpecApplyConfiguration {
+	b.TracingConfig = value
+	return b
+}
+
+// WithBodySizeLimit sets the BodySizeLimit field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the BodySizeLimit field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithBodySizeLimit(value monitoringv1.ByteSize) *PrometheusSpecApplyConfiguration {
+	b.BodySizeLimit = &value
+	return b
+}
+
+// WithSampleLimit sets the SampleLimit field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the SampleLimit field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithSampleLimit(value uint64) *PrometheusSpecApplyConfiguration {
+	b.SampleLimit = &value
+	return b
+}
+
+// WithTargetLimit sets the TargetLimit field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the TargetLimit field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithTargetLimit(value uint64) *PrometheusSpecApplyConfiguration {
+	b.TargetLimit = &value
+	return b
+}
+
+// WithLabelLimit sets the LabelLimit field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the LabelLimit field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithLabelLimit(value uint64) *PrometheusSpecApplyConfiguration {
+	b.LabelLimit = &value
+	return b
+}
+
+// WithLabelNameLengthLimit sets the LabelNameLengthLimit field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the LabelNameLengthLimit field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithLabelNameLengthLimit(value uint64) *PrometheusSpecApplyConfiguration {
+	b.LabelNameLengthLimit = &value
+	return b
+}
+
+// WithLabelValueLengthLimit sets the LabelValueLengthLimit field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the LabelValueLengthLimit field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithLabelValueLengthLimit(value uint64) *PrometheusSpecApplyConfiguration {
+	b.LabelValueLengthLimit = &value
+	return b
+}
+
+// WithKeepDroppedTargets sets the KeepDroppedTargets field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the KeepDroppedTargets field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithKeepDroppedTargets(value uint64) *PrometheusSpecApplyConfiguration {
+	b.KeepDroppedTargets = &value
+	return b
+}
+
+// WithReloadStrategy sets the ReloadStrategy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ReloadStrategy field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithReloadStrategy(value monitoringv1.ReloadStrategyType) *PrometheusSpecApplyConfiguration {
+	b.ReloadStrategy = &value
+	return b
+}
+
+// WithMaximumStartupDurationSeconds sets the MaximumStartupDurationSeconds field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the MaximumStartupDurationSeconds field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithMaximumStartupDurationSeconds(value int32) *PrometheusSpecApplyConfiguration {
+	b.MaximumStartupDurationSeconds = &value
+	return b
+}
+
 // WithBaseImage sets the BaseImage field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the BaseImage field is set to the value of the last call.
@@ -691,14 +807,6 @@ func (b *PrometheusSpecApplyConfiguration) WithPrometheusRulesExcludedFromEnforc
 	return b
 }
 
-// WithQuery sets the Query field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Query field is set to the value of the last call.
-func (b *PrometheusSpecApplyConfiguration) WithQuery(value *QuerySpecApplyConfiguration) *PrometheusSpecApplyConfiguration {
-	b.Query = value
-	return b
-}
-
 // WithRuleSelector sets the RuleSelector field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the RuleSelector field is set to the value of the last call.
@@ -715,24 +823,19 @@ func (b *PrometheusSpecApplyConfiguration) WithRuleNamespaceSelector(value metav
 	return b
 }
 
+// WithQuery sets the Query field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Query field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithQuery(value *QuerySpecApplyConfiguration) *PrometheusSpecApplyConfiguration {
+	b.Query = value
+	return b
+}
+
 // WithAlerting sets the Alerting field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Alerting field is set to the value of the last call.
 func (b *PrometheusSpecApplyConfiguration) WithAlerting(value *AlertingSpecApplyConfiguration) *PrometheusSpecApplyConfiguration {
 	b.Alerting = value
-	return b
-}
-
-// WithRemoteRead adds the given value to the RemoteRead field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the RemoteRead field.
-func (b *PrometheusSpecApplyConfiguration) WithRemoteRead(values ...*RemoteReadSpecApplyConfiguration) *PrometheusSpecApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithRemoteRead")
-		}
-		b.RemoteRead = append(b.RemoteRead, *values[i])
-	}
 	return b
 }
 
@@ -749,6 +852,19 @@ func (b *PrometheusSpecApplyConfiguration) WithAdditionalAlertRelabelConfigs(val
 // If called multiple times, the AdditionalAlertManagerConfigs field is set to the value of the last call.
 func (b *PrometheusSpecApplyConfiguration) WithAdditionalAlertManagerConfigs(value corev1.SecretKeySelector) *PrometheusSpecApplyConfiguration {
 	b.AdditionalAlertManagerConfigs = &value
+	return b
+}
+
+// WithRemoteRead adds the given value to the RemoteRead field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the RemoteRead field.
+func (b *PrometheusSpecApplyConfiguration) WithRemoteRead(values ...*RemoteReadSpecApplyConfiguration) *PrometheusSpecApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithRemoteRead")
+		}
+		b.RemoteRead = append(b.RemoteRead, *values[i])
+	}
 	return b
 }
 
