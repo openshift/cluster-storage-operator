@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azure-file-csi-driver-operator
+spec:
+  template:
+    metadata:
+      labels:
+        hypershift.openshift.io/need-management-kas-access: "true"
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - preference:
+                matchExpressions:
+                  - key: hypershift.openshift.io/control-plane
+                    operator: In
+                    values:
+                      - "true"
+              weight: 50
+            - preference:
+                matchExpressions:
+                  - key: hypershift.openshift.io/cluster
+                    operator: In
+                    values:
+                      - ${CONTROLPLANE_NAMESPACE}
+              weight: 100
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    hypershift.openshift.io/hosted-control-plane: ${CONTROLPLANE_NAMESPACE}
+                topologyKey: kubernetes.io/hostname
+              weight: 100
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: "NoSchedule"
+        - key: hypershift.openshift.io/control-plane
+          operator: Exists
+        - key: hypershift.openshift.io/cluster
+          operator: Equal
+          value: ${CONTROLPLANE_NAMESPACE}
+      containers:
+      - name: azure-file-csi-driver-operator
+        env:
+          - name: DRIVER_CONTROL_PLANE_IMAGE
+            value: ${DRIVER_CONTROL_PLANE_IMAGE}
+          - name: LIVENESS_PROBE_CONTROL_PLANE_IMAGE
+            value: ${LIVENESS_PROBE_CONTROL_PLANE_IMAGE}
+        volumeMounts:
+          - mountPath: /etc/guest-kubeconfig
+            name: guest-kubeconfig
+      priorityClassName: hypershift-control-plane
+      volumes:
+        - name: guest-kubeconfig
+          secret:
+            secretName: service-network-admin-kubeconfig
