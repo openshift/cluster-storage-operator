@@ -135,7 +135,7 @@ func (c *VSphereProblemDetectorStarter) createVSphereProblemDetectorManager(
 		panic(err)
 	}
 
-	mgr = mgr.WithController(deploymentcontroller.NewDeploymentController(
+	mgr = mgr.WithController(NewVSphereProblemDetectorDeploymentController(
 		"VSphereProblemDetectorDeploymentController",
 		deploymentAssets,
 		c.eventRecorder,
