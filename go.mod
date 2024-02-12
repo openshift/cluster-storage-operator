@@ -8,7 +8,7 @@ require (
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/google/go-cmp v0.6.0
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/openshift/api v0.0.0-20240202140003-8b34b9854c7f
+	github.com/openshift/api v0.0.0-20240212125214-04ea3891d9cb
 	github.com/openshift/build-machinery-go v0.0.0-20231128094528-1e9b1b0595c8
 	github.com/openshift/client-go v0.0.0-20240125160436-aa5df63097c4
 	github.com/openshift/library-go v0.0.0-20240130085015-2ad786549f07
