@@ -9,20 +9,19 @@ import (
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 )
 
-// InjectObservedProxyInDeploymentContainers takes an observed proxy config and returns a patched Deployment with proxy env vars set.
-func InjectObservedProxyInDeploymentContainers(deployment *appsv1.Deployment, opSpec *operatorapi.OperatorSpec) (*appsv1.Deployment, error) {
-	deploymentCopy := deployment.DeepCopy()
-	containerNamesString := deploymentCopy.Annotations["config.openshift.io/inject-proxy"]
+// InjectObservedProxyInDeploymentContainers takes an observed proxy config and adds it to the containers in the Deployment.
+func InjectObservedProxyInDeploymentContainers(deployment *appsv1.Deployment, opSpec *operatorapi.OperatorSpec) error {
+	containerNamesString := deployment.Annotations["config.openshift.io/inject-proxy"]
 	err := v1helpers.InjectObservedProxyIntoContainers(
-		&deploymentCopy.Spec.Template.Spec,
+		&deployment.Spec.Template.Spec,
 		strings.Split(containerNamesString, ","),
 		opSpec.ObservedConfig.Raw,
 		ProxyConfigPath()...,
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return deploymentCopy, nil
+	return nil
 }
 
 // ProxyConfigPath returns the path for the observed proxy config. This is a
