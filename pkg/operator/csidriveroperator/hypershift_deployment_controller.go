@@ -119,7 +119,8 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 		return fmt.Errorf("failed to generate required Deployment: %s", err)
 	}
 
-	requiredCopy, err := util.InjectObservedProxyInDeploymentContainers(required, opSpec)
+	requiredCopy := required.DeepCopy()
+	err = util.InjectObservedProxyInDeploymentContainers(requiredCopy, opSpec)
 	if err != nil {
 		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)
 	}
