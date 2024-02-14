@@ -50,9 +50,8 @@ spec:
         name: manila-csi-driver-operator
         volumeMounts:
         - name: cacert
-          mountPath: /etc/openstack-ca/
+          mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
         - name: cloud-credentials
-          # Create /etc/openstack/clouds.yaml
           mountPath: /etc/openstack/
         resources:
           requests:
@@ -70,10 +69,11 @@ spec:
         effect: "NoSchedule"
       volumes:
       - name: cacert
-        # Extract ca-bundle.pem to /usr/share/pki/ca-trust-source if present.
+        # If present, extract ca-bundle.pem to
+        # /etc/kubernetes/static-pod-resources/configmaps/cloud-config
         # Let the pod start when the ConfigMap does not exist or the certificate
         # is not preset there. The certificate file will be created once the
-        # ConfigMap is created / the cerificate is added to it.
+        # ConfigMap is created / the certificate is added to it.
         configMap:
           name: cloud-provider-config
           items:
@@ -84,3 +84,6 @@ spec:
         secret:
           secretName: manila-cloud-credentials
           optional: false
+          items:
+            - key: clouds.yaml
+              path: clouds.yaml
