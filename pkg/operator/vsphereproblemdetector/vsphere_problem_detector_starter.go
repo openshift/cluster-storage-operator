@@ -122,8 +122,9 @@ func (c *VSphereProblemDetectorStarter) createVSphereProblemDetectorManager(
 		"vsphere_problem_detector/10_service.yaml",
 	}
 
+	vSphereProblemDetectorName := "VSphereProblemDetectorDeploymentController"
 	mgr = mgr.WithController(staticresourcecontroller.NewStaticResourceController(
-		"VSphereProblemDetectorStarterStaticController",
+		vSphereProblemDetectorName,
 		assets.ReadFile,
 		staticAssets,
 		resourceapply.NewKubeClientHolder(clients.KubeClient),
@@ -135,20 +136,19 @@ func (c *VSphereProblemDetectorStarter) createVSphereProblemDetectorManager(
 		panic(err)
 	}
 
-	mgr = mgr.WithController(NewVSphereProblemDetectorDeploymentController(
+	vSphereProblemDetectorController := deploymentcontroller.NewDeploymentControllerBuilder(
 		"VSphereProblemDetectorDeploymentController",
 		deploymentAssets,
 		c.eventRecorder,
 		clients.OperatorClient,
 		clients.KubeClient,
 		clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Apps().V1().Deployments(),
-		[]factory.Informer{
-			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().Secrets().Informer(),
-			clients.ConfigInformers.Config().V1().Infrastructures().Informer(),
-		},
-		[]deploymentcontroller.ManifestHookFunc{
-			c.withReplacerHook(),
-		},
+	).WithExtraInformers(
+		clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().Secrets().Informer(),
+		clients.ConfigInformers.Config().V1().Infrastructures().Informer(),
+	).WithManifestHooks(
+		c.withReplacerHook(),
+	).WithDeploymentHooks(
 		csidrivercontrollerservicecontroller.WithControlPlaneTopologyHook(clients.ConfigInformers),
 		csidrivercontrollerservicecontroller.WithObservedProxyDeploymentHook(),
 		// Restart when credentials change to get a quick retest
@@ -168,7 +168,13 @@ func (c *VSphereProblemDetectorStarter) createVSphereProblemDetectorManager(
 			cloudConfigNamespace,
 			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().ConfigMaps(),
 		),
-	), 1)
+	).WithConditions(
+		// No Available Condition
+		operatorapi.OperatorStatusTypeProgressing,
+		operatorapi.OperatorStatusTypeDegraded,
+	).ToController()
+
+	mgr = mgr.WithController(vSphereProblemDetectorController, 1)
 
 	mgr = mgr.WithController(newMonitoringController(
 		clients,
