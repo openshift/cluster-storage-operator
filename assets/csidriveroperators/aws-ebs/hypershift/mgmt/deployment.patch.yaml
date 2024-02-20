@@ -5,6 +5,8 @@ metadata:
 spec:
   template:
     metadata:
+      annotations:
+        openshift.io/required-scc: restricted-v2
       labels:
         hypershift.openshift.io/need-management-kas-access: "true"
     spec:
