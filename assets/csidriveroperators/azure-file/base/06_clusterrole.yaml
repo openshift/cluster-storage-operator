@@ -1,7 +1,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: azure-disk-csi-driver-operator-clusterrole
+  name: azure-file-csi-driver-operator-clusterrole
+  annotations:
+    storage.openshift.io/remove-from: mgmt
 rules:
 - apiGroups:
   - security.openshift.io
@@ -36,7 +38,7 @@ rules:
   - ''
   resourceNames:
   - extension-apiserver-authentication
-  - azure-disk-csi-driver-operator-lock
+  - azure-file-csi-driver-operator-lock
   resources:
   - configmaps
   verbs:
@@ -124,6 +126,10 @@ rules:
   - get
   - list
   - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - ''
   resources:

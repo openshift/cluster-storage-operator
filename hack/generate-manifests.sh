@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-drivers=( aws-ebs azure-disk )
+drivers=( aws-ebs azure-disk azure-file )
 
 for driver in "${drivers[@]}"
 do

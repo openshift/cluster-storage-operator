@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: azure-disk-csi-driver-operator
+  name: azure-file-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
   annotations:
-    config.openshift.io/inject-proxy: azure-disk-csi-driver-operator
+    config.openshift.io/inject-proxy: azure-file-csi-driver-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: azure-disk-csi-driver-operator
+      name: azure-file-csi-driver-operator
   strategy: {}
   template:
     metadata:
       annotations:
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
-        name: azure-disk-csi-driver-operator
+        name: azure-file-csi-driver-operator
     spec:
       containers:
       - args:
@@ -49,18 +49,10 @@ spec:
               fieldPath: metadata.name
         image: ${OPERATOR_IMAGE}
         imagePullPolicy: IfNotPresent
-        name: azure-disk-csi-driver-operator
+        name: azure-file-csi-driver-operator
         resources:
           requests:
             memory: 50Mi
             cpu: 10m
       priorityClassName: system-cluster-critical
-      serviceAccountName: azure-disk-csi-driver-operator
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: "NoSchedule"
+      serviceAccountName: azure-file-csi-driver-operator
