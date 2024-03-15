@@ -53,12 +53,14 @@ func countStorageClasses(clients *csoclients.Clients) {
 				klog.Fatalf("Failed to get existing storage classes: %s", err)
 			}
 			defaultSCCount := 0
+			var defaultSCNames []string
 			for _, sc := range existingSCs {
 				if sc.Annotations[defaultScAnnotationKey] == "true" {
 					defaultSCCount++
+					defaultSCNames = append(defaultSCNames, sc.Name)
 				}
 			}
-			klog.V(4).Infof("Current default StorageClass count %v", defaultSCCount)
+			klog.V(4).Infof("Current default StorageClass count: %v (%v)", defaultSCCount, defaultSCNames)
 			return float64(defaultSCCount)
 		},
 	))
