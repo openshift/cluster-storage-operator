@@ -121,3 +121,5 @@ require (
 	sigs.k8s.io/kube-storage-version-migrator v0.0.6-0.20230721195810-5c8923c5ff96 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/openshift/api v0.0.0-20240212125214-04ea3891d9cb => github.com/RomanBednar/api v0.0.0-20240315105154-fe2e9f28b3ad
