@@ -3,6 +3,7 @@ package deploymentcontroller
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -10,6 +11,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
 	appsinformersv1 "k8s.io/client-go/informers/apps/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
@@ -60,8 +63,14 @@ type DeploymentController struct {
 	// fails indicating the ordinal position of the failed function.
 	// Also, in that scenario the Degraded status is set to True.
 	optionalDeploymentHooks []DeploymentHookFunc
+	// errors contains any errors that occur during the configuration
+	// and setup of the DeploymentController.
+	errors []error
 }
 
+// NewDeploymentController creates a new instance of DeploymentController,
+// returning it as a factory.Controller interface. Under the hood it uses
+// the NewDeploymentControllerBuilder to construct the controller.
 func NewDeploymentController(
 	name string,
 	manifest []byte,
@@ -91,9 +100,16 @@ func NewDeploymentController(
 	).WithDeploymentHooks(
 		optionalDeploymentHooks...,
 	)
-	return c.ToController()
+
+	controller, err := c.ToController()
+	if err != nil {
+		panic(err)
+	}
+	return controller
 }
 
+// NewDeploymentControllerBuilder initializes and returns a pointer to a
+// minimal DeploymentController.
 func NewDeploymentControllerBuilder(
 	name string,
 	manifest []byte,
@@ -112,27 +128,52 @@ func NewDeploymentControllerBuilder(
 	}
 }
 
+// WithExtraInformers appends additional informers to the DeploymentController.
+// These informers are used to watch for additional resources that might affect the Deployment's state.
 func (c *DeploymentController) WithExtraInformers(informers ...factory.Informer) *DeploymentController {
 	c.optionalInformers = informers
 	return c
 }
 
+// WithManifestHooks adds custom hook functions that are called during the handling of the Deployment manifest.
+// These hooks can manipulate the manifest or perform specific checks before its convertion into a Deployment object.
 func (c *DeploymentController) WithManifestHooks(hooks ...ManifestHookFunc) *DeploymentController {
 	c.optionalManifestHooks = hooks
 	return c
 }
 
+// WithDeploymentHooks adds custom hook functions that are called during the sync.
+// These hooks can perform operations or modifications at specific points in the Deployment.
 func (c *DeploymentController) WithDeploymentHooks(hooks ...DeploymentHookFunc) *DeploymentController {
 	c.optionalDeploymentHooks = hooks
 	return c
 }
 
+// WithConditions sets the operational conditions under which the DeploymentController will operate.
+// Only 'Available', 'Progressing' and 'Degraded' are valid conditions; other values are ignored.
 func (c *DeploymentController) WithConditions(conditions ...string) *DeploymentController {
-	c.conditions = conditions
+	validConditions := sets.New[string]()
+	validConditions.Insert(
+		opv1.OperatorStatusTypeAvailable,
+		opv1.OperatorStatusTypeProgressing,
+		opv1.OperatorStatusTypeDegraded,
+	)
+	for _, condition := range conditions {
+		if validConditions.Has(condition) {
+			if !slices.Contains(c.conditions, condition) {
+				c.conditions = append(c.conditions, condition)
+			}
+		} else {
+			err := fmt.Errorf("invalid condition %q. Valid conditions include %v", condition, validConditions.UnsortedList())
+			c.errors = append(c.errors, err)
+		}
+	}
 	return c
 }
 
-func (c *DeploymentController) ToController() factory.Controller {
+// ToController converts the DeploymentController into a factory.Controller.
+// It aggregates and returns all errors reported during the builder phase.
+func (c *DeploymentController) ToController() (factory.Controller, error) {
 	informers := append(
 		c.optionalInformers,
 		c.operatorClient.Informer(),
@@ -145,15 +186,16 @@ func (c *DeploymentController) ToController() factory.Controller {
 	).ResyncEvery(
 		time.Minute,
 	)
-	if containsCondition(c.conditions, opv1.OperatorStatusTypeDegraded) {
+	if slices.Contains(c.conditions, opv1.OperatorStatusTypeDegraded) {
 		controller = controller.WithSyncDegradedOnError(c.operatorClient)
 	}
 	return controller.ToController(
 		c.name,
 		c.recorder.WithComponentSuffix(strings.ToLower(c.name)+"-deployment-controller-"),
-	)
+	), errors.NewAggregate(c.errors)
 }
 
+// Name returns the name of the DeploymentController.
 func (c *DeploymentController) Name() string {
 	return c.name
 }
@@ -214,7 +256,7 @@ func (c *DeploymentController) syncManaged(ctx context.Context, opSpec *opv1.Ope
 	}
 
 	// Set Available Condition
-	if containsCondition(c.conditions, opv1.OperatorStatusTypeAvailable) {
+	if slices.Contains(c.conditions, opv1.OperatorStatusTypeAvailable) {
 		availableCondition := opv1.OperatorCondition{
 			Type:   c.name + opv1.OperatorStatusTypeAvailable,
 			Status: opv1.ConditionTrue,
@@ -230,7 +272,7 @@ func (c *DeploymentController) syncManaged(ctx context.Context, opSpec *opv1.Ope
 	}
 
 	// Set Progressing Condition
-	if containsCondition(c.conditions, opv1.OperatorStatusTypeProgressing) {
+	if slices.Contains(c.conditions, opv1.OperatorStatusTypeProgressing) {
 		progressingCondition := opv1.OperatorCondition{
 			Type:   c.name + opv1.OperatorStatusTypeProgressing,
 			Status: opv1.ConditionFalse,
@@ -308,13 +350,4 @@ func isProgressing(deployment *appsv1.Deployment) (bool, string) {
 		return true, "Waiting for Deployment to deploy pods"
 	}
 	return false, ""
-}
-
-func containsCondition(conditions []string, condition string) bool {
-	for i := range conditions {
-		if conditions[i] == condition {
-			return true
-		}
-	}
-	return false
 }
