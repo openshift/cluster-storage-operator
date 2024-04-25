@@ -46,6 +46,7 @@ spec:
         image: ${OPERATOR_IMAGE}
         imagePullPolicy: IfNotPresent
         name: gcp-pd-csi-driver-operator
+        terminationMessagePolicy: FallbackToLogsOnError
         resources:
           requests:
             memory: 50Mi
