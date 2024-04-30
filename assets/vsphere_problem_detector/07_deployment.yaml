@@ -44,6 +44,7 @@ spec:
         - name: trusted-ca-bundle
           mountPath: /etc/pki/ca-trust/extracted/pem
           readOnly: true
+        terminationMessagePolicy: FallbackToLogsOnError
       priorityClassName: system-cluster-critical
       serviceAccountName: vsphere-problem-detector-operator
       nodeSelector:
