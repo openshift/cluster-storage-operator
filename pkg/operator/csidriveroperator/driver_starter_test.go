@@ -8,11 +8,11 @@ import (
 	"time"
 
 	v1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/api/features"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 
-	cfgv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/stretchr/testify/assert"
@@ -35,9 +35,9 @@ type RunControllerTest struct {
 }
 
 func TestShouldRunController(t *testing.T) {
-	testingDefault := featuregates.NewFeatureGate(nil, []v1.FeatureGateName{v1.FeatureGateCSIDriverSharedResource})
-	testingTechPreview := featuregates.NewFeatureGate([]v1.FeatureGateName{v1.FeatureGateCSIDriverSharedResource}, nil)
-	customFeatureGate := featuregates.NewFeatureGate([]v1.FeatureGateName{"SomeOtherFeatureGate", v1.FeatureGateCSIDriverSharedResource, "YetAnotherGate"}, nil)
+	testingDefault := featuregates.NewFeatureGate(nil, []v1.FeatureGateName{features.FeatureGateCSIDriverSharedResource})
+	testingTechPreview := featuregates.NewFeatureGate([]v1.FeatureGateName{features.FeatureGateCSIDriverSharedResource}, nil)
+	customFeatureGate := featuregates.NewFeatureGate([]v1.FeatureGateName{"SomeOtherFeatureGate", features.FeatureGateCSIDriverSharedResource, "YetAnotherGate"}, nil)
 	customWithJustOther := featuregates.NewFeatureGate([]v1.FeatureGateName{"SomeOtherFeatureGate"}, nil)
 	customWithNothing := featuregates.NewFeatureGate([]v1.FeatureGateName{}, nil)
 
@@ -50,7 +50,7 @@ func TestShouldRunController(t *testing.T) {
 			config: csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           csioperatorclient.AllPlatforms,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
 			},
 			isInstalled: false,
 			expectRun:   true,
@@ -64,7 +64,7 @@ func TestShouldRunController(t *testing.T) {
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
 			},
 			false,
 			true,
@@ -78,7 +78,7 @@ func TestShouldRunController(t *testing.T) {
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           v1.GCPPlatformType,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
 			},
 			false,
 			true,
@@ -92,7 +92,7 @@ func TestShouldRunController(t *testing.T) {
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           v1.VSpherePlatformType,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
 			},
 			false,
 			true,
@@ -168,7 +168,7 @@ func TestShouldRunController(t *testing.T) {
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
 			},
 			false,
 			true,
@@ -182,7 +182,7 @@ func TestShouldRunController(t *testing.T) {
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
 			},
 			false,
 			false,
@@ -196,7 +196,7 @@ func TestShouldRunController(t *testing.T) {
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
 			},
 			false,
 			false,
@@ -210,7 +210,7 @@ func TestShouldRunController(t *testing.T) {
 			csioperatorclient.CSIOperatorConfig{
 				CSIDriverName:      "csi.sharedresource.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: v1.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
 			},
 			false,
 			false,
@@ -218,7 +218,7 @@ func TestShouldRunController(t *testing.T) {
 		},
 		{
 			"Azure File driver should not run on Azure StackHub if not already installed",
-			&v1.PlatformStatus{Type: v1.AzurePlatformType, Azure: &v1.AzurePlatformStatus{CloudName: cfgv1.AzureStackCloud}},
+			&v1.PlatformStatus{Type: v1.AzurePlatformType, Azure: &v1.AzurePlatformStatus{CloudName: v1.AzureStackCloud}},
 			customWithNothing,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
@@ -233,7 +233,7 @@ func TestShouldRunController(t *testing.T) {
 		},
 		{
 			"Azure File driver should keep running on Azure StackHub if already installed",
-			&v1.PlatformStatus{Type: v1.AzurePlatformType, Azure: &v1.AzurePlatformStatus{CloudName: cfgv1.AzureStackCloud}},
+			&v1.PlatformStatus{Type: v1.AzurePlatformType, Azure: &v1.AzurePlatformStatus{CloudName: v1.AzureStackCloud}},
 			customWithNothing,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
@@ -406,7 +406,7 @@ func TestStandAloneStarter(t *testing.T) {
 
 	infrInformer := clients.ConfigInformers.Config().V1().Infrastructures().Informer()
 	infrInformer.GetStore().Add(getInfrastructure(v1.AWSPlatformType))
-	testingDefault := featuregates.NewFeatureGate(nil, []v1.FeatureGateName{v1.FeatureGateCSIDriverSharedResource})
+	testingDefault := featuregates.NewFeatureGate(nil, []v1.FeatureGateName{features.FeatureGateCSIDriverSharedResource})
 
 	csoclients.StartInformers(clients, finish.Done())
 	csoclients.WaitForSync(clients, finish.Done())
