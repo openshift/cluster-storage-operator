@@ -46,6 +46,7 @@ spec:
         volumeMounts:
         - mountPath: /etc/guest-kubeconfig
           name: guest-kubeconfig
+        terminationMessagePolicy: FallbackToLogsOnError
       priorityClassName: hypershift-control-plane
       serviceAccountName: shared-resource-csi-driver-operator
       tolerations:

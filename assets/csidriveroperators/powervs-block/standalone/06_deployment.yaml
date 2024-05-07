@@ -46,6 +46,7 @@ spec:
           requests:
             memory: 50Mi
             cpu: 10m
+        terminationMessagePolicy: FallbackToLogsOnError
       priorityClassName: system-cluster-critical
       serviceAccountName: powervs-block-csi-driver-operator
       nodeSelector:

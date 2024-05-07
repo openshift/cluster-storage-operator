@@ -50,6 +50,7 @@ spec:
           requests:
             memory: 50Mi
             cpu: 10m
+        terminationMessagePolicy: FallbackToLogsOnError
       priorityClassName: system-cluster-critical
       serviceAccountName: ibm-vpc-block-csi-driver-operator
       nodeSelector:
