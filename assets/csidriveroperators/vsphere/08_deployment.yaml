@@ -63,6 +63,7 @@ spec:
           mountPath: /etc/pki/ca-trust/extracted/pem
         - mountPath: /var/run/secrets/serving-cert
           name: vmware-vsphere-csi-driver-operator-metrics-serving-cert
+        terminationMessagePolicy: FallbackToLogsOnError
       priorityClassName: system-cluster-critical
       serviceAccountName: vmware-vsphere-csi-driver-operator
       nodeSelector:

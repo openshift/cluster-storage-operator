@@ -48,6 +48,7 @@ spec:
         volumeMounts:
         - mountPath: /etc/secrets
           name: shared-resource-csi-driver-operator-metrics-serving-cert
+        terminationMessagePolicy: FallbackToLogsOnError
       priorityClassName: system-cluster-critical
       serviceAccountName: shared-resource-csi-driver-operator
       nodeSelector:

@@ -88,6 +88,7 @@ spec:
         volumeMounts:
         - mountPath: /etc/guest-kubeconfig
           name: guest-kubeconfig
+        terminationMessagePolicy: FallbackToLogsOnError
       priorityClassName: hypershift-control-plane
       serviceAccountName: azure-file-csi-driver-operator
       tolerations:
