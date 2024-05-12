@@ -14,6 +14,7 @@ import (
 	openshiftv1 "github.com/openshift/client-go/config/listers/config/v1"
 	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/util"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/controller/manager"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivercontrollerservicecontroller"
@@ -150,7 +151,7 @@ func (c *VSphereProblemDetectorStarter) createVSphereProblemDetectorManager(
 			c.withReplacerHook(),
 		},
 		csidrivercontrollerservicecontroller.WithControlPlaneTopologyHook(clients.ConfigInformers),
-		csidrivercontrollerservicecontroller.WithObservedProxyDeploymentHook(),
+		withProxyHook(),
 		// Restart when credentials change to get a quick retest
 		csidrivercontrollerservicecontroller.WithSecretHashAnnotationHook(
 			csoclients.OperatorNamespace,
@@ -237,4 +238,14 @@ func addObjectHash(deployment *appsv1.Deployment, inputHashes map[string]string)
 		deployment.Spec.Template.Annotations[annotationKey] = v
 	}
 	return nil
+}
+
+func withProxyHook() deploymentcontroller.DeploymentHookFunc {
+	return func(opSpec *operatorapi.OperatorSpec, deployment *appsv1.Deployment) error {
+		// Cannot use csidrivercontrollerservicecontroller.WithObservedProxyDeploymentHook here.
+		// It expects proxy config at spec.observedConfig.targetcsiconfig.proxy,
+		// while CSO uses spec.observedConfig.targetconfig.proxy
+		err := util.InjectObservedProxyInDeploymentContainers(deployment, opSpec)
+		return err
+	}
 }
