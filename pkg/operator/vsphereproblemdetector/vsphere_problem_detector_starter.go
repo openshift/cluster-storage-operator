@@ -123,7 +123,7 @@ func (c *VSphereProblemDetectorStarter) createVSphereProblemDetectorManager(
 		"vsphere_problem_detector/10_service.yaml",
 	}
 
-	vSphereProblemDetectorName := "VSphereProblemDetectorDeploymentController"
+	vSphereProblemDetectorName := "VSphereProblemDetectorStarterStaticController"
 	mgr = mgr.WithController(staticresourcecontroller.NewStaticResourceController(
 		vSphereProblemDetectorName,
 		assets.ReadFile,
