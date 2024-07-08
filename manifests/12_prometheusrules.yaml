@@ -16,7 +16,7 @@ spec:
     - name: default-storage-classes.rules
       rules:
       - alert: MultipleDefaultStorageClasses
-        expr:  max_over_time(default_storage_class_count[5m]) > 1
+        expr:  min_over_time(default_storage_class_count[5m]) > 1
         for: 10m
         labels:
           severity: warning
