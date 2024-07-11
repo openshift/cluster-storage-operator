@@ -265,6 +265,7 @@ var map_ConsoleSpec = map[string]string{
 	"providers":     "providers contains configuration for using specific service providers.",
 	"route":         "route contains hostname and secret reference that contains the serving certificate. If a custom route is specified, a new route will be created with the provided hostname, under which console will be available. In case of custom hostname uses the default routing suffix of the cluster, the Secret specification for a serving certificate will not be needed. In case of custom hostname points to an arbitrary domain, manual DNS configurations steps are necessary. The default console route will be maintained to reserve the default hostname for console if the custom route is removed. If not specified, default route will be used. DEPRECATED",
 	"plugins":       "plugins defines a list of enabled console plugin names.",
+	"ingress":       "ingress allows to configure the alternative ingress for the console. This field is intended for clusters without ingress capability, where access to routes is not possible.",
 }
 
 func (ConsoleSpec) SwaggerDoc() map[string]string {
@@ -318,6 +319,16 @@ var map_DeveloperConsoleCatalogTypes = map[string]string{
 
 func (DeveloperConsoleCatalogTypes) SwaggerDoc() map[string]string {
 	return map_DeveloperConsoleCatalogTypes
+}
+
+var map_Ingress = map[string]string{
+	"":                   "Ingress allows cluster admin to configure alternative ingress for the console.",
+	"consoleURL":         "consoleURL is a URL to be used as the base console address. If not specified, the console route hostname will be used. This field is required for clusters without ingress capability, where access to routes is not possible. Make sure that appropriate ingress is set up at this URL. The console operator will monitor the URL and may go degraded if it's unreachable for an extended period. Must use the HTTPS scheme.",
+	"clientDownloadsURL": "clientDownloadsURL is a URL to be used as the address to download client binaries. If not specified, the downloads route hostname will be used. This field is required for clusters without ingress capability, where access to routes is not possible. The console operator will monitor the URL and may go degraded if it's unreachable for an extended period. Must use the HTTPS scheme.",
+}
+
+func (Ingress) SwaggerDoc() map[string]string {
+	return map_Ingress
 }
 
 var map_Perspective = map[string]string{
@@ -711,6 +722,7 @@ func (EtcdSpec) SwaggerDoc() map[string]string {
 var map_AWSClassicLoadBalancerParameters = map[string]string{
 	"":                      "AWSClassicLoadBalancerParameters holds configuration parameters for an AWS Classic load balancer.",
 	"connectionIdleTimeout": "connectionIdleTimeout specifies the maximum time period that a connection may be idle before the load balancer closes the connection.  The value must be parseable as a time duration value; see <https://pkg.go.dev/time#ParseDuration>.  A nil or zero value means no opinion, in which case a default value is used.  The default value for this field is 60s.  This default is subject to change.",
+	"subnets":               "subnets specifies the subnets to which the load balancer will attach. The subnets may be specified by either their ID or name. The total number of subnets is limited to 10.\n\nIn order for the load balancer to be provisioned with subnets, each subnet must exist, each subnet must be from a different availability zone, and the load balancer service must be recreated to pick up new values.\n\nWhen omitted from the spec, the subnets will be auto-discovered for each availability zone. Auto-discovered subnets are not reported in the status of the IngressController object.",
 }
 
 func (AWSClassicLoadBalancerParameters) SwaggerDoc() map[string]string {
@@ -729,11 +741,22 @@ func (AWSLoadBalancerParameters) SwaggerDoc() map[string]string {
 }
 
 var map_AWSNetworkLoadBalancerParameters = map[string]string{
-	"": "AWSNetworkLoadBalancerParameters holds configuration parameters for an AWS Network load balancer.",
+	"":        "AWSNetworkLoadBalancerParameters holds configuration parameters for an AWS Network load balancer.",
+	"subnets": "subnets specifies the subnets to which the load balancer will attach. The subnets may be specified by either their ID or name. The total number of subnets is limited to 10.\n\nIn order for the load balancer to be provisioned with subnets, each subnet must exist, each subnet must be from a different availability zone, and the load balancer service must be recreated to pick up new values.\n\nWhen omitted from the spec, the subnets will be auto-discovered for each availability zone. Auto-discovered subnets are not reported in the status of the IngressController object.",
 }
 
 func (AWSNetworkLoadBalancerParameters) SwaggerDoc() map[string]string {
 	return map_AWSNetworkLoadBalancerParameters
+}
+
+var map_AWSSubnets = map[string]string{
+	"":      "AWSSubnets contains a list of references to AWS subnets by ID or name.",
+	"ids":   "ids specifies a list of AWS subnets by subnet ID. Subnet IDs must start with \"subnet-\", consist only of alphanumeric characters, must be exactly 24 characters long, must be unique, and the total number of subnets specified by ids and names must not exceed 10.",
+	"names": "names specifies a list of AWS subnets by subnet name. Subnet names must not start with \"subnet-\", must not include commas, must be under 256 characters in length, must be unique, and the total number of subnets specified by ids and names must not exceed 10.",
+}
+
+func (AWSSubnets) SwaggerDoc() map[string]string {
+	return map_AWSSubnets
 }
 
 var map_AccessLogging = map[string]string{
