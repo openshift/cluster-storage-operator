@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -93,7 +94,7 @@ func CreateDeployment(ctx context.Context, depOpts DeploymentOptions) (*appsv1.D
 
 // GetRequiredDeployment returns a deployment from given assset after replacing necessary strings and setting
 // correct log level.
-func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpec, nodeSelector map[string]string, replacers ...*strings.Replacer) (*appsv1.Deployment, error) {
+func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpec, nodeSelector map[string]string, tolerations []corev1.Toleration, replacers ...*strings.Replacer) (*appsv1.Deployment, error) {
 	deploymentBytes, err := assets.ReadFile(deploymentAsset)
 	if err != nil {
 		return nil, err
@@ -115,5 +116,8 @@ func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpe
 	if nodeSelector != nil {
 		deployment.Spec.Template.Spec.NodeSelector = nodeSelector
 	}
+
+	deployment.Spec.Template.Spec.Tolerations = append(deployment.Spec.Template.Spec.Tolerations, tolerations...)
+
 	return deployment, nil
 }
