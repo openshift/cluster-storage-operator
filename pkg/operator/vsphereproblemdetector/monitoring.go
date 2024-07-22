@@ -6,8 +6,10 @@ import (
 	"time"
 
 	operatorapi "github.com/openshift/api/operator/v1"
+	ov1 "github.com/openshift/client-go/operator/listers/operator/v1"
 	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
@@ -35,6 +37,8 @@ type monitoringController struct {
 	configMapLister  v1.ConfigMapLister
 	monitoringClient promclient.Interface
 	eventRecorder    events.Recorder
+
+	clusterCSIDriverLister ov1.ClusterCSIDriverLister
 }
 
 const (
@@ -66,6 +70,8 @@ func newMonitoringController(
 		configMapLister:  clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().ConfigMaps().Lister(),
 		eventRecorder:    eventRecorder.WithComponentSuffix("vsphere-monitoring-controller"),
 		monitoringClient: clients.MonitoringClient,
+
+		clusterCSIDriverLister: clients.OperatorInformers.Operator().V1().ClusterCSIDrivers().Lister(),
 	}
 
 	return factory.New().
@@ -74,7 +80,8 @@ func newMonitoringController(
 			c.operatorClient.Informer(),
 			clients.MonitoringInformer.Monitoring().V1().ServiceMonitors().Informer(),
 			clients.MonitoringInformer.Monitoring().V1().PrometheusRules().Informer(),
-			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().ConfigMaps().Informer()).
+			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().ConfigMaps().Informer(),
+			clients.OperatorInformers.Operator().V1().ClusterCSIDrivers().Informer()).
 		ResyncEvery(resyncInterval).
 		WithSyncDegradedOnError(clients.OperatorClient).
 		ToController(monitoringControllerName, c.eventRecorder)
@@ -107,13 +114,18 @@ func (c *monitoringController) sync(ctx context.Context, syncContext factory.Syn
 		return err
 	}
 
+	ccd, err := c.clusterCSIDriverLister.Get(csioperatorclient.VMwareVSphereDriverName)
+	if err != nil {
+		return err
+	}
+
 	prometheusRuleBytes, err := assets.ReadFile(prometheusRuleFile)
 	if err != nil {
 		return err
 	}
 
 	var message string
-	if cfg.AlertsDisabled {
+	if cfg.AlertsDisabled || ccd.Spec.OperatorSpec.ManagementState == operatorapi.Removed {
 		err = c.deletePrometheusRule(ctx, prometheusRuleBytes)
 		if err != nil {
 			return err
