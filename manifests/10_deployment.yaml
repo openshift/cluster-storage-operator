@@ -133,6 +133,8 @@ spec:
             value: quay.io/openshift/origin-powervs-block-csi-driver-operator:latest
           - name: POWERVS_BLOCK_CSI_DRIVER_IMAGE
             value: quay.io/openshift/origin-powervs-block-csi-driver:latest
+          - name: TOOLS_IMAGE
+            value: quay.io/openshift/origin-tools:latest
           resources:
             requests:
               cpu: 10m
