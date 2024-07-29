@@ -104,3 +104,11 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - operator.openshift.io
+  resources:
+  - clustercsidrivers
+  verbs:
+  - get
+  - list
+  - watch
