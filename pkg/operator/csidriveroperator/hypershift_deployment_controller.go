@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/status"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -114,7 +115,13 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 	if err != nil {
 		return err
 	}
-	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nodeSelector, replacers...)
+
+	tolerations, err := c.getHostedControlPlaneCustomTolerations()
+	if err != nil {
+		return err
+	}
+
+	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nodeSelector, tolerations, replacers...)
 	if err != nil {
 		return fmt.Errorf("failed to generate required Deployment: %s", err)
 	}
@@ -146,6 +153,69 @@ func (c *HyperShiftDeploymentController) Run(ctx context.Context, workers int) {
 
 func (c *HyperShiftDeploymentController) Name() string {
 	return c.name + deploymentControllerName
+}
+
+func (c *HyperShiftDeploymentController) getHostedControlPlaneCustomTolerations() ([]corev1.Toleration, error) {
+	hcp, err := c.getHostedControlPlane()
+	if err != nil {
+		return nil, err
+	}
+
+	var tolerations []corev1.Toleration
+	tolerationsArray, tolerationsArrayFound, err := unstructured.NestedFieldCopy(hcp.UnstructuredContent(), "spec", "tolerations")
+	if !tolerationsArrayFound {
+		return tolerations, nil
+	}
+	tolerationsArrayConverted, hasConverted := tolerationsArray.([]interface{})
+	if !hasConverted {
+		return tolerations, nil
+	}
+
+	for _, entry := range tolerationsArrayConverted {
+		tolerationConverted, hasConverted := entry.(map[string]interface{})
+		if hasConverted {
+			toleration := corev1.Toleration{}
+			raw, ok := tolerationConverted["key"]
+			if ok {
+				str, isString := raw.(string)
+				if isString {
+					toleration.Key = str
+				}
+			}
+			raw, ok = tolerationConverted["operator"]
+			if ok {
+				op, isOperator := raw.(string)
+				if isOperator {
+					toleration.Operator = corev1.TolerationOperator(op)
+				}
+			}
+			raw, ok = tolerationConverted["value"]
+			if ok {
+				str, isString := raw.(string)
+				if isString {
+					toleration.Value = str
+				}
+			}
+			raw, ok = tolerationConverted["effect"]
+			if ok {
+				effect, isEffect := raw.(string)
+				if isEffect {
+					toleration.Effect = corev1.TaintEffect(effect)
+				}
+			}
+			raw, ok = tolerationConverted["tolerationSeconds"]
+			if ok {
+				seconds, isSeconds := raw.(*int64)
+				if isSeconds {
+					toleration.TolerationSeconds = seconds
+				}
+			}
+			tolerations = append(tolerations, toleration)
+		}
+	}
+
+	klog.V(4).Infof("Using tolerations %v", tolerations)
+	return tolerations, nil
 }
 
 func (c *HyperShiftDeploymentController) getHostedControlPlaneNodeSelector() (map[string]string, error) {
