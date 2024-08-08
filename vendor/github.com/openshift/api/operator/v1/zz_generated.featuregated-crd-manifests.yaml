@@ -69,6 +69,7 @@ clustercsidrivers.operator.openshift.io:
   Capability: ""
   Category: ""
   FeatureGates:
+  - AWSEFSDriverVolumeMetrics
   - VSphereDriverConfiguration
   FilenameOperatorName: csi-driver
   FilenameOperatorOrdering: "01"
@@ -178,6 +179,7 @@ ingresscontrollers.operator.openshift.io:
   Category: ""
   FeatureGates:
   - IngressControllerLBSubnetsAWS
+  - SetEIPForNLBIngressController
   FilenameOperatorName: ingress
   FilenameOperatorOrdering: "00"
   FilenameRunLevel: "0000_50"
@@ -327,7 +329,9 @@ networks.operator.openshift.io:
   Capability: ""
   Category: ""
   FeatureGates:
+  - AdditionalRoutingCapabilities
   - NetworkLiveMigration
+  - RouteAdvertisements
   FilenameOperatorName: network
   FilenameOperatorOrdering: "01"
   FilenameRunLevel: "0000_70"
