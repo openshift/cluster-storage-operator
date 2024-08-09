@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-drivers=( aws-ebs azure-disk azure-file )
+drivers=( aws-ebs azure-disk azure-file openstack-cinder )
 
 for driver in "${drivers[@]}"
 do
