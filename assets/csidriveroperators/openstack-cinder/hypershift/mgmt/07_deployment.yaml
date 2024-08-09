@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openstack-cinder-csi-driver-operator
+  namespace: ${CONTROLPLANE_NAMESPACE}
+  annotations:
+    config.openshift.io/inject-proxy: openstack-cinder-csi-driver-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: openstack-cinder-csi-driver-operator
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+      labels:
+        name: openstack-cinder-csi-driver-operator
+    spec:
+      containers:
+      - args:
+        - start
+        - -v=${LOG_LEVEL}
+        env:
+        - name: DRIVER_IMAGE
+          value: ${DRIVER_IMAGE}
+        - name: PROVISIONER_IMAGE
+          value: ${PROVISIONER_IMAGE}
+        - name: ATTACHER_IMAGE
+          value: ${ATTACHER_IMAGE}
+        - name: RESIZER_IMAGE
+          value: ${RESIZER_IMAGE}
+        - name: SNAPSHOTTER_IMAGE
+          value: ${SNAPSHOTTER_IMAGE}
+        - name: NODE_DRIVER_REGISTRAR_IMAGE
+          value: ${NODE_DRIVER_REGISTRAR_IMAGE}
+        - name: LIVENESS_PROBE_IMAGE
+          value: ${LIVENESS_PROBE_IMAGE}
+        - name: KUBE_RBAC_PROXY_IMAGE
+          value: ${KUBE_RBAC_PROXY_IMAGE}
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        image: ${OPERATOR_IMAGE}
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: secret-cinderplugin
+          mountPath: /etc/openstack
+          readOnly: true
+        - name: cacert
+          mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
+        name: openstack-cinder-csi-driver-operator
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
+        terminationMessagePolicy: FallbackToLogsOnError
+      priorityClassName: system-cluster-critical
+      serviceAccountName: openstack-cinder-csi-driver-operator
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: "NoSchedule"
+      volumes:
+      - name: secret-cinderplugin
+        secret:
+          secretName: openstack-cloud-credentials
+          items:
+            - key: clouds.yaml
+              path: clouds.yaml
+      - name: cacert
+        # If present, extract ca-bundle.pem to
+        # /etc/kubernetes/static-pod-resources/configmaps/cloud-config
+        # Let the pod start when the ConfigMap does not exist or the certificate
+        # is not preset there. The certificate file will be created once the
+        # ConfigMap is created / the cerificate is added to it.
+        configMap:
+          name: cloud-provider-config
+          items:
+          - key: ca-bundle.pem
+            path: ca-bundle.pem
+          optional: true
