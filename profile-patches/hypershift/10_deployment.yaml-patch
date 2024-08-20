@@ -61,3 +61,11 @@
   path: /spec/template/spec/containers/0/args/-
   value:
     "--guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig"
+# Remove runAsUser security context requirement in HyperShift as we use restricted-v2 scc
+- op: remove
+  path: /spec/template/spec/securityContext/runAsUser
+- op: replace
+  path: /spec/template/metadata/annotations
+  value:
+    openshift.io/required-scc: restricted-v2
+    target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
