@@ -2,9 +2,11 @@ package csidriveroperator
 
 import (
 	"context"
+	"reflect"
 	"time"
 
 	operatorapi "github.com/openshift/api/operator/v1"
+	opclient "github.com/openshift/client-go/operator/clientset/versioned"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
@@ -32,13 +34,14 @@ import (
 // <CSI driver name>OLMOperatorRemovalProgressing/Degraded: for status reporting.
 // <CSI driver name>OLMOperatorRemovalAvailable: to signal that the removal has been complete
 type OLMOperatorRemovalController struct {
-	name           string
-	operatorClient *operatorclient.OperatorClient
-	olmOptions     *csioperatorclient.OLMOptions
-	dynamicClient  dynamic.Interface
-	kubeClient     kubernetes.Interface
-	eventRecorder  events.Recorder
-	factory        *factory.Factory
+	name              string
+	operatorClient    v1helpers.OperatorClientWithFinalizers
+	operatorClientSet opclient.Interface
+	olmOptions        *csioperatorclient.OLMOptions
+	dynamicClient     dynamic.Interface
+	kubeClient        kubernetes.Interface
+	eventRecorder     events.Recorder
+	factory           *factory.Factory
 
 	olmOperatorNamespace string
 	olmOperatorCSVName   string
@@ -90,13 +93,14 @@ func NewOLMOperatorRemovalController(
 	f = f.WithInformers(clients.OperatorClient.Informer())
 
 	c := &OLMOperatorRemovalController{
-		name:           csiOperatorConfig.ConditionPrefix,
-		operatorClient: clients.OperatorClient,
-		olmOptions:     csiOperatorConfig.OLMOptions,
-		dynamicClient:  clients.DynamicClient,
-		kubeClient:     clients.KubeClient,
-		eventRecorder:  eventRecorder.WithComponentSuffix(csiOperatorConfig.ConditionPrefix),
-		factory:        f,
+		name:              csiOperatorConfig.ConditionPrefix,
+		operatorClient:    clients.OperatorClient,
+		operatorClientSet: clients.OperatorClientSet,
+		olmOptions:        csiOperatorConfig.OLMOptions,
+		dynamicClient:     clients.DynamicClient,
+		kubeClient:        clients.KubeClient,
+		eventRecorder:     eventRecorder.WithComponentSuffix(csiOperatorConfig.ConditionPrefix),
+		factory:           f,
 	}
 	return c
 }
@@ -259,7 +263,20 @@ func (c *OLMOperatorRemovalController) saveMetadata(namespace string, csvName st
 		c.name + olmOperatorNamespaceAnnotation: namespace,
 		c.name + olmOperatorCSVAnnotation:       csvName,
 	}
-	return c.operatorClient.SetObjectAnnotations(annotations)
+	instance, err := c.operatorClientSet.OperatorV1().Storages().Get(context.TODO(), operatorclient.GlobalConfigName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	newInstance := instance.DeepCopy()
+	for k, v := range annotations {
+		metav1.SetMetaDataAnnotation(&newInstance.ObjectMeta, k, v)
+	}
+	if !reflect.DeepEqual(instance.Annotations, newInstance.Annotations) {
+		_, err := c.operatorClientSet.OperatorV1().Storages().Update(context.TODO(), newInstance, metav1.UpdateOptions{})
+		return err
+	}
+	return nil
 }
 
 func (c *OLMOperatorRemovalController) loadMetadata() (string, string, error) {
