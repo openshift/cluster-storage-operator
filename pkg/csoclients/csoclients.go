@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/openshift/library-go/pkg/config/client"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/rest"
 
@@ -16,12 +18,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/restmapper"
 
+	operatorv1 "github.com/openshift/api/operator/v1"
 	cfgclientset "github.com/openshift/client-go/config/clientset/versioned"
 	cfginformers "github.com/openshift/client-go/config/informers/externalversions"
+	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
 	opclient "github.com/openshift/client-go/operator/clientset/versioned"
 	opinformers "github.com/openshift/client-go/operator/informers/externalversions"
-	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
+	"github.com/openshift/library-go/pkg/operator/genericoperatorclient"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	prominformer "github.com/prometheus-operator/prometheus-operator/pkg/client/informers/externalversions"
 	promclient "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned"
@@ -29,7 +33,7 @@ import (
 
 type Clients struct {
 	// Client for CSO's CR
-	OperatorClient *operatorclient.OperatorClient
+	OperatorClient v1helpers.OperatorClientWithFinalizers
 	// Kubernetes API client
 	KubeClient kubernetes.Interface
 	// Kubernetes API informers, per namespace
@@ -127,9 +131,15 @@ func NewClients(controllerConfig *controllercmd.ControllerContext, resync time.D
 	}
 	c.MonitoringInformer = prominformer.NewSharedInformerFactory(c.MonitoringClient, resync)
 
-	c.OperatorClient = &operatorclient.OperatorClient{
-		Informers: c.OperatorInformers,
-		Client:    c.OperatorClientSet,
+	c.OperatorClient, _, err = genericoperatorclient.NewClusterScopedOperatorClient(
+		controllerConfig.KubeConfig,
+		operatorv1.GroupVersion.WithResource("storages"),
+		operatorv1.GroupVersion.WithKind("Storage"),
+		extractOperatorSpec,
+		extractOperatorStatus,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	dc, err := discovery.NewDiscoveryClientForConfig(controllerConfig.KubeConfig)
@@ -231,10 +241,13 @@ func NewHypershiftGuestClients(
 	}
 	c.MonitoringInformer = prominformer.NewSharedInformerFactory(c.MonitoringClient, resync)
 
-	c.OperatorClient = &operatorclient.OperatorClient{
-		Informers: c.OperatorInformers,
-		Client:    c.OperatorClientSet,
-	}
+	c.OperatorClient, _, err = genericoperatorclient.NewClusterScopedOperatorClient(
+		controllerConfig.KubeConfig,
+		operatorv1.GroupVersion.WithResource("storages"),
+		operatorv1.GroupVersion.WithKind("Storage"),
+		extractOperatorSpec,
+		extractOperatorStatus,
+	)
 
 	dc, err := discovery.NewDiscoveryClientForConfig(kubeRestConfig)
 	if err != nil {
@@ -285,4 +298,35 @@ func StartMgmtInformers(clients *Clients, stopCh <-chan struct{}) {
 	} {
 		informer.Start(stopCh)
 	}
+}
+
+func extractOperatorSpec(obj *unstructured.Unstructured, fieldManager string) (*applyoperatorv1.OperatorSpecApplyConfiguration, error) {
+	castObj := &operatorv1.Storage{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, castObj); err != nil {
+		return nil, fmt.Errorf("unable to convert to Storage: %w", err)
+	}
+	ret, err := applyoperatorv1.ExtractStorage(castObj, fieldManager)
+	if err != nil {
+		return nil, fmt.Errorf("unable to extract fields for %q: %w", fieldManager, err)
+	}
+	if ret.Spec == nil {
+		return nil, nil
+	}
+	return &ret.Spec.OperatorSpecApplyConfiguration, nil
+}
+
+func extractOperatorStatus(obj *unstructured.Unstructured, fieldManager string) (*applyoperatorv1.OperatorStatusApplyConfiguration, error) {
+	castObj := &operatorv1.Storage{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, castObj); err != nil {
+		return nil, fmt.Errorf("unable to convert to Storage: %w", err)
+	}
+	ret, err := applyoperatorv1.ExtractStorageStatus(castObj, fieldManager)
+	if err != nil {
+		return nil, fmt.Errorf("unable to extract fields for %q: %w", fieldManager, err)
+	}
+
+	if ret.Status == nil {
+		return nil, nil
+	}
+	return &ret.Status.OperatorStatusApplyConfiguration, nil
 }
