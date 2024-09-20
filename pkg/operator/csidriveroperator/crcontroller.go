@@ -7,6 +7,7 @@ import (
 	"time"
 
 	operatorapi "github.com/openshift/api/operator/v1"
+	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
 	opclient "github.com/openshift/client-go/operator/clientset/versioned"
 	oplisters "github.com/openshift/client-go/operator/listers/operator/v1"
 	"github.com/openshift/cluster-storage-operator/assets"
@@ -14,7 +15,6 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
-	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -124,19 +124,14 @@ func (c *CSIDriverOperatorCRController) Sync(ctx context.Context, syncCtx factor
 		return err
 	}
 
-	newGeneration := operatorapi.GenerationStatus{
-		Group:          operatorapi.GroupName,
-		Resource:       "clustercsidrivers",
-		Namespace:      cr.Namespace,
-		Name:           cr.Name,
-		LastGeneration: cr.ObjectMeta.Generation,
-	}
-	updateGenerationFn := func(newStatus *operatorapi.OperatorStatus) error {
-		resourcemerge.SetGeneration(&newStatus.Generations, newGeneration)
-		return nil
-	}
+	newGeneration := applyoperatorv1.GenerationStatus().
+		WithGroup(operatorapi.GroupName).
+		WithResource("clustercsidrivers").
+		WithNamespace(cr.Namespace).
+		WithName(cr.Name).
+		WithLastGeneration(cr.ObjectMeta.Generation)
 
-	if err := c.syncConditions(ctx, cr.Status.Conditions, updateGenerationFn); err != nil {
+	if err := c.syncConditions(ctx, cr.Status.Conditions, newGeneration); err != nil {
 		errs = append(errs, err)
 	}
 	return errors.NewAggregate(errs)
@@ -185,62 +180,85 @@ func (c *CSIDriverOperatorCRController) applyClusterCSIDriver(ctx context.Contex
 	return existing.DeepCopy(), false, nil
 }
 
-func (c *CSIDriverOperatorCRController) syncConditions(ctx context.Context, conditions []operatorapi.OperatorCondition, updatefn v1helpers.UpdateStatusFunc) error {
-	var availableCnd operatorapi.OperatorCondition
+func (c *CSIDriverOperatorCRController) syncConditions(ctx context.Context, conditions []operatorapi.OperatorCondition, newGeneration *applyoperatorv1.GenerationStatusApplyConfiguration) error {
+	// Available condition
+	availableCnd := applyoperatorv1.
+		OperatorCondition().
+		WithType(c.crConditionName(operatorapi.OperatorStatusTypeAvailable))
 	disabled, msg := c.hasDisabledCondition(conditions)
 	if disabled && c.allowDisabled {
 		// The driver can't be running. Mark the operator as Available, but with an extra message.
-		availableCnd.Status = operatorapi.ConditionTrue
-		availableCnd.Reason = "DriverDisabled"
-		availableCnd.Message = fmt.Sprintf("CSI driver for %s is disabled: %s", c.name, msg)
+		availableCnd = availableCnd.
+			WithStatus(operatorapi.ConditionTrue).
+			WithReason("DriverDisabled").
+			WithMessage(fmt.Sprintf("CSI driver for %s is disabled: %s", c.name, msg))
 	} else {
 		// The driver should be running, copy conditions from the CR
-		availableCnd = status.UnionCondition(operatorapi.OperatorStatusTypeAvailable, operatorapi.ConditionTrue, nil, conditions...)
-		if availableCnd.Status == operatorapi.ConditionUnknown {
-			availableCnd.Status = operatorapi.ConditionFalse
-			availableCnd.Reason = "WaitForOperator"
-			availableCnd.Message = fmt.Sprintf("Waiting for %s operator to report status", c.name)
-		}
-	}
-	availableCnd.Type = c.crConditionName(operatorapi.OperatorStatusTypeAvailable)
-
-	progressingCnd := status.UnionCondition(operatorapi.OperatorStatusTypeProgressing, operatorapi.ConditionFalse, nil, conditions...)
-	progressingCnd.Type = c.crConditionName(operatorapi.OperatorStatusTypeProgressing)
-	if progressingCnd.Status == operatorapi.ConditionUnknown {
-		if disabled && c.allowDisabled {
-			progressingCnd.Status = operatorapi.ConditionFalse
+		clusterCSIDriverAvailableCnd := status.UnionCondition(operatorapi.OperatorStatusTypeAvailable, operatorapi.ConditionTrue, nil, conditions...)
+		if clusterCSIDriverAvailableCnd.Status == operatorapi.ConditionUnknown {
+			// If the ClusterCSIDriver's Available condition is Unknown, then ours will be false
+			availableCnd = availableCnd.
+				WithStatus(operatorapi.ConditionFalse).
+				WithReason("WaitForOperator").
+				WithMessage(fmt.Sprintf("Waiting for %s operator to report status", c.name))
 		} else {
-			progressingCnd.Status = operatorapi.ConditionTrue
-			progressingCnd.Reason = "WaitForOperator"
-			progressingCnd.Message = fmt.Sprintf("Waiting for %s operator to report status", c.name)
+			// Copy the ClusterCSIDriver's Available condition as is
+			availableCnd = availableCnd.
+				WithReason(clusterCSIDriverAvailableCnd.Reason).
+				WithStatus(clusterCSIDriverAvailableCnd.Status).
+				WithMessage(clusterCSIDriverAvailableCnd.Message)
 		}
 	}
 
-	upgradeableConditionType := c.crConditionName(operatorapi.OperatorStatusTypeUpgradeable)
-	upgradeableCond := operatorapi.OperatorCondition{
-		Type:   upgradeableConditionType,
-		Status: operatorapi.ConditionTrue,
+	// Progressing condition
+	progressingCnd := applyoperatorv1.OperatorCondition().WithType(c.crConditionName(operatorapi.OperatorStatusTypeProgressing))
+	clusterCSIDriverProgressingCnd := status.UnionCondition(operatorapi.OperatorStatusTypeProgressing, operatorapi.ConditionFalse, nil, conditions...)
+	if clusterCSIDriverProgressingCnd.Status == operatorapi.ConditionUnknown {
+		if disabled && c.allowDisabled {
+			progressingCnd = progressingCnd.WithStatus(operatorapi.ConditionFalse)
+		} else {
+			progressingCnd = progressingCnd.
+				WithStatus(operatorapi.ConditionTrue).
+				WithReason("WaitForOperator").
+				WithMessage(fmt.Sprintf("Waiting for %s operator to report status", c.name))
+		}
 	}
+
+	// Upgradeable condition
+	upgradeableConditionType := c.crConditionName(operatorapi.OperatorStatusTypeUpgradeable)
+	upgradeableCnd := applyoperatorv1.OperatorCondition().
+		WithType(upgradeableConditionType).
+		WithStatus(operatorapi.ConditionTrue)
 
 	if hasCondition(conditions, operatorapi.OperatorStatusTypeUpgradeable) {
-		upgradeableCond = status.UnionCondition(operatorapi.OperatorStatusTypeUpgradeable, operatorapi.ConditionTrue, nil, conditions...)
-		upgradeableCond.Type = upgradeableConditionType
+		clusterCSIDriverUpgradeableCnd := status.UnionCondition(operatorapi.OperatorStatusTypeUpgradeable, operatorapi.ConditionTrue, nil, conditions...)
+		upgradeableCnd = upgradeableCnd.
+			WithReason(clusterCSIDriverUpgradeableCnd.Reason).
+			WithStatus(clusterCSIDriverUpgradeableCnd.Status).
+			WithMessage(clusterCSIDriverUpgradeableCnd.Message)
 	}
 
-	degradedCnd := status.UnionCondition(operatorapi.OperatorStatusTypeDegraded, operatorapi.ConditionFalse, nil, conditions...)
-	degradedCnd.Type = c.crConditionName(operatorapi.OperatorStatusTypeDegraded)
-	if degradedCnd.Status == operatorapi.ConditionUnknown {
-		degradedCnd.Status = operatorapi.ConditionFalse
+	// Degraded condition
+	degradedCnd := applyoperatorv1.OperatorCondition().WithType(c.crConditionName(operatorapi.OperatorStatusTypeDegraded))
+	clusterCSIDriverDegradedCnd := status.UnionCondition(operatorapi.OperatorStatusTypeDegraded, operatorapi.ConditionFalse, nil, conditions...)
+	if clusterCSIDriverDegradedCnd.Status == operatorapi.ConditionUnknown {
+		degradedCnd = degradedCnd.WithStatus(operatorapi.ConditionFalse)
 	}
 
-	_, _, err := v1helpers.UpdateStatus(ctx, c.operatorClient,
-		v1helpers.UpdateConditionFn(availableCnd),
-		v1helpers.UpdateConditionFn(progressingCnd),
-		v1helpers.UpdateConditionFn(degradedCnd),
-		v1helpers.UpdateConditionFn(upgradeableCond),
-		updatefn,
+	// Create a partial status with conditions and newGeneration
+	status := applyoperatorv1.OperatorStatus().
+		WithConditions(
+			availableCnd,
+			progressingCnd,
+			degradedCnd,
+			upgradeableCnd).
+		WithGenerations(newGeneration)
+
+	return c.operatorClient.ApplyOperatorStatus(
+		ctx,
+		factory.ControllerFieldManager(c.name, "updateOperatorStatus"),
+		status,
 	)
-	return err
 }
 
 func (c *CSIDriverOperatorCRController) hasDisabledCondition(conditions []operatorapi.OperatorCondition) (bool, string) {
