@@ -6,6 +6,7 @@ import (
 	"time"
 
 	operatorapi "github.com/openshift/api/operator/v1"
+	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
 	opclient "github.com/openshift/client-go/operator/clientset/versioned"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
@@ -291,55 +292,61 @@ func (c *OLMOperatorRemovalController) loadMetadata() (string, string, error) {
 }
 
 func (c *OLMOperatorRemovalController) markProgressing(ctx context.Context, syncCtx factory.SyncContext, message string) error {
-	progressing := operatorapi.OperatorCondition{
-		Type:    c.Name() + operatorapi.OperatorStatusTypeProgressing,
-		Reason:  "RemovingOLMOperator",
-		Status:  operatorapi.ConditionTrue,
-		Message: message,
-	}
-	available := operatorapi.OperatorCondition{
-		Type:    c.Name() + operatorapi.OperatorStatusTypeAvailable,
-		Reason:  "RemovingOLMOperator",
-		Status:  operatorapi.ConditionFalse,
-		Message: message,
-	}
+	progressing := applyoperatorv1.OperatorCondition().
+		WithType(c.Name() + operatorapi.OperatorStatusTypeProgressing).
+		WithReason("RemovingOLMOperator").
+		WithStatus(operatorapi.ConditionTrue).
+		WithMessage(message)
 
-	if _, _, err := v1helpers.UpdateStatus(ctx, c.operatorClient,
-		v1helpers.UpdateConditionFn(progressing),
-		v1helpers.UpdateConditionFn(available),
-	); err != nil {
+	available := applyoperatorv1.OperatorCondition().
+		WithType(c.Name() + operatorapi.OperatorStatusTypeAvailable).
+		WithReason("RemovingOLMOperator").
+		WithStatus(operatorapi.ConditionFalse).
+		WithMessage(message)
+
+	// Create a partial status with conditions
+	status := applyoperatorv1.OperatorStatus().WithConditions(available, progressing)
+
+	err := c.operatorClient.ApplyOperatorStatus(
+		ctx,
+		factory.ControllerFieldManager(c.Name(), "updateOperatorStatus"),
+		status,
+	)
+	if err != nil {
 		return err
 	}
 
 	// Re-sync after a while to check if there was any progress
 	syncCtx.Queue().AddAfter(syncCtx.QueueKey(), waitInterval)
-
 	return nil
 }
 
 func (c *OLMOperatorRemovalController) markFinished(ctx context.Context, message string) error {
-	progressing := operatorapi.OperatorCondition{
-		Type:    c.Name() + operatorapi.OperatorStatusTypeProgressing,
-		Reason:  "Finished",
-		Status:  operatorapi.ConditionFalse,
-		Message: message,
-	}
-	available := operatorapi.OperatorCondition{
-		Type:    c.Name() + operatorapi.OperatorStatusTypeAvailable,
-		Reason:  "Finished",
-		Status:  operatorapi.ConditionTrue,
-		Message: message,
-	}
+	progressing := applyoperatorv1.OperatorCondition().
+		WithType(c.Name() + operatorapi.OperatorStatusTypeProgressing).
+		WithReason("Finished").
+		WithStatus(operatorapi.ConditionFalse).
+		WithMessage(message)
+
+	available := applyoperatorv1.OperatorCondition().
+		WithType(c.Name() + operatorapi.OperatorStatusTypeAvailable).
+		WithReason("Finished").
+		WithStatus(operatorapi.ConditionTrue).
+		WithMessage(message)
 
 	// Clear the old namespace annotation - the driver has been fully removed.
 	if err := c.saveMetadata("", ""); err != nil {
 		return err
 	}
-	_, _, err := v1helpers.UpdateStatus(ctx, c.operatorClient,
-		v1helpers.UpdateConditionFn(progressing),
-		v1helpers.UpdateConditionFn(available),
+
+	// Create a partial status with conditions
+	status := applyoperatorv1.OperatorStatus().WithConditions(available, progressing)
+
+	return c.operatorClient.ApplyOperatorStatus(
+		ctx,
+		factory.ControllerFieldManager(c.Name(), "updateOperatorStatus"),
+		status,
 	)
-	return err
 }
 
 func (c *OLMOperatorRemovalController) ensureOperatorDeploymentRemoved(ctx context.Context, namespace, name string) (bool, error) {
