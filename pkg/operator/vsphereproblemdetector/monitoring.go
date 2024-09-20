@@ -6,6 +6,7 @@ import (
 	"time"
 
 	operatorapi "github.com/openshift/api/operator/v1"
+	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
 	ov1 "github.com/openshift/client-go/operator/listers/operator/v1"
 	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
@@ -139,17 +140,17 @@ func (c *monitoringController) sync(ctx context.Context, syncContext factory.Syn
 		message = "vsphere-problem-detector alerts are enabled"
 	}
 
-	monitoringCondition := operatorapi.OperatorCondition{
-		Type:    monitoringControllerName + operatorapi.OperatorStatusTypeAvailable,
-		Status:  operatorapi.ConditionTrue,
-		Message: message,
-	}
-	if _, _, err := v1helpers.UpdateStatus(ctx, c.operatorClient,
-		v1helpers.UpdateConditionFn(monitoringCondition),
-	); err != nil {
-		return err
-	}
-	return nil
+	monitoringCondition := applyoperatorv1.OperatorCondition().
+		WithType(monitoringControllerName + operatorapi.OperatorStatusTypeAvailable).
+		WithStatus(operatorapi.ConditionTrue).
+		WithMessage(message)
+
+	status := applyoperatorv1.OperatorStatus().WithConditions(monitoringCondition)
+	return c.operatorClient.ApplyOperatorStatus(
+		ctx,
+		factory.ControllerFieldManager(monitoringControllerName, "updateOperatorStatus"),
+		status,
+	)
 }
 
 func (c *monitoringController) syncPrometheusRule(ctx context.Context, prometheusRuleBytes []byte) (*promv1.PrometheusRule, bool, error) {
