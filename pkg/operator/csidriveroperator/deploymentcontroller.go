@@ -9,10 +9,12 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	configv1listers "github.com/openshift/client-go/config/listers/config/v1"
+	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
@@ -77,29 +79,32 @@ func (c *CommonCSIDeploymentController) preCheckSync(
 }
 
 func (c *CommonCSIDeploymentController) postSync(ctx context.Context, deployment *appsv1.Deployment) error {
-	progressingCondition := operatorv1.OperatorCondition{
-		Type:   c.name + operatorv1.OperatorStatusTypeProgressing,
-		Status: operatorv1.ConditionFalse,
-	}
+	progressingCondition := applyoperatorv1.OperatorCondition().
+		WithType(c.name + operatorv1.OperatorStatusTypeProgressing).
+		WithStatus(operatorv1.ConditionFalse)
 
 	if ok, msg := isProgressing(deployment); ok {
-		progressingCondition.Status = operatorv1.ConditionTrue
-		progressingCondition.Message = msg
-		progressingCondition.Reason = "Deploying"
+		progressingCondition = progressingCondition.WithStatus(operatorv1.ConditionTrue).
+			WithReason("Deploying").
+			WithMessage(msg)
 	}
 
-	updateStatusFn := func(newStatus *operatorv1.OperatorStatus) error {
-		resourcemerge.SetDeploymentGeneration(&newStatus.Generations, deployment)
-		return nil
-	}
+	// Create a partial status with conditions and generations
+	status := applyoperatorv1.OperatorStatus().
+		WithConditions(progressingCondition).
+		WithGenerations(&applyoperatorv1.GenerationStatusApplyConfiguration{
+			Group:          ptr.To("apps"),
+			Resource:       ptr.To("deployments"),
+			Namespace:      ptr.To(deployment.Namespace),
+			Name:           ptr.To(deployment.Name),
+			LastGeneration: ptr.To(deployment.Generation),
+		})
 
-	_, _, err := v1helpers.UpdateStatus(
+	return c.operatorClient.ApplyOperatorStatus(
 		ctx,
-		c.operatorClient,
-		updateStatusFn,
-		v1helpers.UpdateConditionFn(progressingCondition),
+		factory.ControllerFieldManager(c.name, "updateOperatorStatus"),
+		status,
 	)
-	return err
 }
 
 func initCommonDeploymentParams(
