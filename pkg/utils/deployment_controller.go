@@ -7,7 +7,9 @@ import (
 	"strings"
 
 	operatorapi "github.com/openshift/api/operator/v1"
+	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
 	"github.com/openshift/cluster-storage-operator/assets"
+	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/loglevel"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
@@ -18,6 +20,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/utils/ptr"
 )
 
 type DeploymentOptions struct {
@@ -41,54 +44,67 @@ func CreateDeployment(ctx context.Context, depOpts DeploymentOptions) (*appsv1.D
 	}
 
 	// Available: at least one replica is running
-	deploymentAvailable := operatorapi.OperatorCondition{
-		Type: depOpts.ControllerName + operatorapi.OperatorStatusTypeAvailable,
-	}
+	// deploymentAvailable := operatorapi.OperatorCondition{
+	// Type: depOpts.ControllerName + operatorapi.OperatorStatusTypeAvailable,
+	// }
+	deploymentAvailable := applyoperatorv1.OperatorCondition().
+		WithType(depOpts.ControllerName + operatorapi.OperatorStatusTypeAvailable)
+
 	if deployment.Status.AvailableReplicas > 0 {
-		deploymentAvailable.Status = operatorapi.ConditionTrue
+		deploymentAvailable = deploymentAvailable.
+			WithStatus(operatorapi.ConditionTrue)
 	} else {
-		deploymentAvailable.Status = operatorapi.ConditionFalse
-		deploymentAvailable.Reason = "Deploying"
-		deploymentAvailable.Message = "Waiting for a Deployment pod to start"
+		deploymentAvailable = deploymentAvailable.
+			WithStatus(operatorapi.ConditionFalse).
+			WithReason("Deploying").
+			WithMessage("Waiting for a Deployment pod to start")
 	}
 
 	// Not progressing: all replicas are at the latest version && Deployment generation matches
-	deploymentProgressing := operatorapi.OperatorCondition{
-		Type: depOpts.ControllerName + operatorapi.OperatorStatusTypeProgressing,
-	}
+	deploymentProgressing := applyoperatorv1.OperatorCondition().
+		WithType(depOpts.ControllerName + operatorapi.OperatorStatusTypeProgressing)
+
 	if deployment.Status.ObservedGeneration != deployment.Generation {
-		deploymentProgressing.Status = operatorapi.ConditionTrue
-		deploymentProgressing.Reason = "NewGeneration"
 		msg := fmt.Sprintf("desired generation %d, current generation %d", deployment.Generation, deployment.Status.ObservedGeneration)
-		deploymentProgressing.Message = msg
+		deploymentProgressing = deploymentProgressing.
+			WithStatus(operatorapi.ConditionTrue).
+			WithReason("NewGeneration").
+			WithMessage(msg)
 	} else {
 		if deployment.Spec.Replicas != nil {
 			if deployment.Status.UpdatedReplicas == *deployment.Spec.Replicas {
-				deploymentProgressing.Status = operatorapi.ConditionFalse
+				deploymentProgressing = deploymentProgressing.WithStatus(operatorapi.ConditionFalse)
 				// All replicas were updated, set the version
 				depOpts.VersionGetter.SetVersion(depOpts.VersionName, depOpts.TargetVersion)
 			} else {
 				msg := fmt.Sprintf("%d out of %d pods running", deployment.Status.UpdatedReplicas, *deployment.Spec.Replicas)
-				deploymentProgressing.Status = operatorapi.ConditionTrue
-				deploymentProgressing.Reason = "Deploying"
-				deploymentProgressing.Message = msg
+				deploymentProgressing = deploymentProgressing.
+					WithStatus(operatorapi.ConditionTrue).
+					WithReason("Deploying").
+					WithMessage(msg)
 			}
 		}
 	}
-	updateGenerationFn := func(newStatus *operatorapi.OperatorStatus) error {
-		if deployment != nil {
-			resourcemerge.SetDeploymentGeneration(&newStatus.Generations, deployment)
-		}
-		return nil
-	}
 
-	if _, _, err := v1helpers.UpdateStatus(ctx, depOpts.OperatorClient,
-		v1helpers.UpdateConditionFn(deploymentAvailable),
-		v1helpers.UpdateConditionFn(deploymentProgressing),
-		updateGenerationFn,
-	); err != nil {
+	// Create a partial status with conditions and generations
+	status := applyoperatorv1.OperatorStatus().
+		WithConditions(deploymentAvailable, deploymentProgressing).
+		WithGenerations(&applyoperatorv1.GenerationStatusApplyConfiguration{
+			Group:          ptr.To("apps"),
+			Resource:       ptr.To("deployments"),
+			Namespace:      ptr.To(deployment.Namespace),
+			Name:           ptr.To(deployment.Name),
+			LastGeneration: ptr.To(deployment.Generation),
+		})
+	err = depOpts.OperatorClient.ApplyOperatorStatus(
+		ctx,
+		factory.ControllerFieldManager("CreateDeployment", "updateOperatorStatus"),
+		status,
+	)
+	if err != nil {
 		return nil, err
 	}
+
 	return deployment, nil
 }
 
