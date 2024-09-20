@@ -7,6 +7,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	operatorapi "github.com/openshift/api/operator/v1"
 	openshiftv1 "github.com/openshift/client-go/config/listers/config/v1"
+	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -74,81 +75,112 @@ func (c *Controller) sync(ctx context.Context, syncCtx factory.SyncContext) erro
 		return nil
 	}
 
-	availableCnd := operatorapi.OperatorCondition{
-		Type:   conditionsPrefix + operatorapi.OperatorStatusTypeAvailable,
-		Status: operatorapi.ConditionTrue,
-	}
-	progressingCnd := operatorapi.OperatorCondition{
-		Type:   conditionsPrefix + operatorapi.OperatorStatusTypeProgressing,
-		Status: operatorapi.ConditionFalse,
-	}
+	availableCnd := applyoperatorv1.OperatorCondition().
+		WithType(conditionsPrefix + operatorapi.OperatorStatusTypeAvailable).
+		WithStatus(operatorapi.ConditionTrue)
+
+	progressingCnd := applyoperatorv1.OperatorCondition().
+		WithType(conditionsPrefix + operatorapi.OperatorStatusTypeProgressing).
+		WithStatus(operatorapi.ConditionFalse)
 
 	syncErr := c.syncStorageClass(ctx)
 	if syncErr != nil {
 		if syncErr == unsupportedPlatformError {
 			// Set Disabled condition - there is nothing to do
-			disabledCnd := operatorapi.OperatorCondition{
-				Type:    conditionsPrefix + disabledConditionType,
-				Status:  operatorapi.ConditionTrue,
-				Reason:  "UnsupportedPlatform",
-				Message: syncErr.Error(),
-			}
+			disabledCnd := applyoperatorv1.OperatorCondition().
+				WithType(conditionsPrefix + disabledConditionType).
+				WithStatus(operatorapi.ConditionTrue).
+				WithReason("UnsupportedPlatform").
+				WithMessage(syncErr.Error())
 
-			upgradeableCnt := operatorapi.OperatorCondition{
-				Type:   conditionsPrefix + operatorapi.OperatorStatusTypeUpgradeable,
-				Status: operatorapi.ConditionTrue,
-			}
+			upgradeableCnd := applyoperatorv1.OperatorCondition().
+				WithType(conditionsPrefix + operatorapi.OperatorStatusTypeUpgradeable).
+				WithStatus(operatorapi.ConditionTrue)
 
 			// Set Available=true, Progressing=false, Upgradeable=true - everything is OK and
 			// there is nothing to do. ClusterOperatorStatusController needs
 			// at least one Available/Pogressing condition set to mark the
 			// overall ClusterOperator as Available + notPogressing.
-			availableCnd.Message = "No default StorageClass for this platform"
-			availableCnd.Status = operatorapi.ConditionTrue
+			availableCnd = availableCnd.
+				WithMessage("No default StorageClass for this platform").
+				WithStatus(operatorapi.ConditionTrue)
 
-			_, _, updateErr := v1helpers.UpdateStatus(ctx, c.operatorClient,
-				v1helpers.UpdateConditionFn(disabledCnd),
-				v1helpers.UpdateConditionFn(availableCnd),
-				v1helpers.UpdateConditionFn(progressingCnd),
-				v1helpers.UpdateConditionFn(upgradeableCnt),
+			// Create a partial status with conditions
+			status := applyoperatorv1.OperatorStatus().WithConditions(
+				disabledCnd,
+				availableCnd,
+				progressingCnd,
+				upgradeableCnd,
 			)
-			return updateErr
+			return c.operatorClient.ApplyOperatorStatus(
+				ctx,
+				factory.ControllerFieldManager("DefaultStorageClassController", "updateOperatorStatus"),
+				status,
+			)
 		} else if syncErr == supportedByCSIError {
 			// Set Available=true, Progressing=false - everything is OK
 			// for this operator, but there may be work remaining for the
 			// external CSI Drivers.
-			availableCnd.Message = "StorageClass provided by supplied CSI Driver instead of the cluster-storage-operator"
-			availableCnd.Status = operatorapi.ConditionTrue
+			availableCnd = availableCnd.
+				WithStatus(operatorapi.ConditionTrue).
+				WithMessage("StorageClass provided by supplied CSI Driver instead of the cluster-storage-operator")
 
-			_, _, updateErr := v1helpers.UpdateStatus(ctx, c.operatorClient,
-				v1helpers.UpdateConditionFn(availableCnd),
-				v1helpers.UpdateConditionFn(progressingCnd),
+			// Create a partial status with conditions
+			status := applyoperatorv1.OperatorStatus().WithConditions(
+				availableCnd,
+				progressingCnd,
 			)
-			return updateErr
+			return c.operatorClient.ApplyOperatorStatus(
+				ctx,
+				factory.ControllerFieldManager("DefaultStorageClassController", "updateOperatorStatus"),
+				status,
+			)
 		}
 
-		if v1helpers.IsOperatorConditionPresentAndEqual(opStatus.Conditions, availableCnd.Type, operatorapi.ConditionTrue) {
+		if v1helpers.IsOperatorConditionPresentAndEqual(opStatus.Conditions, *availableCnd.Type, operatorapi.ConditionTrue) {
 			// Don't flip Available=true -> false on a random API server hiccup, e.g. during cluster upgrade.
 			// The operator will get Degraded=true with inertia.
-			availableCnd.Status = operatorapi.ConditionTrue
+			availableCnd = availableCnd.WithStatus(operatorapi.ConditionTrue)
 		} else {
 			// Either add Available=false if it's missing or keep it false.
-			availableCnd.Status = operatorapi.ConditionFalse
+			availableCnd = availableCnd.WithStatus(operatorapi.ConditionFalse)
 		}
-		availableCnd.Reason = "SyncError"
-		availableCnd.Message = syncErr.Error()
+
+		availableCnd = availableCnd.
+			WithReason("SyncError").
+			WithMessage(syncErr.Error())
 		// Progressing=true
-		progressingCnd.Status = operatorapi.ConditionTrue
-		progressingCnd.Reason = "SyncError"
-		progressingCnd.Message = syncErr.Error()
+		progressingCnd = progressingCnd.
+			WithStatus(operatorapi.ConditionTrue).
+			WithReason("SyncError").
+			WithMessage(syncErr.Error())
 		// fall through with syncErr -> mark as Degraded with inertia
 	}
 
-	if _, _, updateErr := v1helpers.UpdateStatus(ctx, c.operatorClient,
-		v1helpers.UpdateConditionFn(availableCnd),
-		v1helpers.UpdateConditionFn(progressingCnd),
-		removeConditionFn(conditionsPrefix+disabledConditionType),
-	); updateErr != nil {
+	// Create a partial status with conditions
+	status := applyoperatorv1.OperatorStatus().WithConditions(
+		availableCnd,
+		progressingCnd,
+	)
+
+	// FIXME: originally this was the code:
+	//
+	// if _, _, updateErr := v1helpers.UpdateStatus(ctx, c.operatorClient,
+	//     v1helpers.UpdateConditionFn(availableCnd),
+	//     v1helpers.UpdateConditionFn(progressingCnd),
+	//     removeConditionFn(conditionsPrefix+disabledConditionType),
+	// );
+	//
+	// However, now we can't remove conditions, we simply don't set them.
+	// Is that enought?
+
+	updateErr := c.operatorClient.ApplyOperatorStatus(
+		ctx,
+		factory.ControllerFieldManager("DefaultStorageClassController", "updateOperatorStatus"),
+		status,
+	)
+
+	if updateErr != nil {
 		return errutil.NewAggregate([]error{syncErr, updateErr})
 	}
 
