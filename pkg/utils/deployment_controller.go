@@ -92,7 +92,7 @@ func CreateDeployment(ctx context.Context, depOpts DeploymentOptions) (*appsv1.D
 	return deployment, nil
 }
 
-// GetRequiredDeployment returns a deployment from given assset after replacing necessary strings and setting
+// GetRequiredDeployment returns a deployment from given asset after replacing necessary strings and setting
 // correct log level.
 func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpec, nodeSelector map[string]string, tolerations []corev1.Toleration, replacers ...*strings.Replacer) (*appsv1.Deployment, error) {
 	deploymentBytes, err := assets.ReadFile(deploymentAsset)

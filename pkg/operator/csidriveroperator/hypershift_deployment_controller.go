@@ -132,6 +132,22 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)
 	}
 
+	// The existence of the environment variable, AZURE_ADAPTER_INIT_IMAGE, means this is an ARO HCP deployment. We need
+	// to pass along additional environment variables for ARO HCP so the Microsoft sidecar containers are added to
+	// azure-disk-csi-controller and azure-file-csi-controller deployments.
+	if os.Getenv("AZURE_ADAPTER_INIT_IMAGE") != "" {
+		envVars := []corev1.EnvVar{
+			{Name: "AZURE_ADAPTER_INIT_IMAGE", Value: os.Getenv("AZURE_ADAPTER_INIT_IMAGE")},
+			{Name: "AZURE_ADAPTER_SERVER_IMAGE", Value: os.Getenv("AZURE_ADAPTER_SERVER_IMAGE")},
+			{Name: "ARO_HCP_DISK_MI_CLIENT_ID", Value: os.Getenv("ARO_HCP_DISK_MI_CLIENT_ID")},
+			{Name: "ARO_HCP_FILE_MI_CLIENT_ID", Value: os.Getenv("ARO_HCP_FILE_MI_CLIENT_ID")},
+			{Name: "CLIENT_ID_SECRET", Value: os.Getenv("CLIENT_ID_SECRET")},
+			{Name: "TENANT_ID", Value: os.Getenv("TENANT_ID")},
+		}
+
+		required.Spec.Template.Spec.Containers[0].Env = append(required.Spec.Template.Spec.Containers[0].Env, envVars...)
+	}
+
 	lastGeneration := resourcemerge.ExpectedDeploymentGeneration(requiredCopy, opStatus.Generations)
 	deployment, _, err := resourceapply.ApplyDeployment(ctx, c.mgmtClient.KubeClient.AppsV1(), c.eventRecorder, requiredCopy, lastGeneration)
 	if err != nil {
