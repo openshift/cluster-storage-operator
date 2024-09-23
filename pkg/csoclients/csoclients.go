@@ -251,6 +251,9 @@ func NewHypershiftGuestClients(
 		extractOperatorSpec,
 		extractOperatorStatus,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	dc, err := discovery.NewDiscoveryClientForConfig(kubeRestConfig)
 	if err != nil {
