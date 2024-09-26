@@ -222,6 +222,11 @@ func (c *CSIDriverOperatorCRController) syncConditions(ctx context.Context, cond
 				WithReason("WaitForOperator").
 				WithMessage(fmt.Sprintf("Waiting for %s operator to report status", c.name))
 		}
+	} else {
+		progressingCnd = progressingCnd.
+			WithReason(clusterCSIDriverProgressingCnd.Reason).
+			WithStatus(clusterCSIDriverProgressingCnd.Status).
+			WithMessage(clusterCSIDriverProgressingCnd.Message)
 	}
 
 	// Upgradeable condition
@@ -243,6 +248,12 @@ func (c *CSIDriverOperatorCRController) syncConditions(ctx context.Context, cond
 	clusterCSIDriverDegradedCnd := status.UnionCondition(operatorapi.OperatorStatusTypeDegraded, operatorapi.ConditionFalse, nil, conditions...)
 	if clusterCSIDriverDegradedCnd.Status == operatorapi.ConditionUnknown {
 		degradedCnd = degradedCnd.WithStatus(operatorapi.ConditionFalse)
+	} else {
+		degradedCnd = degradedCnd.
+			WithStatus(clusterCSIDriverDegradedCnd.Status).
+			WithReason(clusterCSIDriverDegradedCnd.Reason).
+			WithMessage(clusterCSIDriverDegradedCnd.Message)
+
 	}
 
 	// Create a partial status with conditions and newGeneration
