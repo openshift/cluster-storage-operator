@@ -33,7 +33,9 @@ import (
 
 type Clients struct {
 	// Client for CSO's CR
-	OperatorClient v1helpers.OperatorClientWithFinalizers
+	OperatorClient          v1helpers.OperatorClientWithFinalizers
+	OperatorClientInformers dynamicinformer.DynamicSharedInformerFactory
+
 	// Kubernetes API client
 	KubeClient kubernetes.Interface
 	// Kubernetes API informers, per namespace
@@ -131,7 +133,7 @@ func NewClients(controllerConfig *controllercmd.ControllerContext, resync time.D
 	}
 	c.MonitoringInformer = prominformer.NewSharedInformerFactory(c.MonitoringClient, resync)
 
-	c.OperatorClient, _, err = genericoperatorclient.NewClusterScopedOperatorClient(
+	c.OperatorClient, c.OperatorClientInformers, err = genericoperatorclient.NewClusterScopedOperatorClient(
 		controllerConfig.KubeConfig,
 		operatorv1.GroupVersion.WithResource("storages"),
 		operatorv1.GroupVersion.WithKind("Storage"),
@@ -241,7 +243,7 @@ func NewHypershiftGuestClients(
 	}
 	c.MonitoringInformer = prominformer.NewSharedInformerFactory(c.MonitoringClient, resync)
 
-	c.OperatorClient, _, err = genericoperatorclient.NewClusterScopedOperatorClient(
+	c.OperatorClient, c.OperatorClientInformers, err = genericoperatorclient.NewClusterScopedOperatorClient(
 		controllerConfig.KubeConfig,
 		operatorv1.GroupVersion.WithResource("storages"),
 		operatorv1.GroupVersion.WithKind("Storage"),
@@ -266,6 +268,7 @@ func StartInformers(clients *Clients, stopCh <-chan struct{}) {
 		Start(stopCh <-chan struct{})
 	}{
 		clients.KubeInformers,
+		clients.OperatorClientInformers,
 		clients.OperatorInformers,
 		clients.ConfigInformers,
 		clients.ExtensionInformer,
@@ -281,6 +284,7 @@ func StartGuestInformers(clients *Clients, stopCh <-chan struct{}) {
 		Start(stopCh <-chan struct{})
 	}{
 		clients.KubeInformers,
+		clients.OperatorClientInformers,
 		clients.OperatorInformers,
 		clients.ConfigInformers,
 		clients.ExtensionInformer,
@@ -296,6 +300,7 @@ func StartMgmtInformers(clients *Clients, stopCh <-chan struct{}) {
 		Start(stopCh <-chan struct{})
 	}{
 		clients.KubeInformers,
+		clients.OperatorClientInformers,
 		clients.ConfigInformers,
 		clients.DynamicInformer,
 	} {
