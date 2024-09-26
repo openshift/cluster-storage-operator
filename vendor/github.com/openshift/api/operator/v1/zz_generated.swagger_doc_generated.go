@@ -52,7 +52,10 @@ func (NodeStatus) SwaggerDoc() map[string]string {
 }
 
 var map_OperatorCondition = map[string]string{
-	"": "OperatorCondition is just the standard condition fields.",
+	"":                   "OperatorCondition is just the standard condition fields.",
+	"type":               "type of condition in CamelCase or in foo.example.com/CamelCase.",
+	"status":             "status of the condition, one of True, False, Unknown.",
+	"lastTransitionTime": "lastTransitionTime is the last time the condition transitioned from one status to another. This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.",
 }
 
 func (OperatorCondition) SwaggerDoc() map[string]string {
@@ -73,11 +76,12 @@ func (OperatorSpec) SwaggerDoc() map[string]string {
 }
 
 var map_OperatorStatus = map[string]string{
-	"observedGeneration": "observedGeneration is the last generation change you've dealt with",
-	"conditions":         "conditions is a list of conditions and their status",
-	"version":            "version is the level this availability applies to",
-	"readyReplicas":      "readyReplicas indicates how many replicas are ready and at the desired state",
-	"generations":        "generations are used to determine when an item needs to be reconciled or has changed in a way that needs a reaction.",
+	"observedGeneration":      "observedGeneration is the last generation change you've dealt with",
+	"conditions":              "conditions is a list of conditions and their status",
+	"version":                 "version is the level this availability applies to",
+	"readyReplicas":           "readyReplicas indicates how many replicas are ready and at the desired state",
+	"latestAvailableRevision": "latestAvailableRevision is the deploymentID of the most recent deployment",
+	"generations":             "generations are used to determine when an item needs to be reconciled or has changed in a way that needs a reaction.",
 }
 
 func (OperatorStatus) SwaggerDoc() map[string]string {
@@ -97,7 +101,6 @@ func (StaticPodOperatorSpec) SwaggerDoc() map[string]string {
 
 var map_StaticPodOperatorStatus = map[string]string{
 	"":                              "StaticPodOperatorStatus is status for controllers that manage static pods.  There are different needs because individual node status must be tracked.",
-	"latestAvailableRevision":       "latestAvailableRevision is the deploymentID of the most recent deployment",
 	"latestAvailableRevisionReason": "latestAvailableRevisionReason describe the detailed reason for the most recent deployment",
 	"nodeStatuses":                  "nodeStatuses track the deployment values and errors across individual nodes",
 }
@@ -1902,14 +1905,6 @@ var map_OpenShiftAPIServerList = map[string]string{
 
 func (OpenShiftAPIServerList) SwaggerDoc() map[string]string {
 	return map_OpenShiftAPIServerList
-}
-
-var map_OpenShiftAPIServerStatus = map[string]string{
-	"latestAvailableRevision": "latestAvailableRevision is the latest revision used as suffix of revisioned secrets like encryption-config. A new revision causes a new deployment of pods.",
-}
-
-func (OpenShiftAPIServerStatus) SwaggerDoc() map[string]string {
-	return map_OpenShiftAPIServerStatus
 }
 
 var map_OpenShiftControllerManager = map[string]string{
