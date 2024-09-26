@@ -13,6 +13,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	operatorapi "github.com/openshift/api/operator/v1"
 	openshiftv1 "github.com/openshift/client-go/config/listers/config/v1"
+	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
 	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
@@ -23,7 +24,6 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
 	"github.com/openshift/library-go/pkg/operator/status"
-	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -184,14 +184,15 @@ func (dsrc *driverStarterCommon) isOperatorInstalled(name string) (bool, error) 
 
 func (dsrc *driverStarterCommon) setUpgradeableTrue(ctx context.Context) error {
 	conditionPrefix := "StorageOperator"
-	upgradeableCnt := operatorapi.OperatorCondition{
-		Type:   conditionPrefix + operatorapi.OperatorStatusTypeUpgradeable,
-		Status: operatorapi.ConditionTrue,
-	}
-	_, _, err := v1helpers.UpdateStatus(ctx, dsrc.commonClients.OperatorClient,
-		v1helpers.UpdateConditionFn(upgradeableCnt),
+	status := applyoperatorv1.OperatorStatus().
+		WithConditions(applyoperatorv1.OperatorCondition().
+			WithType(conditionPrefix + operatorapi.OperatorStatusTypeUpgradeable).
+			WithStatus(operatorapi.ConditionTrue))
+	return dsrc.commonClients.OperatorClient.ApplyOperatorStatus(
+		ctx,
+		factory.ControllerFieldManager("DriverStarter", "updateOperatorStatus"),
+		status,
 	)
-	return err
 }
 
 func (dsrc *driverStarterCommon) sync(ctx context.Context, syncCtx factory.SyncContext) error {

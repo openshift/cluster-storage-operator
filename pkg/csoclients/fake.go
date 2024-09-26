@@ -1,6 +1,7 @@
 package csoclients
 
 import (
+	operatorv1 "github.com/openshift/api/operator/v1"
 	opv1 "github.com/openshift/api/operator/v1"
 	fakeconfig "github.com/openshift/client-go/config/clientset/versioned/fake"
 	cfginformers "github.com/openshift/client-go/config/informers/externalversions"
@@ -73,13 +74,16 @@ func NewFakeClients(initialObjects *FakeTestObjects) *Clients {
 	categoryExpander := restmapper.NewDiscoveryCategoryExpander(kubeClient.Discovery())
 	restMapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(kubeClient.Discovery()))
 
-	opClient := operatorclient.OperatorClient{
-		Client:    operatorClient,
-		Informers: operatorInformerFactory,
-	}
+	opClient := v1helpers.NewFakeOperatorClient(
+		&operatorv1.OperatorSpec{
+			ManagementState: operatorv1.Managed,
+		},
+		&operatorv1.OperatorStatus{},
+		nil,
+	)
 
 	return &Clients{
-		OperatorClient:     &opClient,
+		OperatorClient:     opClient,
 		KubeClient:         kubeClient,
 		KubeInformers:      kubeInformers,
 		ExtensionClientSet: apiExtClient,
