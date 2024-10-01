@@ -173,13 +173,6 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 		return nil
 	}
 
-	if !olmRemovalComplete(c.csiOperatorConfig, opStatus) {
-		// Wait for the OLM driver to be removed first.
-		// OLMOperatorRemovalController already reports its own progress, so
-		// users know what's going on.
-		return nil
-	}
-
 	replacers := []*strings.Replacer{sidecarReplacer}
 	// Replace images
 	if c.csiOperatorConfig.ImageReplacer != nil {

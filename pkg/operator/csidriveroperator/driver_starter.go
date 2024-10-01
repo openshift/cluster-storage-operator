@@ -294,11 +294,6 @@ func (s *standAloneDriverStarter) addExtraControllersToManager(manager manager.C
 		s.resyncInterval,
 	), 1)
 
-	olmRemovalCtrl := NewOLMOperatorRemovalController(cfg, s.commonClients, s.eventRecorder, s.resyncInterval)
-	if olmRemovalCtrl != nil {
-		manager = manager.WithController(olmRemovalCtrl, 1)
-	}
-
 	if cfg.ServiceMonitorAsset != "" {
 		manager = manager.WithController(staticresourcecontroller.NewStaticResourceController(
 			cfg.ConditionPrefix+"CSIDriverOperatorServiceMonitorController",
