@@ -5,7 +5,6 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/library-go/pkg/controller/factory"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
@@ -57,19 +56,6 @@ type CSIOperatorConfig struct {
 	AllowDisabled bool
 	// Extra controllers to start with the CSI driver operator
 	ExtraControllers []factory.Controller
-	// OLMOptions configuration of migration from OLM to CSO
-	OLMOptions *OLMOptions
 	// Run the CSI driver operator only when given FeatureGate is enabled
 	RequireFeatureGate configv1.FeatureGateName
-}
-
-// OLMOptions contains information that is necessary to remove old CSI driver
-// operator from OLM.
-type OLMOptions struct {
-	// Name of Deployment of OLM-managed operator. The namespace is autodetected from Subscription.
-	OLMOperatorDeploymentName string
-	// Name of package in OLM
-	OLMPackageName string
-	// Resource of the old operator CR
-	CRResource schema.GroupVersionResource
 }

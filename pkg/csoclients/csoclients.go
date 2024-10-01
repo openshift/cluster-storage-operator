@@ -55,7 +55,7 @@ type Clients struct {
 	// informer for prometheus-operator APIs
 	MonitoringInformer prominformer.SharedInformerFactory
 
-	// Dynamic client for OLM, old CSI operator APIs and HyperShift
+	// Dynamic client for old CSI operator APIs and HyperShift
 	DynamicClient   dynamic.Interface
 	DynamicInformer dynamicinformer.DynamicSharedInformerFactory
 
