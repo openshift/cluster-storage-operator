@@ -1,0 +1,9 @@
+resources:
+  - 01_namespace.yaml
+  - 02_sa.yaml
+  - 03_role.yaml
+  - 04_rolebinding.yaml
+  - 05_clusterrole.yaml
+  - 06_clusterrolebinding.yaml
+  - 07_deployment.yaml
+  - 08_cr.yaml
