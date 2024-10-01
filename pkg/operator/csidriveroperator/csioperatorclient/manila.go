@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resourcesynccontroller"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
 )
 
@@ -47,16 +46,6 @@ func GetManilaOperatorConfig(clients *csoclients.Clients, recorder events.Record
 			newCertificateSyncerOrDie(clients, recorder),
 		},
 		AllowDisabled: true,
-		OLMOptions: &OLMOptions{
-			OLMOperatorDeploymentName: "csi-driver-manila-operator",
-
-			OLMPackageName: "manila-csi-driver-operator",
-			CRResource: schema.GroupVersionResource{
-				Group:    "csi.openshift.io",
-				Version:  "v1alpha1",
-				Resource: "maniladrivers",
-			},
-		},
 	}
 }
 
