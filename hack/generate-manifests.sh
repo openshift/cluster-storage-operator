@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-drivers=( aws-ebs azure-disk azure-file openstack-cinder )
+drivers=( aws-ebs azure-disk azure-file openstack-cinder openstack-manila )
 
 for driver in "${drivers[@]}"; do
     # Ignore drivers that don't (yet) support HyperShift

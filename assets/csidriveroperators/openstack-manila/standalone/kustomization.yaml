@@ -1,0 +1,5 @@
+resources:
+  - ../base
+# As manila has assets in openshift-manila-csi-driver and openshift-cluster-csi-drivers namespaces,
+# let's not define a namespace here and use what is already specified in the base assets.
+patches: []

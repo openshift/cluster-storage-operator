@@ -40,15 +40,15 @@ func GetManilaOperatorConfig(isHypershift bool, clients *csoclients.Clients, rec
 
 	if !isHypershift {
 		csiDriverConfig.StaticAssets = []string{
-			"csidriveroperators/manila/01_namespace.yaml",
-			"csidriveroperators/manila/02_sa.yaml",
-			"csidriveroperators/manila/03_role.yaml",
-			"csidriveroperators/manila/04_rolebinding.yaml",
-			"csidriveroperators/manila/05_clusterrole.yaml",
-			"csidriveroperators/manila/06_clusterrolebinding.yaml",
+			"csidriveroperators/openstack-manila/standalone/generated/v1_namespace_openshift-cluster-csi-drivers.yaml",
+			"csidriveroperators/openstack-manila/standalone/generated/v1_serviceaccount_manila-csi-driver-operator.yaml",
+			"csidriveroperators/openstack-manila/standalone/generated/rbac.authorization.k8s.io_v1_role_manila-csi-driver-operator-role.yaml",
+			"csidriveroperators/openstack-manila/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_manila-csi-driver-operator-rolebinding.yaml",
+			"csidriveroperators/openstack-manila/standalone/generated/rbac.authorization.k8s.io_v1_clusterrole_manila-csi-driver-operator-clusterrole.yaml",
+			"csidriveroperators/openstack-manila/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_manila-csi-driver-operator-clusterrolebinding.yaml",
 		}
-		csiDriverConfig.CRAsset = "csidriveroperators/manila/08_cr.yaml"
-		csiDriverConfig.DeploymentAsset = "csidriveroperators/manila/07_deployment.yaml"
+		csiDriverConfig.CRAsset = "csidriveroperators/openstack-manila/standalone/generated/operator.openshift.io_v1_clustercsidriver_manila.csi.openstack.org.yaml"
+		csiDriverConfig.DeploymentAsset = "csidriveroperators/openstack-manila/standalone/generated/apps_v1_deployment_manila-csi-driver-operator.yaml"
 	} else {
 		panic("Hypershift unsupported")
 	}
