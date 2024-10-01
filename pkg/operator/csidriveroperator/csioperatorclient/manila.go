@@ -20,33 +20,40 @@ const (
 	envNFSDriverImage            = "MANILA_NFS_DRIVER_IMAGE"
 )
 
-func GetManilaOperatorConfig(clients *csoclients.Clients, recorder events.Recorder) CSIOperatorConfig {
+func GetManilaOperatorConfig(isHypershift bool, clients *csoclients.Clients, recorder events.Recorder) CSIOperatorConfig {
 	pairs := []string{
 		"${OPERATOR_IMAGE}", os.Getenv(envManilaDriverOperatorImage),
 		"${DRIVER_IMAGE}", os.Getenv(envManilaDriverImage),
 		"${NFS_DRIVER_IMAGE}", os.Getenv(envNFSDriverImage),
 	}
 
-	return CSIOperatorConfig{
+	csiDriverConfig := CSIOperatorConfig{
 		CSIDriverName:   "manila.csi.openstack.org",
 		ConditionPrefix: "Manila",
 		Platform:        v1.OpenStackPlatformType,
-		StaticAssets: []string{
-			"csidriveroperators/manila/01_namespace.yaml",
-			"csidriveroperators/manila/02_sa.yaml",
-			"csidriveroperators/manila/03_role.yaml",
-			"csidriveroperators/manila/04_rolebinding.yaml",
-			"csidriveroperators/manila/05_clusterrole.yaml",
-			"csidriveroperators/manila/06_clusterrolebinding.yaml",
-		},
-		CRAsset:         "csidriveroperators/manila/08_cr.yaml",
-		DeploymentAsset: "csidriveroperators/manila/07_deployment.yaml",
 		ImageReplacer:   strings.NewReplacer(pairs...),
 		ExtraControllers: []factory.Controller{
 			newCertificateSyncerOrDie(clients, recorder),
 		},
 		AllowDisabled: true,
 	}
+
+	if !isHypershift {
+		csiDriverConfig.StaticAssets = []string{
+			"csidriveroperators/manila/01_namespace.yaml",
+			"csidriveroperators/manila/02_sa.yaml",
+			"csidriveroperators/manila/03_role.yaml",
+			"csidriveroperators/manila/04_rolebinding.yaml",
+			"csidriveroperators/manila/05_clusterrole.yaml",
+			"csidriveroperators/manila/06_clusterrolebinding.yaml",
+		}
+		csiDriverConfig.CRAsset = "csidriveroperators/manila/08_cr.yaml"
+		csiDriverConfig.DeploymentAsset = "csidriveroperators/manila/07_deployment.yaml"
+	} else {
+		panic("Hypershift unsupported")
+	}
+
+	return csiDriverConfig
 }
 
 func newCertificateSyncerOrDie(clients *csoclients.Clients, recorder events.Recorder) factory.Controller {
