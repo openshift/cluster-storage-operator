@@ -7,7 +7,6 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
-	"github.com/openshift/api/sharedresource"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/configobservercontroller"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator"
@@ -99,8 +98,6 @@ func (csr *commonStarter) CreateCommonControllers() error {
 		{Resource: "namespaces", Name: csoclients.CSIOperatorNamespace},
 		{Group: operatorv1.GroupName, Resource: "storages", Name: operatorclient.GlobalConfigName},
 		{Group: rbacv1.GroupName, Resource: "clusterrolebindings", Name: "cluster-storage-operator-role"},
-		{Group: sharedresource.GroupName, Resource: "sharedconfigmaps"},
-		{Group: sharedresource.GroupName, Resource: "sharedsecrets"},
 	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
 		clusterOperatorName,
@@ -208,7 +205,6 @@ func (ssr *StandaloneStarter) populateConfigs(clients *csoclients.Clients) []csi
 		csioperatorclient.GetVMwareVSphereCSIOperatorConfig(),
 		csioperatorclient.GetAzureDiskCSIOperatorConfig(false),
 		csioperatorclient.GetAzureFileCSIOperatorConfig(false),
-		csioperatorclient.GetSharedResourceCSIOperatorConfig(false),
 		csioperatorclient.GetIBMVPCBlockCSIOperatorConfig(),
 		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(false),
 	}
@@ -301,7 +297,6 @@ func (hsr *HyperShiftStarter) populateConfigs(clients *csoclients.Clients) []csi
 	return []csioperatorclient.CSIOperatorConfig{
 		csioperatorclient.GetAWSEBSCSIOperatorConfig(true),
 		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(true),
-		csioperatorclient.GetSharedResourceCSIOperatorConfig(true),
 		csioperatorclient.GetAzureDiskCSIOperatorConfig(true),
 		csioperatorclient.GetAzureFileCSIOperatorConfig(true),
 	}
