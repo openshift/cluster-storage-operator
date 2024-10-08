@@ -28,6 +28,7 @@ const (
 	envToolsImage               = "TOOLS_IMAGE"
 
 	envLivenessProbeControlPlaneImage = "LIVENESS_PROBE_CONTROL_PLANE_IMAGE"
+	envKubeRBACProxyControlPlaneImage = "CONTROL_PLANE_KUBE_RBAC_PROXY_IMAGE"
 )
 
 var (
@@ -40,6 +41,7 @@ var (
 		"${LIVENESS_PROBE_IMAGE}", os.Getenv(envLivenessProbeImage),
 		"${LIVENESS_PROBE_CONTROL_PLANE_IMAGE}", os.Getenv(envLivenessProbeControlPlaneImage),
 		"${KUBE_RBAC_PROXY_IMAGE}", os.Getenv(envKubeRBACProxyImage),
+		"${KUBE_RBAC_PROXY_CONTROL_PLANE_IMAGE}", os.Getenv(envKubeRBACProxyControlPlaneImage),
 		"${TOOLS_IMAGE}", os.Getenv(envToolsImage),
 	)
 )
