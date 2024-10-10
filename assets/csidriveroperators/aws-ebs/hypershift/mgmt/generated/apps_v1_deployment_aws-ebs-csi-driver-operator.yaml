@@ -104,4 +104,4 @@ spec:
       volumes:
       - name: guest-kubeconfig
         secret:
-          secretName: service-network-admin-kubeconfig
+          secretName: aws-ebs-csi-driver-operator-kubeconfig
