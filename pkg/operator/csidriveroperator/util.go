@@ -28,7 +28,7 @@ const (
 	envToolsImage               = "TOOLS_IMAGE"
 
 	envLivenessProbeControlPlaneImage = "LIVENESS_PROBE_CONTROL_PLANE_IMAGE"
-	envKubeRBACProxyControlPlaneImage = "CONTROL_PLANE_KUBE_RBAC_PROXY_IMAGE"
+	envKubeRBACProxyControlPlaneImage = "KUBE_RBAC_PROXY_CONTROL_PLANE_IMAGE"
 )
 
 var (
