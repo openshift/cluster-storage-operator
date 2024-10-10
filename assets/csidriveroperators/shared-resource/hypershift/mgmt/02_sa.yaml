@@ -3,3 +3,5 @@ kind: ServiceAccount
 metadata:
   name: shared-resource-csi-driver-operator
   namespace: ${CONTROLPLANE_NAMESPACE}
+imagePullSecrets:
+  - name: pull-secret
