@@ -51,6 +51,8 @@ spec:
             value: ${DRIVER_CONTROL_PLANE_IMAGE}
           - name: LIVENESS_PROBE_CONTROL_PLANE_IMAGE
             value: ${LIVENESS_PROBE_CONTROL_PLANE_IMAGE}
+          - name: KUBE_RBAC_PROXY_CONTROL_PLANE_IMAGE
+            value: ${KUBE_RBAC_PROXY_CONTROL_PLANE_IMAGE}
         volumeMounts:
           - mountPath: /etc/guest-kubeconfig
             name: guest-kubeconfig
