@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// CommonPrometheusFieldsApplyConfiguration represents an declarative configuration of the CommonPrometheusFields type for use
+// CommonPrometheusFieldsApplyConfiguration represents a declarative configuration of the CommonPrometheusFields type for use
 // with apply.
 type CommonPrometheusFieldsApplyConfiguration struct {
 	PodMetadata                          *EmbeddedObjectMetadataApplyConfiguration               `json:"podMetadata,omitempty"`
@@ -69,6 +69,7 @@ type CommonPrometheusFieldsApplyConfiguration struct {
 	Tolerations                          []corev1.Toleration                                     `json:"tolerations,omitempty"`
 	TopologySpreadConstraints            []TopologySpreadConstraintApplyConfiguration            `json:"topologySpreadConstraints,omitempty"`
 	RemoteWrite                          []RemoteWriteSpecApplyConfiguration                     `json:"remoteWrite,omitempty"`
+	OTLP                                 *OTLPConfigApplyConfiguration                           `json:"otlp,omitempty"`
 	SecurityContext                      *corev1.PodSecurityContext                              `json:"securityContext,omitempty"`
 	ListenLocal                          *bool                                                   `json:"listenLocal,omitempty"`
 	Containers                           []corev1.Container                                      `json:"containers,omitempty"`
@@ -107,9 +108,11 @@ type CommonPrometheusFieldsApplyConfiguration struct {
 	ReloadStrategy                       *monitoringv1.ReloadStrategyType                        `json:"reloadStrategy,omitempty"`
 	MaximumStartupDurationSeconds        *int32                                                  `json:"maximumStartupDurationSeconds,omitempty"`
 	ScrapeClasses                        []ScrapeClassApplyConfiguration                         `json:"scrapeClasses,omitempty"`
+	ServiceDiscoveryRole                 *monitoringv1.ServiceDiscoveryRole                      `json:"serviceDiscoveryRole,omitempty"`
+	TSDB                                 *TSDBSpecApplyConfiguration                             `json:"tsdb,omitempty"`
 }
 
-// CommonPrometheusFieldsApplyConfiguration constructs an declarative configuration of the CommonPrometheusFields type for use with
+// CommonPrometheusFieldsApplyConfiguration constructs a declarative configuration of the CommonPrometheusFields type for use with
 // apply.
 func CommonPrometheusFields() *CommonPrometheusFieldsApplyConfiguration {
 	return &CommonPrometheusFieldsApplyConfiguration{}
@@ -497,6 +500,14 @@ func (b *CommonPrometheusFieldsApplyConfiguration) WithRemoteWrite(values ...*Re
 	return b
 }
 
+// WithOTLP sets the OTLP field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the OTLP field is set to the value of the last call.
+func (b *CommonPrometheusFieldsApplyConfiguration) WithOTLP(value *OTLPConfigApplyConfiguration) *CommonPrometheusFieldsApplyConfiguration {
+	b.OTLP = value
+	return b
+}
+
 // WithSecurityContext sets the SecurityContext field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the SecurityContext field is set to the value of the last call.
@@ -824,5 +835,21 @@ func (b *CommonPrometheusFieldsApplyConfiguration) WithScrapeClasses(values ...*
 		}
 		b.ScrapeClasses = append(b.ScrapeClasses, *values[i])
 	}
+	return b
+}
+
+// WithServiceDiscoveryRole sets the ServiceDiscoveryRole field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ServiceDiscoveryRole field is set to the value of the last call.
+func (b *CommonPrometheusFieldsApplyConfiguration) WithServiceDiscoveryRole(value monitoringv1.ServiceDiscoveryRole) *CommonPrometheusFieldsApplyConfiguration {
+	b.ServiceDiscoveryRole = &value
+	return b
+}
+
+// WithTSDB sets the TSDB field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the TSDB field is set to the value of the last call.
+func (b *CommonPrometheusFieldsApplyConfiguration) WithTSDB(value *TSDBSpecApplyConfiguration) *CommonPrometheusFieldsApplyConfiguration {
+	b.TSDB = value
 	return b
 }
