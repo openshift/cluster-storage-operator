@@ -31,6 +31,7 @@ func NewConfigObserverController(
 
 	c := &ConfigObserverController{
 		Controller: configobserver.NewConfigObserver(
+			string("Config Observer Controller"), //TODO fix this
 			clients.OperatorClient,
 			eventRecorder.WithComponentSuffix("config-observer-controller-"),
 			configobservation.Listers{

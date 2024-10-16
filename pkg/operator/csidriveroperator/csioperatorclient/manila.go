@@ -61,6 +61,7 @@ func newCertificateSyncerOrDie(clients *csoclients.Clients, recorder events.Reco
 		Name:      CloudConfigName,
 	}
 	certController := resourcesynccontroller.NewResourceSyncController(
+		string("certController"), //TODO fix this
 		clients.OperatorClient,
 		clients.KubeInformers,
 		clients.KubeClient.CoreV1(),
