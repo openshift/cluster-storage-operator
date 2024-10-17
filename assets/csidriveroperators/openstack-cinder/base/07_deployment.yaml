@@ -60,14 +60,6 @@ spec:
         terminationMessagePolicy: FallbackToLogsOnError
       priorityClassName: system-cluster-critical
       serviceAccountName: openstack-cinder-csi-driver-operator
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: "NoSchedule"
       volumes:
       - name: secret-cinderplugin
         secret:
