@@ -2,6 +2,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: openstack-cinder-csi-driver-operator-clusterrole
+  annotations:
+    storage.openshift.io/remove-from: mgmt
 rules:
 - apiGroups:
   - security.openshift.io
@@ -11,7 +13,6 @@ rules:
   - securitycontextconstraints
   verbs:
   - use
-
 # The operator needs these config maps:
 # - read/write openshift-cluster-csi-drivers/cloud-provider-config
 # - read-only kube-system/extension-apiserver-authentication
