@@ -2,7 +2,7 @@ resources:
   - ../../base
 namespace: ${CONTROLPLANE_NAMESPACE}
 patches:
-  - path: 03sa.patch.yaml
+  - path: sa.patch.yaml
     target:
       kind: ServiceAccount
       version: v1
