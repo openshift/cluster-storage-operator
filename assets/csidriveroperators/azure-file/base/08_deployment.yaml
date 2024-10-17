@@ -4,6 +4,7 @@ metadata:
   name: azure-file-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
   annotations:
+    storage.openshift.io/remove-from: guest
     config.openshift.io/inject-proxy: azure-file-csi-driver-operator
 spec:
   replicas: 1

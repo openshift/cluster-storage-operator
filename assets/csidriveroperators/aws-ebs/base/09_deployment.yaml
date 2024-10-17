@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: aws-ebs-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
+  annotations:
+    storage.openshift.io/remove-from: guest
 spec:
   replicas: 1
   selector:
