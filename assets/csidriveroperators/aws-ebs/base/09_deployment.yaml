@@ -52,5 +52,4 @@ spec:
             memory: 50Mi
             cpu: 10m
         terminationMessagePolicy: FallbackToLogsOnError
-      priorityClassName: system-cluster-critical
       serviceAccountName: aws-ebs-csi-driver-operator
