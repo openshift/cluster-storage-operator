@@ -51,7 +51,7 @@ func GetOpenStackCinderCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/openstack-cinder/hypershift/mgmt/generated/v1_serviceaccount_openstack-cinder-csi-driver-operator.yaml",
 		}
 		csiDriverConfig.DeploymentAsset = "csidriveroperators/openstack-cinder/hypershift/mgmt/generated/apps_v1_deployment_openstack-cinder-csi-driver-operator.yaml"
-		csiDriverConfig.CRAsset = "csidriveroperators/openstack-cinder/hypershift/guest/generated/operator.openshift.io_v1_clustercsidriver_disk.csi.azure.com.yaml"
+		csiDriverConfig.CRAsset = "csidriveroperators/openstack-cinder/hypershift/guest/generated/operator.openshift.io_v1_clustercsidriver_cinder.csi.openstack.org.yaml"
 	}
 
 	return csiDriverConfig
