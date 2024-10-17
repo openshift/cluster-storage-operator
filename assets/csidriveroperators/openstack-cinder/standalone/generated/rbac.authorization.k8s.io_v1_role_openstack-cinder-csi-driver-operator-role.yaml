@@ -5,7 +5,7 @@ metadata:
   namespace: openshift-cluster-csi-drivers
 rules:
 - apiGroups:
-  - ''
+  - ""
   resources:
   - pods
   - services
@@ -23,7 +23,7 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - ''
+  - ""
   resources:
   - namespaces
   verbs:

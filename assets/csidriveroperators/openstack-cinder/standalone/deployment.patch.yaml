@@ -1,11 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: azure-disk-csi-driver-operator
+  name: openstack-cinder-csi-driver-operator
 spec:
   template:
     spec:
-      priorityClassName: system-cluster-critical
       nodeSelector:
         node-role.kubernetes.io/master: ""
       tolerations:
