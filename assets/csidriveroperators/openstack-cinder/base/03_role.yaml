@@ -10,6 +10,8 @@ rules:
   - pods
   - services
   - endpoints
+  # TODO(stephenfin): Other operators (e.g. azure-disk) only grant this
+  # access to this resource on the guest cluster. Why?
   - persistentvolumeclaims
   - events
   - configmaps
