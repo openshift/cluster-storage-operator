@@ -1,0 +1,11 @@
+apiVersion: operator.openshift.io/v1
+kind: ClusterCSIDriver
+metadata:
+  name: cinder.csi.openstack.org
+  namespace: openshift-cluster-csi-drivers
+spec:
+  driverConfig:
+    driverName: cinder.csi.openstack.org
+  logLevel: Trace
+  managementState: Managed
+  operatorLogLevel: Trace
