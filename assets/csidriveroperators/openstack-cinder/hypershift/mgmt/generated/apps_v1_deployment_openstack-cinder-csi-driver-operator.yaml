@@ -5,7 +5,7 @@ metadata:
     config.openshift.io/inject-proxy: openstack-cinder-csi-driver-operator
     storage.openshift.io/remove-from: guest
   name: openstack-cinder-csi-driver-operator
-  namespace: openshift-cluster-csi-drivers
+  namespace: ${CONTROLPLANE_NAMESPACE}
 spec:
   replicas: 1
   selector:
@@ -18,13 +18,44 @@ spec:
         openshift.io/required-scc: restricted-v2
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
+        hypershift.openshift.io/need-management-kas-access: "true"
         name: openstack-cinder-csi-driver-operator
     spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - preference:
+              matchExpressions:
+              - key: hypershift.openshift.io/control-plane
+                operator: In
+                values:
+                - "true"
+            weight: 50
+          - preference:
+              matchExpressions:
+              - key: hypershift.openshift.io/cluster
+                operator: In
+                values:
+                - ${CONTROLPLANE_NAMESPACE}
+            weight: 100
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  hypershift.openshift.io/hosted-control-plane: ${CONTROLPLANE_NAMESPACE}
+              topologyKey: kubernetes.io/hostname
+            weight: 100
       containers:
       - args:
         - start
         - -v=${LOG_LEVEL}
+        - --guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig
         env:
+        - name: DRIVER_CONTROL_PLANE_IMAGE
+          value: ${DRIVER_CONTROL_PLANE_IMAGE}
+        - name: LIVENESS_PROBE_CONTROL_PLANE_IMAGE
+          value: ${LIVENESS_PROBE_CONTROL_PLANE_IMAGE}
         - name: DRIVER_IMAGE
           value: ${DRIVER_IMAGE}
         - name: PROVISIONER_IMAGE
@@ -54,14 +85,14 @@ spec:
             memory: 50Mi
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
+        - mountPath: /etc/guest-kubeconfig
+          name: guest-kubeconfig
         - mountPath: /etc/openstack
           name: secret-cinderplugin
           readOnly: true
         - mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
           name: cacert
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
-      priorityClassName: system-cluster-critical
+      priorityClassName: hypershift-control-plane
       serviceAccountName: openstack-cinder-csi-driver-operator
       tolerations:
       - key: CriticalAddonsOnly
@@ -69,7 +100,15 @@ spec:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master
         operator: Exists
+      - key: hypershift.openshift.io/control-plane
+        operator: Exists
+      - key: hypershift.openshift.io/cluster
+        operator: Equal
+        value: ${CONTROLPLANE_NAMESPACE}
       volumes:
+      - name: guest-kubeconfig
+        secret:
+          secretName: service-network-admin-kubeconfig
       - name: secret-cinderplugin
         secret:
           items:
