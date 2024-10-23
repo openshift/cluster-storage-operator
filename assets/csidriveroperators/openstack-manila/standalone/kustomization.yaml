@@ -2,4 +2,12 @@ resources:
   - ../base
 # As manila has assets in openshift-manila-csi-driver and openshift-cluster-csi-drivers namespaces,
 # let's not define a namespace here and use what is already specified in the base assets.
-patches: []
+patches:
+  - path: monitoring_role.patch.yaml
+    target:
+      kind: Role
+      version: v1
+  - path: deployment.patch.yaml
+    target:
+      kind: Deployment
+      version: v1
