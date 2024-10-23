@@ -197,16 +197,16 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 
 func (ssr *StandaloneStarter) populateConfigs(clients *csoclients.Clients) []csioperatorclient.CSIOperatorConfig {
 	return []csioperatorclient.CSIOperatorConfig{
-		csioperatorclient.GetAWSEBSCSIOperatorConfig(false),
-		csioperatorclient.GetGCPPDCSIOperatorConfig(),
-		csioperatorclient.GetOpenStackCinderCSIOperatorConfig(false),
-		csioperatorclient.GetOVirtCSIOperatorConfig(clients, ssr.eventRecorder),
-		csioperatorclient.GetManilaOperatorConfig(clients, ssr.eventRecorder),
-		csioperatorclient.GetVMwareVSphereCSIOperatorConfig(),
 		csioperatorclient.GetAzureDiskCSIOperatorConfig(false),
 		csioperatorclient.GetAzureFileCSIOperatorConfig(false),
+		csioperatorclient.GetAWSEBSCSIOperatorConfig(false),
+		csioperatorclient.GetGCPPDCSIOperatorConfig(),
 		csioperatorclient.GetIBMVPCBlockCSIOperatorConfig(),
+		csioperatorclient.GetManilaOperatorConfig(clients, ssr.eventRecorder),
+		csioperatorclient.GetOpenStackCinderCSIOperatorConfig(false),
+		csioperatorclient.GetOVirtCSIOperatorConfig(clients, ssr.eventRecorder),
 		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(false),
+		csioperatorclient.GetVMwareVSphereCSIOperatorConfig(),
 	}
 }
 
@@ -295,9 +295,9 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 
 func (hsr *HyperShiftStarter) populateConfigs(clients *csoclients.Clients) []csioperatorclient.CSIOperatorConfig {
 	return []csioperatorclient.CSIOperatorConfig{
-		csioperatorclient.GetAWSEBSCSIOperatorConfig(true),
-		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(true),
 		csioperatorclient.GetAzureDiskCSIOperatorConfig(true),
 		csioperatorclient.GetAzureFileCSIOperatorConfig(true),
+		csioperatorclient.GetAWSEBSCSIOperatorConfig(true),
+		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(true),
 	}
 }
