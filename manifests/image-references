@@ -114,18 +114,6 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-cluster-cloud-controller-manager-operator:latest
-  - name: csi-driver-shared-resource-operator
-    from:
-      kind: DockerImage
-      name: quay.io/openshift/origin-csi-driver-shared-resource-operator:latest
-  - name: csi-driver-shared-resource
-    from:
-      kind: DockerImage
-      name: quay.io/openshift/origin-csi-driver-shared-resource:latest
-  - name: csi-driver-shared-resource-webhook
-    from:
-      kind: DockerImage
-      name: quay.io/openshift/origin-csi-driver-shared-resource-webhook:latest
   - name: ibm-vpc-block-csi-driver-operator
     from:
       kind: DockerImage

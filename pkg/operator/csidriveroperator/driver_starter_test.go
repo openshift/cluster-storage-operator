@@ -35,64 +35,64 @@ type RunControllerTest struct {
 }
 
 func TestShouldRunController(t *testing.T) {
-	testingDefault := featuregates.NewFeatureGate(nil, []v1.FeatureGateName{features.FeatureGateCSIDriverSharedResource})
-	testingTechPreview := featuregates.NewFeatureGate([]v1.FeatureGateName{features.FeatureGateCSIDriverSharedResource}, nil)
-	customFeatureGate := featuregates.NewFeatureGate([]v1.FeatureGateName{"SomeOtherFeatureGate", features.FeatureGateCSIDriverSharedResource, "YetAnotherGate"}, nil)
+	testingDefault := featuregates.NewFeatureGate(nil, []v1.FeatureGateName{features.FeatureGateExample})
+	testingTechPreview := featuregates.NewFeatureGate([]v1.FeatureGateName{features.FeatureGateExample}, nil)
+	customFeatureGate := featuregates.NewFeatureGate([]v1.FeatureGateName{"SomeOtherFeatureGate", features.FeatureGateExample, "YetAnotherGate"}, nil)
 	customWithJustOther := featuregates.NewFeatureGate([]v1.FeatureGateName{"SomeOtherFeatureGate"}, nil)
 	customWithNothing := featuregates.NewFeatureGate([]v1.FeatureGateName{}, nil)
 
 	tests := []RunControllerTest{
 		{
-			name:           "tech preview Shared Resource driver on AllPlatforms type",
+			name:           "tech preview example driver on AllPlatforms type",
 			platformStatus: &v1.PlatformStatus{Type: v1.AWSPlatformType},
 			featureGate:    testingTechPreview,
 			csiDriver:      nil,
 			config: csioperatorclient.CSIOperatorConfig{
-				CSIDriverName:      "csi.sharedresource.openshift.io",
+				CSIDriverName:      "csi.test.openshift.io",
 				Platform:           csioperatorclient.AllPlatforms,
-				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateExample,
 			},
 			isInstalled: false,
 			expectRun:   true,
 			expectError: false,
 		},
 		{
-			"tech preview Shared Resource driver on AWSPlatformType",
+			"tech preview example driver on AWSPlatformType",
 			&v1.PlatformStatus{Type: v1.AWSPlatformType},
 			testingTechPreview,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
-				CSIDriverName:      "csi.sharedresource.openshift.io",
+				CSIDriverName:      "csi.test.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateExample,
 			},
 			false,
 			true,
 			false,
 		},
 		{
-			"tech preview Shared Resource driver on GCPPlatformType",
+			"tech preview example driver on GCPPlatformType",
 			&v1.PlatformStatus{Type: v1.GCPPlatformType},
 			testingTechPreview,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
-				CSIDriverName:      "csi.sharedresource.openshift.io",
+				CSIDriverName:      "csi.test.openshift.io",
 				Platform:           v1.GCPPlatformType,
-				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateExample,
 			},
 			false,
 			true,
 			false,
 		},
 		{
-			"tech preview Shared Resource driver on GCPPlatformType",
+			"tech preview example driver on GCPPlatformType",
 			&v1.PlatformStatus{Type: v1.VSpherePlatformType},
 			testingTechPreview,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
-				CSIDriverName:      "csi.sharedresource.openshift.io",
+				CSIDriverName:      "csi.test.openshift.io",
 				Platform:           v1.VSpherePlatformType,
-				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateExample,
 			},
 			false,
 			true,
@@ -161,56 +161,56 @@ func TestShouldRunController(t *testing.T) {
 			false,
 		},
 		{
-			"tech preview Shared Resource driver with positive custom featureGate",
+			"tech preview example driver with positive custom featureGate",
 			&v1.PlatformStatus{Type: v1.AWSPlatformType},
 			customFeatureGate,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
-				CSIDriverName:      "csi.sharedresource.openshift.io",
+				CSIDriverName:      "csi.test.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateExample,
 			},
 			false,
 			true,
 			false,
 		},
 		{
-			"tech preview Shared Resource driver with negative custom featureGate",
+			"tech preview example driver with negative custom featureGate",
 			&v1.PlatformStatus{Type: v1.AWSPlatformType},
 			customWithJustOther,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
-				CSIDriverName:      "csi.sharedresource.openshift.io",
+				CSIDriverName:      "csi.test.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateExample,
 			},
 			false,
 			false,
 			false,
 		},
 		{
-			"tech preview Shared Resource driver with empty custom featureGate",
+			"tech preview example driver with empty custom featureGate",
 			&v1.PlatformStatus{Type: v1.AWSPlatformType},
 			customWithNothing,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
-				CSIDriverName:      "csi.sharedresource.openshift.io",
+				CSIDriverName:      "csi.test.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateExample,
 			},
 			false,
 			false,
 			false,
 		},
 		{
-			"tech preview Shared Resource driver with nil custom featureGate",
+			"tech preview example driver with nil custom featureGate",
 			&v1.PlatformStatus{Type: v1.AWSPlatformType},
 			customWithNothing,
 			nil,
 			csioperatorclient.CSIOperatorConfig{
-				CSIDriverName:      "csi.sharedresource.openshift.io",
+				CSIDriverName:      "csi.test.openshift.io",
 				Platform:           v1.AWSPlatformType,
-				RequireFeatureGate: features.FeatureGateCSIDriverSharedResource,
+				RequireFeatureGate: features.FeatureGateExample,
 			},
 			false,
 			false,
@@ -406,7 +406,7 @@ func TestStandAloneStarter(t *testing.T) {
 
 	infrInformer := clients.ConfigInformers.Config().V1().Infrastructures().Informer()
 	infrInformer.GetStore().Add(getInfrastructure(v1.AWSPlatformType))
-	testingDefault := featuregates.NewFeatureGate(nil, []v1.FeatureGateName{features.FeatureGateCSIDriverSharedResource})
+	testingDefault := featuregates.NewFeatureGate(nil, []v1.FeatureGateName{features.FeatureGateExample})
 
 	csoclients.StartInformers(clients, finish.Done())
 	csoclients.WaitForSync(clients, finish.Done())

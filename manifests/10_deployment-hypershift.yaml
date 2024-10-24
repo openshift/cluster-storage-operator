@@ -85,12 +85,6 @@ spec:
           value: quay.io/openshift/origin-vsphere-csi-driver-syncer:latest
         - name: CLUSTER_CLOUD_CONTROLLER_MANAGER_OPERATOR_IMAGE
           value: quay.io/openshift/origin-cluster-cloud-controller-manager-operator:latest
-        - name: SHARED_RESOURCE_DRIVER_OPERATOR_IMAGE
-          value: quay.io/openshift/origin-csi-driver-shared-resource-operator:latest
-        - name: SHARED_RESOURCE_DRIVER_IMAGE
-          value: quay.io/openshift/origin-csi-driver-shared-resource:latest
-        - name: SHARED_RESOURCE_DRIVER_WEBHOOK_IMAGE
-          value: quay.io/openshift/origin-csi-driver-shared-resource-webhook:latest
         - name: IBM_VPC_BLOCK_DRIVER_OPERATOR_IMAGE
           value: quay.io/openshift/origin-ibm-vpc-block-csi-driver-operator:latest
         - name: IBM_VPC_BLOCK_DRIVER_IMAGE
