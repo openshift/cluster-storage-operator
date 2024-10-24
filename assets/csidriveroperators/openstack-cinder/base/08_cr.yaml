@@ -2,6 +2,8 @@ apiVersion: operator.openshift.io/v1
 kind: ClusterCSIDriver
 metadata:
   name: cinder.csi.openstack.org
+  annotations:
+    storage.openshift.io/remove-from: mgmt
 spec:
   managementState: Managed
   logLevel: Trace
