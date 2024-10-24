@@ -2,8 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: azure-disk-csi-driver-operator
-  annotations:
-    config.openshift.io/inject-proxy: azure-disk-csi-driver-operator
 spec:
   template:
     spec:

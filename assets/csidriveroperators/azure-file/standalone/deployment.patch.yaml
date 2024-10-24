@@ -2,14 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: azure-file-csi-driver-operator
-  annotations:
-    config.openshift.io/inject-proxy: azure-file-csi-driver-operator
 spec:
   template:
     spec:
-      priorityClassName: system-cluster-critical
       nodeSelector:
         node-role.kubernetes.io/master: ""
+      priorityClassName: system-cluster-critical
       tolerations:
         - key: CriticalAddonsOnly
           operator: Exists

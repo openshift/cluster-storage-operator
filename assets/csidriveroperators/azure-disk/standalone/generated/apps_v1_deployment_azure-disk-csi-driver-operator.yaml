@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   annotations:
     config.openshift.io/inject-proxy: azure-disk-csi-driver-operator
+    storage.openshift.io/remove-from: guest
   name: azure-disk-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
 spec:

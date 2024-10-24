@@ -2,7 +2,7 @@ resources:
   - ../../base
 namespace: ${CONTROLPLANE_NAMESPACE}
 patches:
-  - path: 02sa.patch.yaml
+  - path: sa.patch.yaml
     target:
       kind: ServiceAccount
       version: v1
@@ -27,4 +27,3 @@ patches:
       kind: Kustomization
       metadata:
         name: PLACEHOLDER
-        

@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   annotations:
     config.openshift.io/inject-proxy: azure-file-csi-driver-operator
+    storage.openshift.io/remove-from: guest
   name: azure-file-csi-driver-operator
   namespace: ${CONTROLPLANE_NAMESPACE}
 spec:
