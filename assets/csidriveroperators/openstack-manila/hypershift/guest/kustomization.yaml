@@ -1,0 +1,16 @@
+resources:
+  - ../../base
+patches:
+  - path: monitoring_role.patch.yaml
+    target:
+      kind: Role
+      version: v1
+  # The deployment runs in the management cluster, not here in the guest
+  # cluster. Remove it.
+  - patch: |-
+      $patch: delete
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: manila-csi-driver-operator
+        namespace: openshift-cluster-csi-drivers
