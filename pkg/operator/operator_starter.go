@@ -299,5 +299,6 @@ func (hsr *HyperShiftStarter) populateConfigs(clients *csoclients.Clients) []csi
 		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(true),
 		csioperatorclient.GetAzureDiskCSIOperatorConfig(true),
 		csioperatorclient.GetAzureFileCSIOperatorConfig(true),
+		csioperatorclient.GetOpenStackManilaOperatorConfig(true, clients, hsr.eventRecorder),
 	}
 }
