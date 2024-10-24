@@ -18,17 +18,18 @@ package v1alpha1
 
 import (
 	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	v1alpha1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/client/applyconfiguration/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
-// DockerSwarmSDConfigApplyConfiguration represents an declarative configuration of the DockerSwarmSDConfig type for use
+// DockerSwarmSDConfigApplyConfiguration represents a declarative configuration of the DockerSwarmSDConfig type for use
 // with apply.
 type DockerSwarmSDConfigApplyConfiguration struct {
 	Host                                       *string                                           `json:"host,omitempty"`
 	Role                                       *string                                           `json:"role,omitempty"`
 	Port                                       *int32                                            `json:"port,omitempty"`
-	Filters                                    []DockerSwarmFilterApplyConfiguration             `json:"filters,omitempty"`
+	Filters                                    *v1alpha1.Filters                                 `json:"filters,omitempty"`
 	RefreshInterval                            *v1.Duration                                      `json:"refreshInterval,omitempty"`
 	BasicAuth                                  *monitoringv1.BasicAuthApplyConfiguration         `json:"basicAuth,omitempty"`
 	Authorization                              *monitoringv1.SafeAuthorizationApplyConfiguration `json:"authorization,omitempty"`
@@ -39,7 +40,7 @@ type DockerSwarmSDConfigApplyConfiguration struct {
 	EnableHTTP2                                *bool                                         `json:"enableHTTP2,omitempty"`
 }
 
-// DockerSwarmSDConfigApplyConfiguration constructs an declarative configuration of the DockerSwarmSDConfig type for use with
+// DockerSwarmSDConfigApplyConfiguration constructs a declarative configuration of the DockerSwarmSDConfig type for use with
 // apply.
 func DockerSwarmSDConfig() *DockerSwarmSDConfigApplyConfiguration {
 	return &DockerSwarmSDConfigApplyConfiguration{}
@@ -69,16 +70,11 @@ func (b *DockerSwarmSDConfigApplyConfiguration) WithPort(value int32) *DockerSwa
 	return b
 }
 
-// WithFilters adds the given value to the Filters field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Filters field.
-func (b *DockerSwarmSDConfigApplyConfiguration) WithFilters(values ...*DockerSwarmFilterApplyConfiguration) *DockerSwarmSDConfigApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithFilters")
-		}
-		b.Filters = append(b.Filters, *values[i])
-	}
+// WithFilters sets the Filters field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Filters field is set to the value of the last call.
+func (b *DockerSwarmSDConfigApplyConfiguration) WithFilters(value v1alpha1.Filters) *DockerSwarmSDConfigApplyConfiguration {
+	b.Filters = &value
 	return b
 }
 

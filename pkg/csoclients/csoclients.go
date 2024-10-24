@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"time"
 
+	opv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/library-go/pkg/config/client"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/clock"
 
 	apiextclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
@@ -18,10 +22,11 @@ import (
 
 	cfgclientset "github.com/openshift/client-go/config/clientset/versioned"
 	cfginformers "github.com/openshift/client-go/config/informers/externalversions"
+	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
 	opclient "github.com/openshift/client-go/operator/clientset/versioned"
 	opinformers "github.com/openshift/client-go/operator/informers/externalversions"
-	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
+	"github.com/openshift/library-go/pkg/operator/genericoperatorclient"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	prominformer "github.com/prometheus-operator/prometheus-operator/pkg/client/informers/externalversions"
 	promclient "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned"
@@ -29,7 +34,9 @@ import (
 
 type Clients struct {
 	// Client for CSO's CR
-	OperatorClient *operatorclient.OperatorClient
+	OperatorClient         v1helpers.OperatorClientWithFinalizers
+	OperatorClientInformer dynamicinformer.DynamicSharedInformerFactory
+
 	// Kubernetes API client
 	KubeClient kubernetes.Interface
 	// Kubernetes API informers, per namespace
@@ -127,9 +134,42 @@ func NewClients(controllerConfig *controllercmd.ControllerContext, resync time.D
 	}
 	c.MonitoringInformer = prominformer.NewSharedInformerFactory(c.MonitoringClient, resync)
 
-	c.OperatorClient = &operatorclient.OperatorClient{
-		Informers: c.OperatorInformers,
-		Client:    c.OperatorClientSet,
+	extractApplySpec := func(obj *unstructured.Unstructured, fieldManager string) (*applyoperatorv1.OperatorSpecApplyConfiguration, error) {
+		castObj := &opv1.ClusterCSIDriver{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, castObj); err != nil {
+			return nil, fmt.Errorf("unable to convert to ClusterCSIDriver: %w", err)
+		}
+		ret, err := applyoperatorv1.ExtractClusterCSIDriver(castObj, fieldManager)
+		if err != nil {
+			return nil, fmt.Errorf("unable to extract fields for %q: %w", fieldManager, err)
+		}
+		if ret.Spec == nil {
+			return nil, nil
+		}
+		return &ret.Spec.OperatorSpecApplyConfiguration, nil
+	}
+	extractApplyStatus := func(obj *unstructured.Unstructured, fieldManager string) (*applyoperatorv1.OperatorStatusApplyConfiguration, error) {
+		castObj := &opv1.ClusterCSIDriver{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, castObj); err != nil {
+			return nil, fmt.Errorf("unable to convert to ClusterCSIDriver: %w", err)
+		}
+		ret, err := applyoperatorv1.ExtractClusterCSIDriverStatus(castObj, fieldManager)
+		if err != nil {
+			return nil, fmt.Errorf("unable to extract fields for %q: %w", fieldManager, err)
+		}
+
+		if ret.Status == nil {
+			return nil, nil
+		}
+		return &ret.Status.OperatorStatusApplyConfiguration, nil
+	}
+
+	gvr := opv1.SchemeGroupVersion.WithResource("storages")
+	gvk := opv1.SchemeGroupVersion.WithKind("Storages")
+	c.OperatorClient, c.OperatorClientInformer, err = genericoperatorclient.NewClusterScopedOperatorClient(
+		clock.RealClock{}, controllerConfig.ProtoKubeConfig, gvr, gvk, extractApplySpec, extractApplyStatus)
+	if err != nil {
+		return nil, err
 	}
 
 	dc, err := discovery.NewDiscoveryClientForConfig(controllerConfig.KubeConfig)
@@ -231,9 +271,41 @@ func NewHypershiftGuestClients(
 	}
 	c.MonitoringInformer = prominformer.NewSharedInformerFactory(c.MonitoringClient, resync)
 
-	c.OperatorClient = &operatorclient.OperatorClient{
-		Informers: c.OperatorInformers,
-		Client:    c.OperatorClientSet,
+	extractApplySpec := func(obj *unstructured.Unstructured, fieldManager string) (*applyoperatorv1.OperatorSpecApplyConfiguration, error) {
+		castObj := &opv1.ClusterCSIDriver{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, castObj); err != nil {
+			return nil, fmt.Errorf("unable to convert to ClusterCSIDriver: %w", err)
+		}
+		ret, err := applyoperatorv1.ExtractClusterCSIDriver(castObj, fieldManager)
+		if err != nil {
+			return nil, fmt.Errorf("unable to extract fields for %q: %w", fieldManager, err)
+		}
+		if ret.Spec == nil {
+			return nil, nil
+		}
+		return &ret.Spec.OperatorSpecApplyConfiguration, nil
+	}
+	extractApplyStatus := func(obj *unstructured.Unstructured, fieldManager string) (*applyoperatorv1.OperatorStatusApplyConfiguration, error) {
+		castObj := &opv1.ClusterCSIDriver{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, castObj); err != nil {
+			return nil, fmt.Errorf("unable to convert to ClusterCSIDriver: %w", err)
+		}
+		ret, err := applyoperatorv1.ExtractClusterCSIDriverStatus(castObj, fieldManager)
+		if err != nil {
+			return nil, fmt.Errorf("unable to extract fields for %q: %w", fieldManager, err)
+		}
+
+		if ret.Status == nil {
+			return nil, nil
+		}
+		return &ret.Status.OperatorStatusApplyConfiguration, nil
+	}
+
+	gvr := opv1.SchemeGroupVersion.WithResource("storages")
+	gvk := opv1.SchemeGroupVersion.WithKind("Storages")
+	c.OperatorClient, c.OperatorClientInformer, err = genericoperatorclient.NewClusterScopedOperatorClient(clock.RealClock{}, kubeRestConfig, gvr, gvk, extractApplySpec, extractApplyStatus)
+	if err != nil {
+		return nil, err
 	}
 
 	dc, err := discovery.NewDiscoveryClientForConfig(kubeRestConfig)
@@ -255,6 +327,7 @@ func StartInformers(clients *Clients, stopCh <-chan struct{}) {
 		clients.ExtensionInformer,
 		clients.MonitoringInformer,
 		clients.DynamicInformer,
+		clients.OperatorClientInformer,
 	} {
 		informer.Start(stopCh)
 	}
@@ -270,6 +343,7 @@ func StartGuestInformers(clients *Clients, stopCh <-chan struct{}) {
 		clients.ExtensionInformer,
 		clients.MonitoringInformer,
 		clients.DynamicInformer,
+		clients.OperatorClientInformer,
 	} {
 		informer.Start(stopCh)
 	}
