@@ -5,8 +5,16 @@ patches:
   - path: monitoring_role.patch.yaml
     target:
       kind: Role
-      version: v1    
+      version: v1
   - path: deployment.patch.yaml
     target:
       kind: Deployment
       version: v1
+  # remove these annotations as they're just noise post-kustomization
+  # note that '~1' is the escaped form of '/'
+  # https://datatracker.ietf.org/doc/html/rfc6901
+  - target:
+      annotationSelector: "storage.openshift.io/remove-from=mgmt"
+    patch: |
+      - op: "remove"
+        path: "/metadata/annotations/storage.openshift.io~1remove-from"
