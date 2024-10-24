@@ -56,6 +56,11 @@
   value:
     name: AZURE_FILE_DRIVER_CONTROL_PLANE_IMAGE
     value: quay.io/openshift/origin-azure-file-csi-driver-operator:latest
+- op: add
+  path: /spec/template/spec/containers/0/env/41
+  value:
+    name: KUBE_RBAC_PROXY_CONTROL_PLANE_IMAGE
+    value: quay.io/openshift/origin-kube-rbac-proxy:latest
 # Add cmdline args
 - op: add
   path: /spec/template/spec/containers/0/args/-
