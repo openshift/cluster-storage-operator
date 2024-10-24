@@ -44,6 +44,31 @@ spec:
               topologyKey: kubernetes.io/hostname
             weight: 100
       containers:
+      - args: null
+        name: csi-driver
+      - args:
+        - --service-account-namespace=openshift-cluster-csi-drivers
+        - --service-account-name=aws-ebs-csi-driver-controller-sa
+        - --token-audience=openshift
+        - --token-file=/var/run/secrets/openshift/serviceaccount/token
+        - --kubeconfig=/etc/hosted-kubernetes/kubeconfig
+        command:
+        - /usr/bin/control-plane-operator
+        - token-minter
+        image: ${HYPERSHIFT_IMAGE}
+        imagePullPolicy: IfNotPresent
+        name: token-minter
+        resources:
+          requests:
+            cpu: 10m
+            memory: 10Mi
+        terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/run/secrets/openshift/serviceaccount
+          name: bound-sa-token
+        - mountPath: /etc/hosted-kubernetes
+          name: hosted-kubeconfig
+          readOnly: true
       - args:
         - start
         - -v=${LOG_LEVEL}
@@ -102,6 +127,13 @@ spec:
         operator: Equal
         value: ${CONTROLPLANE_NAMESPACE}
       volumes:
+      - emptyDir:
+          medium: Memory
+        name: bound-sa-token
+      - name: hosted-kubeconfig
+        secret:
+          defaultMode: 420
+          secretName: service-network-admin-kubeconfig
       - name: guest-kubeconfig
         secret:
           secretName: service-network-admin-kubeconfig

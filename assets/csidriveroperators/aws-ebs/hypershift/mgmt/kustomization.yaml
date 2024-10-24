@@ -20,6 +20,15 @@ patches:
         value: --guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig
     target:
       kind: Deployment
+  - path: controller_add_hypershift_controller_minter.yaml
+    target:
+      kind: Deployment
+      version: v1
+  - patch: |-
+      - op: "add"
+        path: "/spec/template/spec/containers/0/args"
+    target:
+      kind: Deployment
   - target:
       annotationSelector: "storage.openshift.io/remove-from=mgmt"
     patch: |
