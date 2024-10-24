@@ -20,7 +20,7 @@ const (
 	envNFSDriverImage            = "MANILA_NFS_DRIVER_IMAGE"
 )
 
-func GetManilaOperatorConfig(isHypershift bool, clients *csoclients.Clients, recorder events.Recorder) CSIOperatorConfig {
+func GetOpenStackManilaOperatorConfig(isHypershift bool, clients *csoclients.Clients, recorder events.Recorder) CSIOperatorConfig {
 	pairs := []string{
 		"${OPERATOR_IMAGE}", os.Getenv(envManilaDriverOperatorImage),
 		"${DRIVER_IMAGE}", os.Getenv(envManilaDriverImage),
