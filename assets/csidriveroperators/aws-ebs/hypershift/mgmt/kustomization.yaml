@@ -27,6 +27,12 @@ patches:
   - patch: |-
       - op: "add"
         path: "/spec/template/spec/containers/0/args"
+        value:
+          - --service-account-namespace=openshift-cluster-csi-drivers
+          - --service-account-name=aws-ebs-csi-driver-controller-sa
+          - --token-audience=openshift
+          - --token-file=/var/run/secrets/openshift/serviceaccount/token
+          - --kubeconfig=/etc/hosted-kubernetes/kubeconfig
     target:
       kind: Deployment
   - target:

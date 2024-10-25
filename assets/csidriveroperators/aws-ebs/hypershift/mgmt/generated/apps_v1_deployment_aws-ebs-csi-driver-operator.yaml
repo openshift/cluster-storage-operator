@@ -44,8 +44,6 @@ spec:
               topologyKey: kubernetes.io/hostname
             weight: 100
       containers:
-      - args: null
-        name: csi-driver
       - args:
         - --service-account-namespace=openshift-cluster-csi-drivers
         - --service-account-name=aws-ebs-csi-driver-controller-sa

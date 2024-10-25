@@ -7,9 +7,6 @@ spec:
   template:
     spec:
       containers:
-        # Explicitly mention csi-driver container so the minter is appended after it
-        - name: csi-driver
-
         - name: token-minter
           args:
             - --service-account-namespace=openshift-cluster-csi-drivers
