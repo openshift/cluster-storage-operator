@@ -136,13 +136,21 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 	// deployment. We need to pass along additional environment variables for ARO HCP in order to mount the backing
 	// certificates, related to the client IDs, in a volume on the azure-disk-csi-controller and
 	// azure-file-csi-controller deployments.
-	if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE") != "" {
-		envVars := []corev1.EnvVar{
-			{Name: "ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE", Value: os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE")},
+	var envVars []corev1.EnvVar
+	if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK") != "" && requiredCopy.ObjectMeta.Name == "azure-disk-csi-driver-operator" {
+		envVars = []corev1.EnvVar{
 			{Name: "ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK", Value: os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK")},
 		}
+	}
 
-		required.Spec.Template.Spec.Containers[0].Env = append(required.Spec.Template.Spec.Containers[0].Env, envVars...)
+	if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE") != "" && requiredCopy.ObjectMeta.Name == "azure-file-csi-driver-operator" {
+		envVars = []corev1.EnvVar{
+			{Name: "ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE", Value: os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE")},
+		}
+	}
+
+	if len(envVars) > 0 {
+		requiredCopy.Spec.Template.Spec.Containers[0].Env = append(requiredCopy.Spec.Template.Spec.Containers[0].Env, envVars...)
 	}
 
 	lastGeneration := resourcemerge.ExpectedDeploymentGeneration(requiredCopy, opStatus.Generations)
