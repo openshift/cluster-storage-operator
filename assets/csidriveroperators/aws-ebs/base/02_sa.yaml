@@ -3,4 +3,3 @@ kind: ServiceAccount
 metadata:
   name: aws-ebs-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
-

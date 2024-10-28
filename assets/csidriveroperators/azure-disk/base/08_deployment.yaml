@@ -4,6 +4,7 @@ metadata:
   name: azure-disk-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
   annotations:
+    storage.openshift.io/remove-from: guest
     config.openshift.io/inject-proxy: azure-disk-csi-driver-operator
 spec:
   replicas: 1
@@ -55,11 +56,4 @@ spec:
             memory: 50Mi
             cpu: 10m
         terminationMessagePolicy: FallbackToLogsOnError
-      priorityClassName: system-cluster-critical
       serviceAccountName: azure-disk-csi-driver-operator
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: "NoSchedule"

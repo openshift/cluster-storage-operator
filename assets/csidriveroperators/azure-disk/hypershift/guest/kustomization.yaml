@@ -10,12 +10,10 @@ patches:
     target:
       kind: Role
       version: v1
-  - patch: |-
+  - patch: |
       $patch: delete
-      apiVersion: apps/v1
-      kind: Deployment
+      kind: Kustomization
       metadata:
-        name: azure-disk-csi-driver-operator
-        namespace: openshift-cluster-csi-drivers
-
-
+        name: PLACEHOLDER
+    target:
+      annotationSelector: "storage.openshift.io/remove-from=guest"

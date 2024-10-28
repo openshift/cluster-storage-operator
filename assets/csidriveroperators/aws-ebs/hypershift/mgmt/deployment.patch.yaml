@@ -35,17 +35,6 @@ spec:
                     hypershift.openshift.io/hosted-control-plane: ${CONTROLPLANE_NAMESPACE}
                 topologyKey: kubernetes.io/hostname
               weight: 100
-      tolerations:
-        - key: CriticalAddonsOnly
-          operator: Exists
-        - key: node-role.kubernetes.io/master
-          operator: Exists
-          effect: "NoSchedule"
-        - key: hypershift.openshift.io/control-plane
-          operator: Exists
-        - key: hypershift.openshift.io/cluster
-          operator: Equal
-          value: ${CONTROLPLANE_NAMESPACE}
       containers:
       - name: aws-ebs-csi-driver-operator
         env:
@@ -60,6 +49,17 @@ spec:
             name: guest-kubeconfig
         terminationMessagePolicy: FallbackToLogsOnError
       priorityClassName: hypershift-control-plane
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: "NoSchedule"
+        - key: hypershift.openshift.io/control-plane
+          operator: Exists
+        - key: hypershift.openshift.io/cluster
+          operator: Equal
+          value: ${CONTROLPLANE_NAMESPACE}
       volumes:
         - name: guest-kubeconfig
           secret:

@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   annotations:
     config.openshift.io/inject-proxy: aws-ebs-csi-driver-operator
+    storage.openshift.io/remove-from: guest
   name: aws-ebs-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
 spec:
