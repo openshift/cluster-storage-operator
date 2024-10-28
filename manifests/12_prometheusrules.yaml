@@ -40,8 +40,8 @@ spec:
         expr: |
           increase(storage_operation_duration_seconds_count{status != "success", operation_name =~"volume_attach|volume_mount"}[5m]) > 0
             and ignoring(status) (sum without(status)
-              (increase(storage_operation_duration_seconds_count{status = "success", operation_name =~"volume_attach|volume_mount"}[5m]))
-                or increase(storage_operation_duration_seconds_count{status != "success", operation_name =~"volume_attach|volume_mount"}[5m]) * 0
+              (increase(storage_operation_duration_seconds_count{status = "success", operation_name =~"volume_attach|volume_mount"}[5m])
+                or increase(storage_operation_duration_seconds_count{status != "success", operation_name =~"volume_attach|volume_mount"}[5m]) * 0)
               ) == 0
         for: 5m
         labels:
