@@ -280,21 +280,8 @@ rules:
   - watch
 # Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
 - apiGroups:
-  - "authentication.k8s.io"
+  - authentication.k8s.io
   resources:
-  - "tokenreviews"
+  - tokenreviews
   verbs:
-  - "create"
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - get
-  - list
-  - watch
   - create
-  - update
-  - patch
-  - delete
-  
