@@ -137,13 +137,13 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 	// certificates, related to the client IDs, in a volume on the azure-disk-csi-controller and
 	// azure-file-csi-controller deployments.
 	var envVars []corev1.EnvVar
-	if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK") != "" && requiredCopy.ObjectMeta.Name == "azure-disk-csi-driver-operator" {
+	if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK") != "" && requiredCopy.Name == "azure-disk-csi-driver-operator" {
 		envVars = []corev1.EnvVar{
 			{Name: "ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK", Value: os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK")},
 		}
 	}
 
-	if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE") != "" && requiredCopy.ObjectMeta.Name == "azure-file-csi-driver-operator" {
+	if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE") != "" && requiredCopy.Name == "azure-file-csi-driver-operator" {
 		envVars = []corev1.EnvVar{
 			{Name: "ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE", Value: os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE")},
 		}
