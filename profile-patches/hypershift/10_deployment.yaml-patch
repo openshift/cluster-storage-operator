@@ -61,6 +61,11 @@
   value:
     name: KUBE_RBAC_PROXY_CONTROL_PLANE_IMAGE
     value: quay.io/openshift/origin-kube-rbac-proxy:latest
+- op: add
+  path: /spec/template/spec/containers/0/env/40
+  value:
+    name: MANILA_DRIVER_CONTROL_PLANE_IMAGE
+    value: quay.io/openshift/origin-csi-driver-manila-operator:latest
 # Add cmdline args
 - op: add
   path: /spec/template/spec/containers/0/args/-

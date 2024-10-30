@@ -15,9 +15,10 @@ import (
 const (
 	CloudConfigName = "cloud-provider-config"
 
-	envManilaDriverOperatorImage = "MANILA_DRIVER_OPERATOR_IMAGE"
-	envManilaDriverImage         = "MANILA_DRIVER_IMAGE"
-	envNFSDriverImage            = "MANILA_NFS_DRIVER_IMAGE"
+	envManilaDriverOperatorImage      = "MANILA_DRIVER_OPERATOR_IMAGE"
+	envManilaDriverImage              = "MANILA_DRIVER_IMAGE"
+	envNFSDriverImage                 = "MANILA_NFS_DRIVER_IMAGE"
+	envManilaDriverControlPlangeImage = "MANILA_DRIVER_CONTROL_PLANE_IMAGE"
 )
 
 func GetOpenStackManilaOperatorConfig(isHypershift bool, clients *csoclients.Clients, recorder events.Recorder) CSIOperatorConfig {
@@ -25,6 +26,7 @@ func GetOpenStackManilaOperatorConfig(isHypershift bool, clients *csoclients.Cli
 		"${OPERATOR_IMAGE}", os.Getenv(envManilaDriverOperatorImage),
 		"${DRIVER_IMAGE}", os.Getenv(envManilaDriverImage),
 		"${NFS_DRIVER_IMAGE}", os.Getenv(envNFSDriverImage),
+		"${DRIVER_CONTROL_PLANE_IMAGE}", os.Getenv(envManilaDriverControlPlangeImage),
 	}
 
 	csiDriverConfig := CSIOperatorConfig{
