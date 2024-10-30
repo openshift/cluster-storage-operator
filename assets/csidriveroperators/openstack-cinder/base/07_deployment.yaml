@@ -5,6 +5,7 @@ metadata:
   namespace: openshift-cluster-csi-drivers
   annotations:
     config.openshift.io/inject-proxy: openstack-cinder-csi-driver-operator
+    storage.openshift.io/remove-from: guest
 spec:
   replicas: 1
   selector:
