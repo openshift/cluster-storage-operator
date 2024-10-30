@@ -24,3 +24,42 @@
       - update
       - patch
       - delete
+- op: "add"
+  path: "/rules/-"
+  value:
+    apiGroups:
+      - policy
+    resources:
+      - poddisruptionbudgets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+- op: "add"
+  path: "/rules/-"
+  value:
+    apiGroups:
+      - ''
+    resources:
+      - serviceaccounts
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+- op: "add"
+  path: "/rules/-"
+  value:
+    apiGroups:
+      - apps
+    resources:
+      - replicasets
+    verbs:
+      - get
