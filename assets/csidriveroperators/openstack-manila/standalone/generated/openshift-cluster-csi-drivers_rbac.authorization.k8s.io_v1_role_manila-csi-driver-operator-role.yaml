@@ -10,7 +10,6 @@ rules:
   - pods
   - services
   - endpoints
-  - persistentvolumeclaims
   - events
   - configmaps
   - secrets
@@ -23,18 +22,9 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - ""
-  resources:
-  - namespaces
-  verbs:
-  - get
-- apiGroups:
   - apps
   resources:
   - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
   verbs:
   - get
   - list
