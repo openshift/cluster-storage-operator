@@ -34,10 +34,12 @@ func GetOpenStackManilaOperatorConfig(isHypershift bool, clients *csoclients.Cli
 		ConditionPrefix: "Manila",
 		Platform:        v1.OpenStackPlatformType,
 		ImageReplacer:   strings.NewReplacer(pairs...),
-		ExtraControllers: []factory.Controller{
+		AllowDisabled:   true,
+	}
+	if !isHypershift {
+		csiDriverConfig.ExtraControllers = []factory.Controller{
 			newCertificateSyncerOrDie(clients, recorder),
-		},
-		AllowDisabled: true,
+		}
 	}
 
 	if !isHypershift {
