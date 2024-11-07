@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    config.openshift.io/inject-proxy: openstack-cinder-csi-driver-operator
+  name: openstack-cinder-csi-driver-operator
+  namespace: openshift-cluster-csi-drivers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: openstack-cinder-csi-driver-operator
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        openshift.io/required-scc: restricted-v2
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+      labels:
+        name: openstack-cinder-csi-driver-operator
+    spec:
+      containers:
+      - args:
+        - start
+        - -v=${LOG_LEVEL}
+        env:
+        - name: DRIVER_IMAGE
+          value: ${DRIVER_IMAGE}
+        - name: PROVISIONER_IMAGE
+          value: ${PROVISIONER_IMAGE}
+        - name: ATTACHER_IMAGE
+          value: ${ATTACHER_IMAGE}
+        - name: RESIZER_IMAGE
+          value: ${RESIZER_IMAGE}
+        - name: SNAPSHOTTER_IMAGE
+          value: ${SNAPSHOTTER_IMAGE}
+        - name: NODE_DRIVER_REGISTRAR_IMAGE
+          value: ${NODE_DRIVER_REGISTRAR_IMAGE}
+        - name: LIVENESS_PROBE_IMAGE
+          value: ${LIVENESS_PROBE_IMAGE}
+        - name: KUBE_RBAC_PROXY_IMAGE
+          value: ${KUBE_RBAC_PROXY_IMAGE}
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        image: ${OPERATOR_IMAGE}
+        imagePullPolicy: IfNotPresent
+        name: openstack-cinder-csi-driver-operator
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
+        terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /etc/openstack
+          name: secret-cinderplugin
+          readOnly: true
+        - mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
+          name: cacert
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      priorityClassName: system-cluster-critical
+      serviceAccountName: openstack-cinder-csi-driver-operator
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      volumes:
+      - name: secret-cinderplugin
+        secret:
+          items:
+          - key: clouds.yaml
+            path: clouds.yaml
+          secretName: openstack-cloud-credentials
+      - configMap:
+          items:
+          - key: ca-bundle.pem
+            path: ca-bundle.pem
+          name: cloud-provider-config
+          optional: true
+        name: cacert
