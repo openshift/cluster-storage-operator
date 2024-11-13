@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/clock"
 
 	apiextclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
@@ -132,6 +133,7 @@ func NewClients(controllerConfig *controllercmd.ControllerContext, resync time.D
 	c.MonitoringInformer = prominformer.NewSharedInformerFactory(c.MonitoringClient, resync)
 
 	c.OperatorClient, _, err = genericoperatorclient.NewClusterScopedOperatorClient(
+		clock.RealClock{},
 		controllerConfig.KubeConfig,
 		operatorv1.GroupVersion.WithResource("storages"),
 		operatorv1.GroupVersion.WithKind("Storage"),
@@ -242,6 +244,7 @@ func NewHypershiftGuestClients(
 	c.MonitoringInformer = prominformer.NewSharedInformerFactory(c.MonitoringClient, resync)
 
 	c.OperatorClient, _, err = genericoperatorclient.NewClusterScopedOperatorClient(
+		clock.RealClock{},
 		controllerConfig.KubeConfig,
 		operatorv1.GroupVersion.WithResource("storages"),
 		operatorv1.GroupVersion.WithKind("Storage"),

@@ -61,6 +61,7 @@ func newCertificateSyncerOrDie(clients *csoclients.Clients, recorder events.Reco
 		Name:      CloudConfigName,
 	}
 	certController := resourcesynccontroller.NewResourceSyncController(
+		"openshift-storage",
 		clients.OperatorClient,
 		clients.KubeInformers,
 		clients.KubeClient.CoreV1(),
