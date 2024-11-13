@@ -1,0 +1,14 @@
+resources:
+  - ../../base
+patches:
+  - path: monitoring_role.patch.yaml
+    target:
+      kind: Role
+      version: v1
+  - patch: |
+      $patch: delete
+      kind: Kustomization
+      metadata:
+        name: PLACEHOLDER
+    target:
+      annotationSelector: "storage.openshift.io/remove-from=guest"
