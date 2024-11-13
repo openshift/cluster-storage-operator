@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    config.openshift.io/inject-proxy: manila-csi-driver-operator
+    storage.openshift.io/remove-from: guest
+  name: manila-csi-driver-operator
+  namespace: ${CONTROLPLANE_NAMESPACE}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: manila-csi-driver-operator
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        openshift.io/required-scc: restricted-v2
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+      labels:
+        hypershift.openshift.io/need-management-kas-access: "true"
+        name: manila-csi-driver-operator
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - preference:
+              matchExpressions:
+              - key: hypershift.openshift.io/control-plane
+                operator: In
+                values:
+                - "true"
+            weight: 50
+          - preference:
+              matchExpressions:
+              - key: hypershift.openshift.io/cluster
+                operator: In
+                values:
+                - ${CONTROLPLANE_NAMESPACE}
+            weight: 100
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  hypershift.openshift.io/hosted-control-plane: ${CONTROLPLANE_NAMESPACE}
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      containers:
+      - args:
+        - start
+        - -v=${LOG_LEVEL}
+        - --guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig
+        env:
+        - name: DRIVER_CONTROL_PLANE_IMAGE
+          value: ${DRIVER_CONTROL_PLANE_IMAGE}
+        - name: LIVENESS_PROBE_CONTROL_PLANE_IMAGE
+          value: ${LIVENESS_PROBE_CONTROL_PLANE_IMAGE}
+        - name: DRIVER_IMAGE
+          value: ${DRIVER_IMAGE}
+        - name: NFS_DRIVER_IMAGE
+          value: ${NFS_DRIVER_IMAGE}
+        - name: PROVISIONER_IMAGE
+          value: ${PROVISIONER_IMAGE}
+        - name: ATTACHER_IMAGE
+          value: ${ATTACHER_IMAGE}
+        - name: RESIZER_IMAGE
+          value: ${RESIZER_IMAGE}
+        - name: SNAPSHOTTER_IMAGE
+          value: ${SNAPSHOTTER_IMAGE}
+        - name: NODE_DRIVER_REGISTRAR_IMAGE
+          value: ${NODE_DRIVER_REGISTRAR_IMAGE}
+        - name: LIVENESS_PROBE_IMAGE
+          value: ${LIVENESS_PROBE_IMAGE}
+        - name: KUBE_RBAC_PROXY_IMAGE
+          value: ${KUBE_RBAC_PROXY_IMAGE}
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        image: ${OPERATOR_IMAGE}
+        imagePullPolicy: IfNotPresent
+        name: manila-csi-driver-operator
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
+        terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /etc/guest-kubeconfig
+          name: guest-kubeconfig
+        - mountPath: /etc/openstack-ca/
+          name: cacert
+        - mountPath: /etc/openstack/
+          name: cloud-credentials
+      priorityClassName: hypershift-control-plane
+      serviceAccountName: manila-csi-driver-operator
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - key: hypershift.openshift.io/control-plane
+        operator: Exists
+      - key: hypershift.openshift.io/cluster
+        operator: Equal
+        value: ${CONTROLPLANE_NAMESPACE}
+      volumes:
+      - name: guest-kubeconfig
+        secret:
+          secretName: service-network-admin-kubeconfig
+      - configMap:
+          items:
+          - key: ca-bundle.pem
+            path: ca-bundle.pem
+          name: cloud-provider-config
+          optional: true
+        name: cacert
+      - name: cloud-credentials
+        secret:
+          optional: false
+          secretName: manila-cloud-credentials
