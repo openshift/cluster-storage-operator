@@ -1,6 +1,8 @@
 apiVersion: operator.openshift.io/v1
 kind: ClusterCSIDriver
 metadata:
+  annotations:
+    storage.openshift.io/remove-from: mgmt
   name: manila.csi.openstack.org
 spec:
   logLevel: Normal

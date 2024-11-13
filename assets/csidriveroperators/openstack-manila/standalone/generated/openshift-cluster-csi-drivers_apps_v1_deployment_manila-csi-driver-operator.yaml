@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   annotations:
     config.openshift.io/inject-proxy: manila-csi-driver-operator
+    storage.openshift.io/remove-from: guest
   name: manila-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
 spec:
