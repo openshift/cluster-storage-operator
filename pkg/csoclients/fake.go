@@ -8,7 +8,6 @@ import (
 	cfginformers "github.com/openshift/client-go/config/informers/externalversions"
 	fakeop "github.com/openshift/client-go/operator/clientset/versioned/fake"
 	opinformers "github.com/openshift/client-go/operator/informers/externalversions"
-	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	prominformer "github.com/prometheus-operator/prometheus-operator/pkg/client/informers/externalversions"
 	fakemonitoring "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned/fake"
@@ -38,7 +37,7 @@ type CrModifier func(cr *opv1.Storage) *opv1.Storage
 
 func GetCR(modifiers ...CrModifier) *opv1.Storage {
 	cr := &opv1.Storage{
-		ObjectMeta: metav1.ObjectMeta{Name: operatorclient.GlobalConfigName},
+		ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
 		Spec: opv1.StorageSpec{
 			OperatorSpec: opv1.OperatorSpec{
 				ManagementState: opv1.Managed,
