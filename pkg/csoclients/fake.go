@@ -1,7 +1,8 @@
 package csoclients
 
 import (
-	operatorv1 "github.com/openshift/api/operator/v1"
+	"time"
+
 	opv1 "github.com/openshift/api/operator/v1"
 	fakeconfig "github.com/openshift/client-go/config/clientset/versioned/fake"
 	cfginformers "github.com/openshift/client-go/config/informers/externalversions"
@@ -74,30 +75,44 @@ func NewFakeClients(initialObjects *FakeTestObjects) *Clients {
 	categoryExpander := restmapper.NewDiscoveryCategoryExpander(kubeClient.Discovery())
 	restMapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(kubeClient.Discovery()))
 
-	opClient := v1helpers.NewFakeOperatorClient(
-		&operatorv1.OperatorSpec{
-			ManagementState: operatorv1.Managed,
-		},
-		&operatorv1.OperatorStatus{},
-		nil,
-	)
+	opInstance := makeFakeOperatorInstance(initialObjects)
+	opClient := v1helpers.NewFakeOperatorClientWithObjectMeta(&opInstance.ObjectMeta, &opInstance.Spec.OperatorSpec, &opInstance.Status.OperatorStatus, nil /*triggerErr func*/)
 
 	return &Clients{
-		OperatorClient:     opClient,
-		KubeClient:         kubeClient,
-		KubeInformers:      kubeInformers,
-		ExtensionClientSet: apiExtClient,
-		ExtensionInformer:  apiExtInformerFactory,
-		OperatorClientSet:  operatorClient,
-		OperatorInformers:  operatorInformerFactory,
-		ConfigClientSet:    configClient,
-		ConfigInformers:    configInformerFactory,
-		MonitoringClient:   monitoringClient,
-		MonitoringInformer: monitoringInformer,
-		DynamicClient:      dynamicClient,
-		DynamicInformer:    dynamicInformer,
-		CategoryExpander:   categoryExpander,
-		RestMapper:         restMapper,
+		OperatorClient:          opClient,
+		OperatorClientInformers: dynamicinformer.NewDynamicSharedInformerFactory(dynamicClient, time.Minute),
+		KubeClient:              kubeClient,
+		KubeInformers:           kubeInformers,
+		ExtensionClientSet:      apiExtClient,
+		ExtensionInformer:       apiExtInformerFactory,
+		OperatorClientSet:       operatorClient,
+		OperatorInformers:       operatorInformerFactory,
+		ConfigClientSet:         configClient,
+		ConfigInformers:         configInformerFactory,
+		MonitoringClient:        monitoringClient,
+		MonitoringInformer:      monitoringInformer,
+		DynamicClient:           dynamicClient,
+		DynamicInformer:         dynamicInformer,
+		CategoryExpander:        categoryExpander,
+		RestMapper:              restMapper,
+	}
+}
+
+func makeFakeOperatorInstance(initialObjects *FakeTestObjects) *opv1.Storage {
+	if len(initialObjects.OperatorObjects) > 0 {
+		return initialObjects.OperatorObjects[0].(*opv1.Storage)
+	}
+	return &opv1.Storage{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "cluster",
+			Generation: 0,
+		},
+		Spec: opv1.StorageSpec{
+			OperatorSpec: opv1.OperatorSpec{
+				ManagementState: opv1.Managed,
+			},
+		},
+		Status: opv1.StorageStatus{},
 	}
 }
 
