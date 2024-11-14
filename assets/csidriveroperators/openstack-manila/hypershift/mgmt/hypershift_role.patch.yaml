@@ -9,3 +9,18 @@
       - watch
       - list
       - get
+- op: "add"
+  path: "/rules/-"
+  value:
+    apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
