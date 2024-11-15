@@ -31,6 +31,7 @@ func NewConfigObserverController(
 
 	c := &ConfigObserverController{
 		Controller: configobserver.NewConfigObserver(
+			"openshift-storage",
 			clients.OperatorClient,
 			eventRecorder.WithComponentSuffix("config-observer-controller-"),
 			configobservation.Listers{

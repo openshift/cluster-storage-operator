@@ -13,7 +13,6 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/vsphereproblemdetector"
-	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
@@ -96,7 +95,7 @@ func (csr *commonStarter) CreateCommonControllers() error {
 	relatedObjects := []configv1.ObjectReference{
 		{Resource: "namespaces", Name: operatorNamespace},
 		{Resource: "namespaces", Name: csoclients.CSIOperatorNamespace},
-		{Group: operatorv1.GroupName, Resource: "storages", Name: operatorclient.GlobalConfigName},
+		{Group: operatorv1.GroupName, Resource: "storages", Name: "cluster"},
 		{Group: rbacv1.GroupName, Resource: "clusterrolebindings", Name: "cluster-storage-operator-role"},
 	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
