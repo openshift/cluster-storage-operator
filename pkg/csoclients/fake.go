@@ -1,12 +1,13 @@
 package csoclients
 
 import (
+	"time"
+
 	opv1 "github.com/openshift/api/operator/v1"
 	fakeconfig "github.com/openshift/client-go/config/clientset/versioned/fake"
 	cfginformers "github.com/openshift/client-go/config/informers/externalversions"
 	fakeop "github.com/openshift/client-go/operator/clientset/versioned/fake"
 	opinformers "github.com/openshift/client-go/operator/informers/externalversions"
-	"github.com/openshift/cluster-storage-operator/pkg/operatorclient"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	prominformer "github.com/prometheus-operator/prometheus-operator/pkg/client/informers/externalversions"
 	fakemonitoring "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned/fake"
@@ -36,7 +37,7 @@ type CrModifier func(cr *opv1.Storage) *opv1.Storage
 
 func GetCR(modifiers ...CrModifier) *opv1.Storage {
 	cr := &opv1.Storage{
-		ObjectMeta: metav1.ObjectMeta{Name: operatorclient.GlobalConfigName},
+		ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
 		Spec: opv1.StorageSpec{
 			OperatorSpec: opv1.OperatorSpec{
 				ManagementState: opv1.Managed,
@@ -73,27 +74,26 @@ func NewFakeClients(initialObjects *FakeTestObjects) *Clients {
 	categoryExpander := restmapper.NewDiscoveryCategoryExpander(kubeClient.Discovery())
 	restMapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(kubeClient.Discovery()))
 
-	opClient := operatorclient.OperatorClient{
-		Client:    operatorClient,
-		Informers: operatorInformerFactory,
-	}
+	opInstance := makeFakeOperatorInstance(initialObjects)
+	opClient := v1helpers.NewFakeOperatorClientWithObjectMeta(&opInstance.ObjectMeta, &opInstance.Spec.OperatorSpec, &opInstance.Status.OperatorStatus, nil /*triggerErr func*/)
 
 	return &Clients{
-		OperatorClient:     &opClient,
-		KubeClient:         kubeClient,
-		KubeInformers:      kubeInformers,
-		ExtensionClientSet: apiExtClient,
-		ExtensionInformer:  apiExtInformerFactory,
-		OperatorClientSet:  operatorClient,
-		OperatorInformers:  operatorInformerFactory,
-		ConfigClientSet:    configClient,
-		ConfigInformers:    configInformerFactory,
-		MonitoringClient:   monitoringClient,
-		MonitoringInformer: monitoringInformer,
-		DynamicClient:      dynamicClient,
-		DynamicInformer:    dynamicInformer,
-		CategoryExpander:   categoryExpander,
-		RestMapper:         restMapper,
+		OperatorClient:         opClient,
+		OperatorClientInformer: dynamicinformer.NewDynamicSharedInformerFactory(dynamicClient, time.Minute),
+		KubeClient:             kubeClient,
+		KubeInformers:          kubeInformers,
+		ExtensionClientSet:     apiExtClient,
+		ExtensionInformer:      apiExtInformerFactory,
+		OperatorClientSet:      operatorClient,
+		OperatorInformers:      operatorInformerFactory,
+		ConfigClientSet:        configClient,
+		ConfigInformers:        configInformerFactory,
+		MonitoringClient:       monitoringClient,
+		MonitoringInformer:     monitoringInformer,
+		DynamicClient:          dynamicClient,
+		DynamicInformer:        dynamicInformer,
+		CategoryExpander:       categoryExpander,
+		RestMapper:             restMapper,
 	}
 }
 
@@ -115,5 +115,23 @@ func NewFakeMgmtClients(initialObjects *FakeTestObjects) *Clients {
 		ConfigInformers: configInformerFactory,
 		DynamicClient:   dynamicClient,
 		DynamicInformer: dynamicInformer,
+	}
+}
+
+func makeFakeOperatorInstance(initialObjects *FakeTestObjects) *opv1.Storage {
+	if len(initialObjects.OperatorObjects) > 0 {
+		return initialObjects.OperatorObjects[0].(*opv1.Storage)
+	}
+	return &opv1.Storage{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "cluster",
+			Generation: 0,
+		},
+		Spec: opv1.StorageSpec{
+			OperatorSpec: opv1.OperatorSpec{
+				ManagementState: opv1.Managed,
+			},
+		},
+		Status: opv1.StorageStatus{},
 	}
 }
