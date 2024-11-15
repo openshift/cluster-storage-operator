@@ -31,6 +31,7 @@
   value:
     - name: guest-kubeconfig
       mountPath: /etc/guest-kubeconfig
+
 - op: add
   path: /spec/template/spec/containers/0/env/33
   value:
@@ -59,13 +60,20 @@
 - op: add
   path: /spec/template/spec/containers/0/env/38
   value:
+    name: OPENSTACK_CINDER_DRIVER_CONTROL_PLANE_IMAGE
+    value: quay.io/openshift/origin-openstack-cinder-csi-driver-operator:latest
+- op: add
+  path: /spec/template/spec/containers/0/env/39
+  value:
     name: KUBE_RBAC_PROXY_CONTROL_PLANE_IMAGE
     value: quay.io/openshift/origin-kube-rbac-proxy:latest
+
 # Add cmdline args
 - op: add
   path: /spec/template/spec/containers/0/args/-
   value:
     "--guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig"
+
 # Remove runAsUser security context requirement in HyperShift as we use restricted-v2 scc
 - op: remove
   path: /spec/template/spec/securityContext/runAsUser

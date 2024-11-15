@@ -5,7 +5,7 @@ metadata:
   namespace: openshift-cluster-csi-drivers
 rules:
 - apiGroups:
-  - ''
+  - ""
   resources:
   - pods
   - services
@@ -14,6 +14,7 @@ rules:
   - events
   - configmaps
   - secrets
+  - persistentvolumeclaims
   verbs:
   - get
   - list
@@ -46,7 +47,6 @@ rules:
   - update
   - patch
   - delete
-# Allow pods to engage in leader election
 - apiGroups:
   - coordination.k8s.io
   resources:
@@ -55,6 +55,16 @@ rules:
   - get
   - list
   - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
   - create
   - update
   - patch

@@ -10,7 +10,7 @@ rules:
   - pods
   - services
   - endpoints
-  - persistentvolumeclaims
+  - serviceaccounts
   - events
   - configmaps
   - secrets
@@ -23,18 +23,9 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - ""
-  resources:
-  - namespaces
-  verbs:
-  - get
-- apiGroups:
   - apps
   resources:
   - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
   verbs:
   - get
   - list
@@ -47,6 +38,18 @@ rules:
   - policy
   resources:
   - poddisruptionbudgets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
   verbs:
   - get
   - list

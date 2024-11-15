@@ -1,0 +1,21 @@
+resources:
+  - ../../base
+namespace: openshift-cluster-csi-drivers
+patches:
+  - path: claim_role.patch.yaml
+    target:
+      kind: Role
+      version: v1
+  - path: monitoring_role.patch.yaml
+    target:
+      kind: Role
+      version: v1
+  # The deployment runs in the management cluster, not here in the guest
+  # cluster. Remove it.
+  - patch: |
+      $patch: delete
+      kind: Kustomization
+      metadata:
+        name: PLACEHOLDER
+    target:
+      annotationSelector: "storage.openshift.io/remove-from=guest"

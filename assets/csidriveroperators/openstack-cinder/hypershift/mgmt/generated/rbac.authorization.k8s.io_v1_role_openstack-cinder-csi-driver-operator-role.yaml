@@ -2,10 +2,10 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: openstack-cinder-csi-driver-operator-role
-  namespace: openshift-cluster-csi-drivers
+  namespace: ${CONTROLPLANE_NAMESPACE}
 rules:
 - apiGroups:
-  - ''
+  - ""
   resources:
   - pods
   - services
@@ -46,7 +46,6 @@ rules:
   - update
   - patch
   - delete
-# Allow pods to engage in leader election
 - apiGroups:
   - coordination.k8s.io
   resources:
@@ -59,3 +58,11 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - hypershift.openshift.io
+  resources:
+  - hostedcontrolplanes
+  verbs:
+  - watch
+  - list
+  - get

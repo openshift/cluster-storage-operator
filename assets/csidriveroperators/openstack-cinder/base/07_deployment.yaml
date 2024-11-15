@@ -5,6 +5,7 @@ metadata:
   namespace: openshift-cluster-csi-drivers
   annotations:
     config.openshift.io/inject-proxy: openstack-cinder-csi-driver-operator
+    storage.openshift.io/remove-from: guest
 spec:
   replicas: 1
   selector:
@@ -60,14 +61,6 @@ spec:
         terminationMessagePolicy: FallbackToLogsOnError
       priorityClassName: system-cluster-critical
       serviceAccountName: openstack-cinder-csi-driver-operator
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: "NoSchedule"
       volumes:
       - name: secret-cinderplugin
         secret:
