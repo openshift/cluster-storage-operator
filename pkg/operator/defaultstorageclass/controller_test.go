@@ -213,14 +213,14 @@ func TestSync(t *testing.T) {
 
 			// Check expectedObjects.storage
 			if test.expectedObjects.storage != nil {
-				actualStorage, err := ctx.clients.OperatorClientSet.OperatorV1().Storages().Get(context.TODO(), "cluster", metav1.GetOptions{})
+				_, status, _, err := ctx.clients.OperatorClient.GetOperatorState()
 				if err != nil {
 					t.Errorf("Failed to get Storage: %v", err)
 				}
-				sanitizeStorage(actualStorage)
-				sanitizeStorage(test.expectedObjects.storage)
-				if !equality.Semantic.DeepEqual(test.expectedObjects.storage, actualStorage) {
-					t.Errorf("Unexpected Storage content:\n%s", cmp.Diff(test.expectedObjects.storage, actualStorage))
+				sanitizeStatus(status)
+				sanitizeStatus(&test.expectedObjects.storage.Status.OperatorStatus)
+				if !equality.Semantic.DeepEqual(test.expectedObjects.storage.Status.OperatorStatus, *status) {
+					t.Errorf("Unexpected Storage content:\n%s", cmp.Diff(test.expectedObjects.storage.Status.OperatorStatus, *status))
 				}
 			}
 			// Check expectedObjects.storageClasses
@@ -255,15 +255,15 @@ func TestSync(t *testing.T) {
 	}
 }
 
-func sanitizeStorage(instance *opv1.Storage) {
+func sanitizeStatus(status *opv1.OperatorStatus) {
 	// Remove condition texts
-	for i := range instance.Status.Conditions {
-		instance.Status.Conditions[i].LastTransitionTime = metav1.Time{}
-		instance.Status.Conditions[i].Message = ""
-		instance.Status.Conditions[i].Reason = ""
+	for i := range status.Conditions {
+		status.Conditions[i].LastTransitionTime = metav1.Time{}
+		status.Conditions[i].Message = ""
+		status.Conditions[i].Reason = ""
 	}
 	// Sort the conditions by name to have consistent position in the array
-	sort.Slice(instance.Status.Conditions, func(i, j int) bool {
-		return instance.Status.Conditions[i].Type < instance.Status.Conditions[j].Type
+	sort.Slice(status.Conditions, func(i, j int) bool {
+		return status.Conditions[i].Type < status.Conditions[j].Type
 	})
 }
