@@ -70,12 +70,6 @@ spec:
         key: node-role.kubernetes.io/master
         operator: Exists
       volumes:
-      - name: secret-cinderplugin
-        secret:
-          items:
-          - key: clouds.yaml
-            path: clouds.yaml
-          secretName: openstack-cloud-credentials
       - configMap:
           items:
           - key: ca-bundle.pem
@@ -83,3 +77,9 @@ spec:
           name: cloud-provider-config
           optional: true
         name: cacert
+      - name: secret-cinderplugin
+        secret:
+          items:
+          - key: clouds.yaml
+            path: clouds.yaml
+          secretName: openstack-cloud-credentials
