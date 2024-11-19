@@ -106,6 +106,13 @@ spec:
         operator: Equal
         value: ${CONTROLPLANE_NAMESPACE}
       volumes:
+      - configMap:
+          items:
+          - key: ca-bundle.pem
+            path: ca-bundle.pem
+          name: openstack-cloud-config
+          optional: true
+        name: cacert
       - name: guest-kubeconfig
         secret:
           secretName: service-network-admin-kubeconfig
@@ -115,10 +122,3 @@ spec:
           - key: clouds.yaml
             path: clouds.yaml
           secretName: openstack-cloud-credentials
-      - configMap:
-          items:
-          - key: ca-bundle.pem
-            path: ca-bundle.pem
-          name: cloud-provider-config
-          optional: true
-        name: cacert

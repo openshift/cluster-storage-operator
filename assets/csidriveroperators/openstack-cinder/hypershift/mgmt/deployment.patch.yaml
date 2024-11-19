@@ -57,6 +57,13 @@ spec:
         terminationMessagePolicy: FallbackToLogsOnError
       priorityClassName: hypershift-control-plane
       volumes:
+        - configMap:
+            items:
+            - key: ca-bundle.pem
+              path: ca-bundle.pem
+            name: openstack-cloud-config
+            optional: true
+          name: cacert
         - name: guest-kubeconfig
           secret:
             secretName: service-network-admin-kubeconfig

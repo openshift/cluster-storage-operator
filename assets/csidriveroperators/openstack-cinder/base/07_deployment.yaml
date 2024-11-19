@@ -62,12 +62,6 @@ spec:
       priorityClassName: system-cluster-critical
       serviceAccountName: openstack-cinder-csi-driver-operator
       volumes:
-      - name: secret-cinderplugin
-        secret:
-          secretName: openstack-cloud-credentials
-          items:
-            - key: clouds.yaml
-              path: clouds.yaml
       - name: cacert
         # If present, extract ca-bundle.pem to
         # /etc/kubernetes/static-pod-resources/configmaps/cloud-config
@@ -80,3 +74,9 @@ spec:
           - key: ca-bundle.pem
             path: ca-bundle.pem
           optional: true
+      - name: secret-cinderplugin
+        secret:
+          secretName: openstack-cloud-credentials
+          items:
+            - key: clouds.yaml
+              path: clouds.yaml
