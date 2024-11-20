@@ -15,38 +15,63 @@ import (
 const (
 	CloudConfigName = "cloud-provider-config"
 
-	envManilaDriverOperatorImage = "MANILA_DRIVER_OPERATOR_IMAGE"
-	envManilaDriverImage         = "MANILA_DRIVER_IMAGE"
-	envNFSDriverImage            = "MANILA_NFS_DRIVER_IMAGE"
+	envManilaDriverOperatorImage      = "MANILA_DRIVER_OPERATOR_IMAGE"
+	envManilaDriverImage              = "MANILA_DRIVER_IMAGE"
+	envNFSDriverImage                 = "MANILA_NFS_DRIVER_IMAGE"
+	envManilaDriverControlPlangeImage = "MANILA_DRIVER_CONTROL_PLANE_IMAGE"
 )
 
-func GetManilaOperatorConfig(clients *csoclients.Clients, recorder events.Recorder) CSIOperatorConfig {
+func GetOpenStackManilaOperatorConfig(isHypershift bool, clients *csoclients.Clients, recorder events.Recorder) CSIOperatorConfig {
 	pairs := []string{
 		"${OPERATOR_IMAGE}", os.Getenv(envManilaDriverOperatorImage),
 		"${DRIVER_IMAGE}", os.Getenv(envManilaDriverImage),
 		"${NFS_DRIVER_IMAGE}", os.Getenv(envNFSDriverImage),
+		"${DRIVER_CONTROL_PLANE_IMAGE}", os.Getenv(envManilaDriverControlPlangeImage),
 	}
 
-	return CSIOperatorConfig{
+	csiDriverConfig := CSIOperatorConfig{
 		CSIDriverName:   "manila.csi.openstack.org",
 		ConditionPrefix: "Manila",
 		Platform:        v1.OpenStackPlatformType,
-		StaticAssets: []string{
-			"csidriveroperators/manila/01_namespace.yaml",
-			"csidriveroperators/manila/02_sa.yaml",
-			"csidriveroperators/manila/03_role.yaml",
-			"csidriveroperators/manila/04_rolebinding.yaml",
-			"csidriveroperators/manila/05_clusterrole.yaml",
-			"csidriveroperators/manila/06_clusterrolebinding.yaml",
-		},
-		CRAsset:         "csidriveroperators/manila/08_cr.yaml",
-		DeploymentAsset: "csidriveroperators/manila/07_deployment.yaml",
 		ImageReplacer:   strings.NewReplacer(pairs...),
-		ExtraControllers: []factory.Controller{
-			newCertificateSyncerOrDie(clients, recorder),
-		},
-		AllowDisabled: true,
+		AllowDisabled:   true,
 	}
+	if !isHypershift {
+		csiDriverConfig.ExtraControllers = []factory.Controller{
+			newCertificateSyncerOrDie(clients, recorder),
+		}
+	}
+
+	if !isHypershift {
+		csiDriverConfig.StaticAssets = []string{
+			"csidriveroperators/openstack-manila/standalone/generated/v1_namespace_openshift-manila-csi-driver.yaml",
+			"csidriveroperators/openstack-manila/standalone/generated/openshift-cluster-csi-drivers_v1_serviceaccount_manila-csi-driver-operator.yaml",
+			"csidriveroperators/openstack-manila/standalone/generated/openshift-cluster-csi-drivers_rbac.authorization.k8s.io_v1_role_manila-csi-driver-operator-role.yaml",
+			"csidriveroperators/openstack-manila/standalone/generated/openshift-cluster-csi-drivers_rbac.authorization.k8s.io_v1_rolebinding_manila-csi-driver-operator-rolebinding.yaml",
+			"csidriveroperators/openstack-manila/standalone/generated/rbac.authorization.k8s.io_v1_clusterrole_manila-csi-driver-operator-clusterrole.yaml",
+			"csidriveroperators/openstack-manila/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_manila-csi-driver-operator-clusterrolebinding.yaml",
+		}
+		csiDriverConfig.CRAsset = "csidriveroperators/openstack-manila/standalone/generated/default_operator.openshift.io_v1_clustercsidriver_manila.csi.openstack.org.yaml"
+		csiDriverConfig.DeploymentAsset = "csidriveroperators/openstack-manila/standalone/generated/openshift-cluster-csi-drivers_apps_v1_deployment_manila-csi-driver-operator.yaml"
+	} else {
+		csiDriverConfig.StaticAssets = []string{
+			"csidriveroperators/openstack-manila/hypershift/guest/generated/v1_namespace_openshift-manila-csi-driver.yaml",
+			"csidriveroperators/openstack-manila/hypershift/guest/generated/openshift-cluster-csi-drivers_v1_serviceaccount_manila-csi-driver-operator.yaml",
+			"csidriveroperators/openstack-manila/hypershift/guest/generated/openshift-cluster-csi-drivers_rbac.authorization.k8s.io_v1_role_manila-csi-driver-operator-role.yaml",
+			"csidriveroperators/openstack-manila/hypershift/guest/generated/openshift-cluster-csi-drivers_rbac.authorization.k8s.io_v1_rolebinding_manila-csi-driver-operator-rolebinding.yaml",
+			"csidriveroperators/openstack-manila/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrole_manila-csi-driver-operator-clusterrole.yaml",
+			"csidriveroperators/openstack-manila/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_manila-csi-driver-operator-clusterrolebinding.yaml",
+		}
+		csiDriverConfig.MgmtStaticAssets = []string{
+			"csidriveroperators/openstack-manila/hypershift/mgmt/generated/rbac.authorization.k8s.io_v1_rolebinding_manila-csi-driver-operator-rolebinding.yaml",
+			"csidriveroperators/openstack-manila/hypershift/mgmt/generated/rbac.authorization.k8s.io_v1_role_manila-csi-driver-operator-role.yaml",
+			"csidriveroperators/openstack-manila/hypershift/mgmt/generated/v1_serviceaccount_manila-csi-driver-operator.yaml",
+		}
+		csiDriverConfig.CRAsset = "csidriveroperators/openstack-manila/hypershift/guest/generated/default_operator.openshift.io_v1_clustercsidriver_manila.csi.openstack.org.yaml"
+		csiDriverConfig.DeploymentAsset = "csidriveroperators/openstack-manila/hypershift/mgmt/generated/apps_v1_deployment_manila-csi-driver-operator.yaml"
+	}
+
+	return csiDriverConfig
 }
 
 func newCertificateSyncerOrDie(clients *csoclients.Clients, recorder events.Recorder) factory.Controller {

@@ -1,0 +1,65 @@
+- op: "add"
+  path: "/rules/-"
+  value:
+    apiGroups:
+      - hypershift.openshift.io
+    resources:
+      - hostedcontrolplanes
+    verbs:
+      - watch
+      - list
+      - get
+- op: "add"
+  path: "/rules/-"
+  value:
+    apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+- op: "add"
+  path: "/rules/-"
+  value:
+    apiGroups:
+      - policy
+    resources:
+      - poddisruptionbudgets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+- op: "add"
+  path: "/rules/-"
+  value:
+    apiGroups:
+      - ''
+    resources:
+      - serviceaccounts
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+- op: "add"
+  path: "/rules/-"
+  value:
+    apiGroups:
+      - apps
+    resources:
+      - replicasets
+    verbs:
+      - get

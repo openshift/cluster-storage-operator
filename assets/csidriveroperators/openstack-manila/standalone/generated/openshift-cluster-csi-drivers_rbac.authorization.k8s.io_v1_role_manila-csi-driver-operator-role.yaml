@@ -5,12 +5,11 @@ metadata:
   namespace: openshift-cluster-csi-drivers
 rules:
 - apiGroups:
-  - ''
+  - ""
   resources:
   - pods
   - services
   - endpoints
-  - persistentvolumeclaims
   - events
   - configmaps
   - secrets
@@ -23,22 +22,23 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - ''
-  resources:
-  - namespaces
-  verbs:
-  - get
-- apiGroups:
   - apps
   resources:
   - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
   verbs:
   - get
   - list
   - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
   - create
   - update
   - patch

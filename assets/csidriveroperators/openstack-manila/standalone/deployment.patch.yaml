@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: manila-csi-driver-operator
+spec:
+  template:
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: "NoSchedule"

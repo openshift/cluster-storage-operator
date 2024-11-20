@@ -1,0 +1,35 @@
+resources:
+  - ../../base
+namespace: ${CONTROLPLANE_NAMESPACE}
+patches:
+  - path: sa.patch.yaml
+    target:
+      kind: ServiceAccount
+      version: v1
+  - path: hypershift_role.patch.yaml
+    target:
+      kind: Role
+      version: v1
+  - path: deployment.patch.yaml
+    target:
+      kind: Deployment
+      version: v1
+  - patch: |-
+      - op: "add"
+        path: "/spec/template/spec/containers/0/args/-"
+        value: --guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig
+    target:
+      kind: Deployment
+  - target:
+      annotationSelector: "storage.openshift.io/remove-from=mgmt"
+    patch: |
+      $patch: delete
+      kind: Kustomization
+      metadata:
+        name: PLACEHOLDER
+  - patch: |-
+      - op: "replace"
+        path: "/spec/template/spec/volumes/1/configMap/name"
+        value: openstack-cloud-config
+    target:
+      kind: Deployment
