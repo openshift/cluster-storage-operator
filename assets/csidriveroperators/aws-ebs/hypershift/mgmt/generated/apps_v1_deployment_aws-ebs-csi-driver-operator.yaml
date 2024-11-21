@@ -1,8 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    storage.openshift.io/remove-from: guest
   name: aws-ebs-csi-driver-operator
   namespace: ${CONTROLPLANE_NAMESPACE}
 spec:

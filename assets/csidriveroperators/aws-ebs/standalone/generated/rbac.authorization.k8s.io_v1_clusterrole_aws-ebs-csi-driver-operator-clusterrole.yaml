@@ -1,8 +1,6 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  annotations:
-    storage.openshift.io/remove-from: mgmt
   name: aws-ebs-csi-driver-operator-clusterrole
 rules:
 - apiGroups:
