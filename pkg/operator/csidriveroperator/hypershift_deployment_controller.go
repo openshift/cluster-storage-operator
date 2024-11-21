@@ -132,6 +132,27 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)
 	}
 
+	// The existence of the environment variable, ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE, means this is an ARO HCP
+	// deployment. We need to pass along additional environment variables for ARO HCP in order to mount the backing
+	// certificates, related to the client IDs, in a volume on the azure-disk-csi-controller and
+	// azure-file-csi-controller deployments.
+	var envVars []corev1.EnvVar
+	if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK") != "" && requiredCopy.Name == "azure-disk-csi-driver-operator" {
+		envVars = []corev1.EnvVar{
+			{Name: "ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK", Value: os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK")},
+		}
+	}
+
+	if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE") != "" && requiredCopy.Name == "azure-file-csi-driver-operator" {
+		envVars = []corev1.EnvVar{
+			{Name: "ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE", Value: os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE")},
+		}
+	}
+
+	if len(envVars) > 0 {
+		requiredCopy.Spec.Template.Spec.Containers[0].Env = append(requiredCopy.Spec.Template.Spec.Containers[0].Env, envVars...)
+	}
+
 	lastGeneration := resourcemerge.ExpectedDeploymentGeneration(requiredCopy, opStatus.Generations)
 	deployment, _, err := resourceapply.ApplyDeployment(ctx, c.mgmtClient.KubeClient.AppsV1(), c.eventRecorder, requiredCopy, lastGeneration)
 	if err != nil {
