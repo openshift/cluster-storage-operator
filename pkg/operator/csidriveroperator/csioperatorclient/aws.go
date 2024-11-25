@@ -20,6 +20,7 @@ func GetAWSEBSCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 		"${OPERATOR_IMAGE}", os.Getenv(envAWSEBSDriverOperatorImage),
 		"${DRIVER_IMAGE}", os.Getenv(envAWSEBSDriverImage),
 		"${DRIVER_CONTROL_PLANE_IMAGE}", os.Getenv(envAWSEBSDriverControlPlaneImage),
+		"${OPERATOR_IMAGE_VERSION}", os.Getenv(envOperatorImageVersion),
 	}
 
 	csiDriverConfig := CSIOperatorConfig{
