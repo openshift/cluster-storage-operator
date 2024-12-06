@@ -3,3 +3,5 @@ kind: ServiceAccount
 metadata:
   name: manila-csi-driver-operator
   namespace: openshift-cluster-csi-drivers
+  annotations:
+    storage.openshift.io/remove-from: guest

@@ -1,6 +1,8 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
+  annotations:
+    storage.openshift.io/remove-from: guest
   name: manila-csi-driver-operator-rolebinding
   namespace: openshift-cluster-csi-drivers
 roleRef:
