@@ -56,9 +56,6 @@ func GetOpenStackManilaOperatorConfig(isHypershift bool, clients *csoclients.Cli
 	} else {
 		csiDriverConfig.StaticAssets = []string{
 			"csidriveroperators/openstack-manila/hypershift/guest/generated/v1_namespace_openshift-manila-csi-driver.yaml",
-			"csidriveroperators/openstack-manila/hypershift/guest/generated/openshift-cluster-csi-drivers_v1_serviceaccount_manila-csi-driver-operator.yaml",
-			"csidriveroperators/openstack-manila/hypershift/guest/generated/openshift-cluster-csi-drivers_rbac.authorization.k8s.io_v1_role_manila-csi-driver-operator-role.yaml",
-			"csidriveroperators/openstack-manila/hypershift/guest/generated/openshift-cluster-csi-drivers_rbac.authorization.k8s.io_v1_rolebinding_manila-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/openstack-manila/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrole_manila-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/openstack-manila/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_manila-csi-driver-operator-clusterrolebinding.yaml",
 		}
@@ -67,7 +64,7 @@ func GetOpenStackManilaOperatorConfig(isHypershift bool, clients *csoclients.Cli
 			"csidriveroperators/openstack-manila/hypershift/mgmt/generated/rbac.authorization.k8s.io_v1_role_manila-csi-driver-operator-role.yaml",
 			"csidriveroperators/openstack-manila/hypershift/mgmt/generated/v1_serviceaccount_manila-csi-driver-operator.yaml",
 		}
-		csiDriverConfig.CRAsset = "csidriveroperators/openstack-manila/hypershift/guest/generated/default_operator.openshift.io_v1_clustercsidriver_manila.csi.openstack.org.yaml"
+		csiDriverConfig.CRAsset = "csidriveroperators/openstack-manila/hypershift/guest/generated/operator.openshift.io_v1_clustercsidriver_manila.csi.openstack.org.yaml"
 		csiDriverConfig.DeploymentAsset = "csidriveroperators/openstack-manila/hypershift/mgmt/generated/apps_v1_deployment_manila-csi-driver-operator.yaml"
 	}
 
