@@ -10,5 +10,5 @@ metadata:
     capability.openshift.io/name: Storage
 rules:
   - apiGroups: ["storage.k8s.io"]
-    resources: ["volumeattributesclass"]
+    resources: ["volumeattributesclasses"]
     verbs: ["get", "list", "watch"]
