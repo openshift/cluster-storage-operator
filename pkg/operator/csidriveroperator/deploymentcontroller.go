@@ -179,7 +179,7 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 		replacers = append(replacers, c.csiOperatorConfig.ImageReplacer)
 	}
 
-	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nil, nil, replacers...)
+	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nil, nil, nil, replacers...)
 	if err != nil {
 		return fmt.Errorf("failed to generate required Deployment: %s", err)
 	}

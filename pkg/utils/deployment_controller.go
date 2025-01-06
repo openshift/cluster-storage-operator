@@ -94,7 +94,7 @@ func CreateDeployment(ctx context.Context, depOpts DeploymentOptions) (*appsv1.D
 
 // GetRequiredDeployment returns a deployment from given assset after replacing necessary strings and setting
 // correct log level.
-func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpec, nodeSelector map[string]string, tolerations []corev1.Toleration, replacers ...*strings.Replacer) (*appsv1.Deployment, error) {
+func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpec, nodeSelector map[string]string, labels map[string]string, tolerations []corev1.Toleration, replacers ...*strings.Replacer) (*appsv1.Deployment, error) {
 	deploymentBytes, err := assets.ReadFile(deploymentAsset)
 	if err != nil {
 		return nil, err
@@ -115,6 +115,13 @@ func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpe
 	deployment := resourceread.ReadDeploymentV1OrDie([]byte(deploymentString))
 	if nodeSelector != nil {
 		deployment.Spec.Template.Spec.NodeSelector = nodeSelector
+	}
+
+	for key, value := range labels {
+		// don't replace existing labels as they are used in the deployment's labelSelector.
+		if _, exist := deployment.Spec.Template.Labels[key]; !exist {
+			deployment.Spec.Template.Labels[key] = value
+		}
 	}
 
 	deployment.Spec.Template.Spec.Tolerations = append(deployment.Spec.Template.Spec.Tolerations, tolerations...)
