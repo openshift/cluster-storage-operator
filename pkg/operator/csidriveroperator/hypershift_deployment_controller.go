@@ -116,12 +116,17 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 		return err
 	}
 
+	labels, err := c.getHostedControlPlaneLabels()
+	if err != nil {
+		return err
+	}
+
 	tolerations, err := c.getHostedControlPlaneCustomTolerations()
 	if err != nil {
 		return err
 	}
 
-	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nodeSelector, tolerations, replacers...)
+	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nodeSelector, labels, tolerations, replacers...)
 	if err != nil {
 		return fmt.Errorf("failed to generate required Deployment: %s", err)
 	}
@@ -253,6 +258,22 @@ func (c *HyperShiftDeploymentController) getHostedControlPlaneNodeSelector() (ma
 	}
 	klog.V(4).Infof("Using node selector %v", nodeSelector)
 	return nodeSelector, nil
+}
+
+func (c *HyperShiftDeploymentController) getHostedControlPlaneLabels() (map[string]string, error) {
+	hcp, err := c.getHostedControlPlane()
+	if err != nil {
+		return nil, err
+	}
+	labels, exists, err := unstructured.NestedStringMap(hcp.UnstructuredContent(), "spec", "labels")
+	if !exists {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	klog.V(4).Infof("Using labels %v", labels)
+	return labels, nil
 }
 
 func (c *HyperShiftDeploymentController) getHostedControlPlane() (*unstructured.Unstructured, error) {
