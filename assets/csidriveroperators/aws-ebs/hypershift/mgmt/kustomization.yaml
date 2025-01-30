@@ -20,7 +20,7 @@ patches:
         value: --guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig
     target:
       kind: Deployment
-  - path: controller_add_hypershift_controller_minter.yaml
+  - path: hypershift_token_minter.yaml
     target:
       kind: Deployment
       version: v1

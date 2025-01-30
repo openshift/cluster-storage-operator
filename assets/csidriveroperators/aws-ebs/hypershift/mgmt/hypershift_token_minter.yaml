@@ -26,14 +26,13 @@ spec:
           terminationMessagePolicy: FallbackToLogsOnError
           volumeMounts:
             - mountPath: /var/run/secrets/openshift/serviceaccount
-              name: bound-sa-token
+              name: web-identity-token
             - mountPath: /etc/hosted-kubernetes
               name: hosted-kubeconfig
               readOnly: true
       volumes:
-        - name: bound-sa-token
-          emptyDir:
-            medium: Memory
+        - emptyDir: {}
+          name: web-identity-token
         - name: hosted-kubeconfig
           secret:
             defaultMode: 420

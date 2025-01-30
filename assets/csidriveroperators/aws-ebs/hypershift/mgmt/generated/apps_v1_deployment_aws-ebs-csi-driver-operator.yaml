@@ -63,7 +63,7 @@ spec:
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /var/run/secrets/openshift/serviceaccount
-          name: bound-sa-token
+          name: web-identity-token
         - mountPath: /etc/hosted-kubernetes
           name: hosted-kubeconfig
           readOnly: true
@@ -111,6 +111,8 @@ spec:
         volumeMounts:
         - mountPath: /etc/guest-kubeconfig
           name: guest-kubeconfig
+        - mountPath: /var/run/secrets/openshift/serviceaccount
+          name: web-identity-token
       priorityClassName: hypershift-control-plane
       serviceAccountName: aws-ebs-csi-driver-operator
       tolerations:
@@ -125,9 +127,8 @@ spec:
         operator: Equal
         value: ${CONTROLPLANE_NAMESPACE}
       volumes:
-      - emptyDir:
-          medium: Memory
-        name: bound-sa-token
+      - emptyDir: {}
+        name: web-identity-token
       - name: hosted-kubeconfig
         secret:
           defaultMode: 420
