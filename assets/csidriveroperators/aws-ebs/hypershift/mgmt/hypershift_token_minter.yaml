@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aws-ebs-csi-driver-operator
+  namespace: ${CONTROLPLANE_NAMESPACE}
+spec:
+  template:
+    spec:
+      containers:
+        - name: token-minter
+          args:
+            - --service-account-namespace=openshift-cluster-csi-drivers
+            - --service-account-name=aws-ebs-csi-driver-controller-sa
+            - --token-audience=openshift
+            - --token-file=/var/run/secrets/openshift/serviceaccount/token
+            - --kubeconfig=/etc/hosted-kubernetes/kubeconfig
+          command:
+            - /usr/bin/control-plane-operator
+            - token-minter
+          image: ${HYPERSHIFT_IMAGE}
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 10m
+              memory: 10Mi
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - mountPath: /var/run/secrets/openshift/serviceaccount
+              name: web-identity-token
+            - mountPath: /etc/hosted-kubernetes
+              name: hosted-kubeconfig
+              readOnly: true
+      volumes:
+        - emptyDir: {}
+          name: web-identity-token
+        - name: hosted-kubeconfig
+          secret:
+            defaultMode: 420
+            secretName: service-network-admin-kubeconfig
