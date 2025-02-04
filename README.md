@@ -16,6 +16,7 @@ export KUBECONFIG=<path-to-kubeconfig>
 # Scale down CVO and CSO
 oc scale --replicas=0 deploy/cluster-version-operator -n openshift-cluster-version  
 oc scale --replicas=0 deploy/cluster-storage-operator -n openshift-cluster-storage-operator
+
 ```
 
 ### Configure required environment variables
