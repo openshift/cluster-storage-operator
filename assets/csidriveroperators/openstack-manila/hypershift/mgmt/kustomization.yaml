@@ -27,10 +27,3 @@ patches:
       kind: Kustomization
       metadata:
         name: PLACEHOLDER
-  # TODO(stephenfin): Remove in 4.20
-  - patch: |-
-      - op: "replace"
-        path: "/spec/template/spec/volumes/2/configMap/name"
-        value: openstack-cloud-config
-    target:
-      kind: Deployment
