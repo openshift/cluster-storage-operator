@@ -22,6 +22,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/loglevel"
 	"github.com/openshift/library-go/pkg/operator/management"
 	"github.com/openshift/library-go/pkg/operator/managementstatecontroller"
+	"github.com/openshift/library-go/pkg/operator/staleconditions"
 	"github.com/openshift/library-go/pkg/operator/status"
 	rbacv1 "k8s.io/api/rbac/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -124,6 +125,15 @@ func (csr *commonStarter) CreateCommonControllers() error {
 	// This controller syncs the operator log level with the value set in the CR.Spec.OperatorLogLevel
 	logLevelController := loglevel.NewClusterOperatorLoggingController(csr.commonClients.OperatorClient, csr.eventRecorder)
 	csr.controllers = append(csr.controllers, logLevelController)
+
+	// This controller removes VSphereProblemDetectorDeploymentControllerAvailable condition in the storage status
+	staleConditionsController := staleconditions.NewRemoveStaleConditionsController(
+		"RemoveStaleConditionsController",
+		[]string{"VSphereProblemDetectorDeploymentControllerAvailable"},
+		csr.commonClients.OperatorClient,
+		csr.eventRecorder,
+	)
+	csr.controllers = append(csr.controllers, staleConditionsController)
 
 	// This controller observes a config (proxy for now) and writes it to CR.Spec.ObservedConfig for later use by the operator
 	configObserverController := configobservercontroller.NewConfigObserverController(csr.commonClients, csr.eventRecorder)
