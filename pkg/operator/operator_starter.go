@@ -25,6 +25,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/clock"
 )
 
 type OperatorStarter interface {
@@ -107,6 +108,7 @@ func (csr *commonStarter) CreateCommonControllers() error {
 		csr.commonClients.OperatorClient,
 		csr.versionGetter,
 		csr.eventRecorder,
+		clock.RealClock{},
 	).WithVersionRemoval()
 
 	clusterOperatorStatus.WithRelatedObjectsFunc(csidriveroperator.RelatedObjectFunc())
@@ -256,7 +258,7 @@ func (hsr *HyperShiftStarter) initClient(ctx context.Context) error {
 	if err != nil {
 		klog.Warningf("unable to get owner reference (falling back to namespace): %v", err)
 	}
-	guestEventRecorder := events.NewKubeRecorder(guestClients.KubeClient.CoreV1().Events(operatorNamespace), clusterOperatorName, controllerRef)
+	guestEventRecorder := events.NewKubeRecorder(guestClients.KubeClient.CoreV1().Events(operatorNamespace), clusterOperatorName, controllerRef, clock.RealClock{})
 	hsr.eventRecorder = guestEventRecorder
 	return nil
 }
