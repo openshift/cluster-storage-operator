@@ -3,11 +3,13 @@ package vsphereproblemdetector
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/library-go/pkg/operator/events"
 	promv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	clocktesting "k8s.io/utils/clock/testing"
 )
 
 func TestSyncPrometheusRule(t *testing.T) {
@@ -34,7 +36,7 @@ func TestSyncPrometheusRule(t *testing.T) {
 			}
 
 			client := csoclients.NewFakeClients(initialObjects)
-			eventRecorder := events.NewInMemoryRecorder("vsphere-client")
+			eventRecorder := events.NewInMemoryRecorder("vsphere-client", clocktesting.NewFakePassiveClock(time.Now()))
 			c := &monitoringController{
 				operatorClient:   client.OperatorClient,
 				kubeClient:       client.KubeClient,
