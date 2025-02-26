@@ -56,10 +56,12 @@ spec:
             memory: 50Mi
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
-        - mountPath: /etc/openstack-ca/
-          name: cacert
-        - mountPath: /etc/openstack/
+        - mountPath: /etc/openstack
           name: cloud-credentials
+          readOnly: true
+        - mountPath: /etc/openstack-ca
+          name: legacy-cacert
+          readOnly: true
       nodeSelector:
         node-role.kubernetes.io/master: ""
       priorityClassName: system-cluster-critical
@@ -77,8 +79,12 @@ spec:
             path: ca-bundle.pem
           name: cloud-provider-config
           optional: true
-        name: cacert
+        name: legacy-cacert
       - name: cloud-credentials
         secret:
-          optional: false
+          items:
+          - key: cacert
+            path: ca.crt
+          - key: clouds.yaml
+            path: clouds.yaml
           secretName: manila-cloud-credentials
