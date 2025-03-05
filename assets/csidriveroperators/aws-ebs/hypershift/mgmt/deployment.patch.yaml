@@ -47,6 +47,8 @@ spec:
         volumeMounts:
           - mountPath: /etc/guest-kubeconfig
             name: guest-kubeconfig
+          - mountPath: /var/run/secrets/openshift/serviceaccount
+            name: web-identity-token
         terminationMessagePolicy: FallbackToLogsOnError
       priorityClassName: hypershift-control-plane
       tolerations:
