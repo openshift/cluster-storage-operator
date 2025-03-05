@@ -21,6 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/errors"
+	clocktesting "k8s.io/utils/clock/testing"
 )
 
 type RunControllerTest struct {
@@ -418,7 +419,7 @@ func TestStandAloneStarter(t *testing.T) {
 		20*time.Minute,
 		status.NewVersionGetter(),
 		"",
-		events.NewInMemoryRecorder(csiDriverControllerName),
+		events.NewInMemoryRecorder(csiDriverControllerName, clocktesting.NewFakePassiveClock(time.Now())),
 		awsConfig)
 
 	if fc == nil {

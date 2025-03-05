@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	cfgv1 "github.com/openshift/api/config/v1"
@@ -17,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	clocktesting "k8s.io/utils/clock/testing"
 )
 
 type testContext struct {
@@ -52,7 +54,7 @@ func newController(test operatorTest) *testContext {
 
 	clients := csoclients.NewFakeClients(initialObjects)
 
-	recorder := events.NewInMemoryRecorder("operator")
+	recorder := events.NewInMemoryRecorder("operator", clocktesting.NewFakePassiveClock(time.Now()))
 	ctrl := NewController(clients, recorder)
 
 	return &testContext{
