@@ -246,18 +246,6 @@ rules:
   - update
   - delete
 - apiGroups:
-  - csi.openshift.io
-  resources:
-  - '*'
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
   - config.openshift.io
   resources:
   - infrastructures
