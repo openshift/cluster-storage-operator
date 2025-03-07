@@ -47,6 +47,7 @@ spec:
           readOnly: true
         terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
+          readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           capabilities:
             drop:

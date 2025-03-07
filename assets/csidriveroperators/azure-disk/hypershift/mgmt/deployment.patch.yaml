@@ -56,6 +56,8 @@ spec:
         volumeMounts:
           - mountPath: /etc/guest-kubeconfig
             name: guest-kubeconfig
+        securityContext:
+          readOnlyRootFilesystem: false
       priorityClassName: hypershift-control-plane
       volumes:
         - name: guest-kubeconfig

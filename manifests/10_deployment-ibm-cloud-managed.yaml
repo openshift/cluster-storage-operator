@@ -114,6 +114,7 @@ spec:
           capabilities:
             drop:
             - ALL
+          readOnlyRootFilesystem: false
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /var/run/secrets/serving-cert
