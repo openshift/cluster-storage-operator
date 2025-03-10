@@ -19,6 +19,7 @@ spec:
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         name: aws-ebs-csi-driver-operator
+        openshift.storage.network-policy.api-server: allow
     spec:
       containers:
       - args:

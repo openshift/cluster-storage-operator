@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+ name: allow-ingress-to-resizer-m
+ namespace: openshift-cluster-csi-drivers
+ annotations:
+  include.release.openshift.io/hypershift: "true"
+  include.release.openshift.io/ibm-cloud-managed: "true"
+  include.release.openshift.io/self-managed-high-availability: "true"
+  include.release.openshift.io/single-node-developer: "true"
+  capability.openshift.io/name: Storage
+spec:
+ podSelector:
+   matchLabels:
+     openshift.storage.network-policy.resizer-m: allow
+ ingress:
+ - ports:
+   - protocol: TCP
+     port: resizer-m
+ policyTypes:
+ - Ingress

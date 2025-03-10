@@ -17,6 +17,7 @@ spec:
       labels:
         hypershift.openshift.io/need-management-kas-access: "true"
         name: aws-ebs-csi-driver-operator
+        openshift.storage.network-policy.api-server: allow
     spec:
       affinity:
         nodeAffinity:

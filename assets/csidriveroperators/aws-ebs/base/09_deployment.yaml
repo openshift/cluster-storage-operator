@@ -18,6 +18,7 @@ spec:
         openshift.io/required-scc: restricted-v2
       labels:
         name: aws-ebs-csi-driver-operator
+        openshift.storage.network-policy.api-server: allow
     spec:
       containers:
       - args:
