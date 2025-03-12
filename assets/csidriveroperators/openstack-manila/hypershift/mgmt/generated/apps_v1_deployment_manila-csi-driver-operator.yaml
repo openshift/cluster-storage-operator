@@ -89,10 +89,12 @@ spec:
         volumeMounts:
         - mountPath: /etc/guest-kubeconfig
           name: guest-kubeconfig
-        - mountPath: /etc/openstack-ca/
-          name: cacert
         - mountPath: /etc/openstack/
           name: cloud-credentials
+          readOnly: true
+        - mountPath: /etc/openstack-ca/
+          name: cacert
+          readOnly: true
       priorityClassName: hypershift-control-plane
       serviceAccountName: manila-csi-driver-operator
       tolerations:
@@ -110,6 +112,9 @@ spec:
       - name: guest-kubeconfig
         secret:
           secretName: service-network-admin-kubeconfig
+      - name: cloud-credentials
+        secret:
+          secretName: manila-cloud-credentials
       - configMap:
           items:
           - key: ca-bundle.pem
@@ -117,7 +122,3 @@ spec:
           name: openstack-cloud-config
           optional: true
         name: cacert
-      - name: cloud-credentials
-        secret:
-          optional: false
-          secretName: manila-cloud-credentials
