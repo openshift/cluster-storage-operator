@@ -65,6 +65,7 @@ spec:
           readOnly: true
         - mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
           name: cacert
+          readOnly: true
         - mountPath: /tmp
           name: tmp
       nodeSelector:
