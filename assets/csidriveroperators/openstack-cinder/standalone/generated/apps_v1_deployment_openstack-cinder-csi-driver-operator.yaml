@@ -59,6 +59,7 @@ spec:
           readOnly: true
         - mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
           name: cacert
+          readOnly: true
       nodeSelector:
         node-role.kubernetes.io/master: ""
       priorityClassName: system-cluster-critical
