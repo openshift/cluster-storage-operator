@@ -97,6 +97,7 @@ spec:
           readOnly: true
         - mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
           name: cacert
+          readOnly: true
       priorityClassName: hypershift-control-plane
       securityContext:
         runAsNonRoot: true
