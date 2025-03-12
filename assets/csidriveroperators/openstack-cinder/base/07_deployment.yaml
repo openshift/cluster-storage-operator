@@ -48,7 +48,7 @@ spec:
         image: ${OPERATOR_IMAGE}
         imagePullPolicy: IfNotPresent
         volumeMounts:
-        - name: secret-cinderplugin
+        - name: cloud-credentials
           mountPath: /etc/openstack
           readOnly: true
         # NOTE(stephenfin): The volumes definition for this mount varies
@@ -74,7 +74,7 @@ spec:
       priorityClassName: system-cluster-critical
       serviceAccountName: openstack-cinder-csi-driver-operator
       volumes:
-      - name: secret-cinderplugin
+      - name: cloud-credentials
         secret:
           secretName: openstack-cloud-credentials
           items:

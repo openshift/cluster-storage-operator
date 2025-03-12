@@ -61,7 +61,7 @@ spec:
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /etc/openstack
-          name: secret-cinderplugin
+          name: cloud-credentials
           readOnly: true
         - mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
           name: cacert
@@ -90,7 +90,7 @@ spec:
           name: cloud-provider-config
           optional: true
         name: cacert
-      - name: secret-cinderplugin
+      - name: cloud-credentials
         secret:
           items:
           - key: clouds.yaml

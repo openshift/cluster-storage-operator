@@ -94,7 +94,7 @@ spec:
         - mountPath: /etc/guest-kubeconfig
           name: guest-kubeconfig
         - mountPath: /etc/openstack
-          name: secret-cinderplugin
+          name: cloud-credentials
           readOnly: true
         - mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
           name: cacert
@@ -129,7 +129,7 @@ spec:
       - name: guest-kubeconfig
         secret:
           secretName: service-network-admin-kubeconfig
-      - name: secret-cinderplugin
+      - name: cloud-credentials
         secret:
           items:
           - key: clouds.yaml
