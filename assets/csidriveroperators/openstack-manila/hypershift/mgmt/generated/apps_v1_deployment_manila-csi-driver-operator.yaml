@@ -121,9 +121,6 @@ spec:
       - name: guest-kubeconfig
         secret:
           secretName: service-network-admin-kubeconfig
-      - name: cloud-credentials
-        secret:
-          secretName: manila-cloud-credentials
       - configMap:
           items:
           - key: ca-bundle.pem
@@ -131,3 +128,6 @@ spec:
           name: openstack-cloud-config
           optional: true
         name: cacert
+      - name: cloud-credentials
+        secret:
+          secretName: manila-cloud-credentials
