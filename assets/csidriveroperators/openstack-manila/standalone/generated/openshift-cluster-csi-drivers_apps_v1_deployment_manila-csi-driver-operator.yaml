@@ -66,7 +66,7 @@ spec:
           name: cloud-credentials
           readOnly: true
         - mountPath: /etc/openstack-ca/
-          name: cacert
+          name: legacy-cacert
           readOnly: true
         - mountPath: /tmp
           name: tmp
@@ -91,7 +91,7 @@ spec:
             path: ca-bundle.pem
           name: cloud-provider-config
           optional: true
-        name: cacert
+        name: legacy-cacert
       - name: cloud-credentials
         secret:
           secretName: manila-cloud-credentials

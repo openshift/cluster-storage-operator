@@ -57,7 +57,7 @@ spec:
         # NOTE(stephenfin): This volumes definiton for this mount varies
         # between standalone and hypershift configurations, thus it is defined
         # in overlay patches
-        - name: cacert
+        - name: legacy-cacert
           mountPath: /etc/openstack-ca/
           readOnly: true
         - name: tmp

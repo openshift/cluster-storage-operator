@@ -62,7 +62,7 @@ spec:
         - name: guest-kubeconfig
           secret:
             secretName: service-network-admin-kubeconfig
-        - name: cacert
+        - name: legacy-cacert
           configMap:
             name: openstack-cloud-config
             items:
