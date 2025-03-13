@@ -91,7 +91,7 @@ spec:
           name: cloud-credentials
           readOnly: true
         - mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
-          name: cacert
+          name: legacy-cacert
           readOnly: true
       priorityClassName: hypershift-control-plane
       serviceAccountName: openstack-cinder-csi-driver-operator
@@ -113,7 +113,7 @@ spec:
             path: ca-bundle.pem
           name: openstack-cloud-config
           optional: true
-        name: cacert
+        name: legacy-cacert
       - name: guest-kubeconfig
         secret:
           secretName: service-network-admin-kubeconfig
