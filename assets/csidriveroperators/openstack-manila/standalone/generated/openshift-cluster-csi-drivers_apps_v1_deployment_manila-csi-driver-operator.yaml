@@ -62,10 +62,10 @@ spec:
           readOnlyRootFilesystem: true
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
-        - mountPath: /etc/openstack/
+        - mountPath: /etc/openstack
           name: cloud-credentials
           readOnly: true
-        - mountPath: /etc/openstack-ca/
+        - mountPath: /etc/openstack-ca
           name: legacy-cacert
           readOnly: true
         - mountPath: /tmp
@@ -93,8 +93,19 @@ spec:
           optional: true
         name: legacy-cacert
       - name: cloud-credentials
-        secret:
-          secretName: manila-cloud-credentials
+        projected:
+          sources:
+          - secret:
+              items:
+              - key: cacert
+                path: ca.crt
+              name: openstack-cloud-credentials
+              optional: true
+          - secret:
+              items:
+              - key: clouds.yaml
+                path: clouds.yaml
+              name: openstack-cloud-credentials
       - emptyDir:
           medium: Memory
         name: tmp

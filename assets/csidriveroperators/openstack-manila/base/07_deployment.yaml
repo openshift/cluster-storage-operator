@@ -52,13 +52,14 @@ spec:
         name: manila-csi-driver-operator
         volumeMounts:
         - name: cloud-credentials
-          mountPath: /etc/openstack/
+          mountPath: /etc/openstack
           readOnly: true
         # NOTE(stephenfin): This volumes definiton for this mount varies
         # between standalone and hypershift configurations, thus it is defined
         # in overlay patches
+        # TODO(stephenfin): Remove in 4.20
         - name: legacy-cacert
-          mountPath: /etc/openstack-ca/
+          mountPath: /etc/openstack-ca
           readOnly: true
         - name: tmp
           mountPath: /tmp
@@ -77,8 +78,19 @@ spec:
       serviceAccountName: manila-csi-driver-operator
       volumes:
       - name: cloud-credentials
-        secret:
-          secretName: manila-cloud-credentials
+        projected:
+          sources:
+            - secret:
+                name: openstack-cloud-credentials
+                items:
+                - key: cacert
+                  path: ca.crt
+                optional: true
+            - secret:
+                name: openstack-cloud-credentials
+                items:
+                - key: clouds.yaml
+                  path: clouds.yaml
       - name: tmp
         emptyDir:
           medium: Memory
