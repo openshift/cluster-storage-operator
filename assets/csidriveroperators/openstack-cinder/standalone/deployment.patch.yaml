@@ -14,7 +14,7 @@ spec:
           operator: Exists
           effect: "NoSchedule"
       volumes:
-        - name: cacert
+        - name: legacy-cacert
           configMap:
             name: cloud-provider-config
             items:

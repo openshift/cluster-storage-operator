@@ -54,7 +54,7 @@ spec:
         # NOTE(stephenfin): The volumes definition for this mount varies
         # between standalone and hypershift configurations, thus it is defined
         # in overlay patches
-        - name: cacert
+        - name: legacy-cacert
           mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
           readOnly: true
         - name: tmp

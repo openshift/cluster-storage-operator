@@ -59,7 +59,7 @@ spec:
             readOnlyRootFilesystem: false
       priorityClassName: hypershift-control-plane
       volumes:
-        - name: cacert
+        - name: legacy-cacert
           configMap:
             items:
               - key: ca-bundle.pem
