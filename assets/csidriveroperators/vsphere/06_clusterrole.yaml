@@ -302,7 +302,8 @@ rules:
   - list
   - watch
 # Needed by the CSI driver itself
-# TODO: check if it's really necessary
+# - Syncer uses pod listener
+# - Feature states map uses configmap listener
 - apiGroups:
   - ''
   resources:
@@ -324,10 +325,16 @@ rules:
   - update
   - patch
   - delete
+# cns.vmware.com resource list comes from:
+# https://raw.githubusercontent.com/kubernetes-sigs/vsphere-csi-driver/v3.3.1/manifests/vanilla/vsphere-csi-driver.yaml
 - apiGroups:
   - cns.vmware.com
   resources:
-  - '*'
+  - triggercsifullsyncs
+  - cnsvspherevolumemigrations
+  - cnsvolumeinfoes
+  - cnsvolumeoperationrequests
+  - csinodetopologies
   verbs:
   - get
   - list
