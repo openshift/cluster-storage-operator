@@ -6,3 +6,9 @@
     capability.openshift.io/name: Storage
 - op: remove
   path: /spec/template/spec/nodeSelector
+
+# Remove changes for readOnlyRootFilesystem
+- op: replace
+  path: /spec/template/spec/containers/0/securityContext/readOnlyRootFilesystem
+  value:
+    false
