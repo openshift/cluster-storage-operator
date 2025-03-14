@@ -83,6 +83,11 @@ spec:
           requests:
             cpu: 10m
             memory: 50Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /etc/guest-kubeconfig
@@ -93,6 +98,10 @@ spec:
         - mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
           name: cacert
       priorityClassName: hypershift-control-plane
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: openstack-cinder-csi-driver-operator
       tolerations:
       - key: CriticalAddonsOnly

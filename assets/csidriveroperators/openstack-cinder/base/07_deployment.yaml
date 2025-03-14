@@ -59,6 +59,11 @@ spec:
             cpu: 10m
             memory: 50Mi
         terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
       priorityClassName: system-cluster-critical
       serviceAccountName: openstack-cinder-csi-driver-operator
       volumes:
@@ -80,3 +85,7 @@ spec:
           items:
             - key: clouds.yaml
               path: clouds.yaml
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault

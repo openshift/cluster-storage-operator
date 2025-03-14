@@ -52,6 +52,11 @@ spec:
           requests:
             memory: 50Mi
             cpu: 10m
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
       priorityClassName: system-cluster-critical
       serviceAccountName: gcp-pd-csi-driver-operator
       nodeSelector:
@@ -62,3 +67,7 @@ spec:
       - key: node-role.kubernetes.io/master
         operator: Exists
         effect: "NoSchedule"
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault

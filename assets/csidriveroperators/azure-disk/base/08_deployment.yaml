@@ -57,4 +57,13 @@ spec:
             memory: 50Mi
             cpu: 10m
         terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
       serviceAccountName: azure-disk-csi-driver-operator
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault

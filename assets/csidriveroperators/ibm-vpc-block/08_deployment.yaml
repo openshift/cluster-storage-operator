@@ -52,6 +52,11 @@ spec:
             memory: 50Mi
             cpu: 10m
         terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
       priorityClassName: system-cluster-critical
       serviceAccountName: ibm-vpc-block-csi-driver-operator
       nodeSelector:
@@ -62,3 +67,7 @@ spec:
       - key: node-role.kubernetes.io/master
         operator: Exists
         effect: "NoSchedule"
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
