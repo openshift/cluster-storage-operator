@@ -27,9 +27,3 @@ patches:
       kind: Kustomization
       metadata:
         name: PLACEHOLDER
-  - patch: |-
-      - op: "replace"
-        path: "/spec/template/spec/volumes/1/configMap/name"
-        value: openstack-cloud-config
-    target:
-      kind: Deployment
