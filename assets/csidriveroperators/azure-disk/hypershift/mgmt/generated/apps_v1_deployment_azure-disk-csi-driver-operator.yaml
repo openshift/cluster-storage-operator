@@ -88,11 +88,20 @@ spec:
           requests:
             cpu: 10m
             memory: 50Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /etc/guest-kubeconfig
           name: guest-kubeconfig
       priorityClassName: hypershift-control-plane
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: azure-disk-csi-driver-operator
       tolerations:
       - key: CriticalAddonsOnly
