@@ -18,6 +18,8 @@ require (
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
 )
 
+replace github.com/openshift/api => github.com/RomanBednar/api v0.0.0-20250311094636-c86f460c7c1a
+
 require (
 	k8s.io/api v0.32.1
 	k8s.io/apiextensions-apiserver v0.32.1
