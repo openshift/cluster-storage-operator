@@ -15,6 +15,11 @@ rules:
   - use
 - apiGroups:
   - ""
+  resourceNames:
+  - cloud-provider-config
+  - extension-apiserver-authentication
+  - openstack-cinder-csi-driver-operator-lock
+  - openstack-cinder-csi-driver-trusted-ca-bundle
   resources:
   - configmaps
   verbs:
@@ -25,6 +30,14 @@ rules:
   - delete
   - patch
   - update
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - watch
+  - list
+  - get
 - apiGroups:
   - ""
   resources:
