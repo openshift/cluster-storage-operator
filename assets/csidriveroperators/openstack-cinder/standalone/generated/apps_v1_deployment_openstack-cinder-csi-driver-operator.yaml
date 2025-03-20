@@ -52,6 +52,11 @@ spec:
           requests:
             cpu: 10m
             memory: 50Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /etc/openstack
@@ -62,6 +67,10 @@ spec:
       nodeSelector:
         node-role.kubernetes.io/master: ""
       priorityClassName: system-cluster-critical
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: openstack-cinder-csi-driver-operator
       tolerations:
       - key: CriticalAddonsOnly

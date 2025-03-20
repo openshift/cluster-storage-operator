@@ -61,6 +61,11 @@ spec:
             memory: 50Mi
             cpu: 10m
         terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
       priorityClassName: system-cluster-critical
       serviceAccountName: manila-csi-driver-operator
       volumes:
@@ -79,3 +84,7 @@ spec:
         secret:
           secretName: manila-cloud-credentials
           optional: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault

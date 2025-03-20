@@ -109,6 +109,11 @@ spec:
           requests:
             cpu: 10m
             memory: 50Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /etc/guest-kubeconfig
@@ -116,6 +121,10 @@ spec:
         - mountPath: /var/run/secrets/openshift/serviceaccount
           name: web-identity-token
       priorityClassName: hypershift-control-plane
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: aws-ebs-csi-driver-operator
       tolerations:
       - key: CriticalAddonsOnly

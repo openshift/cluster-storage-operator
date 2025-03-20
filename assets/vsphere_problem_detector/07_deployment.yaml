@@ -46,6 +46,11 @@ spec:
           mountPath: /etc/pki/ca-trust/extracted/pem
           readOnly: true
         terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
       priorityClassName: system-cluster-critical
       serviceAccountName: vsphere-problem-detector-operator
       nodeSelector:
@@ -67,3 +72,7 @@ spec:
           items:
             - key: ca-bundle.crt
               path: tls-ca-bundle.pem
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
