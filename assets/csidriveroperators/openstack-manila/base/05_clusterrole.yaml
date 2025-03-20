@@ -18,8 +18,14 @@ rules:
 # - read/write openshift-manila-csi-driver/cloud-provider-config
 # - read-only kube-system/extension-apiserver-authentication
 # - read/write manila-csi-driver-operator-lock
+# - read/write manila-csi-driver-trusted-ca-bundle
 - apiGroups:
   - ''
+  resourceNames:
+  - cloud-provider-config
+  - extension-apiserver-authentication
+  - manila-csi-driver-operator-lock
+  - manila-csi-driver-trusted-ca-bundle
   resources:
   - configmaps
   verbs:
@@ -30,6 +36,14 @@ rules:
   - delete
   - patch
   - update
+- apiGroups:
+  - ''
+  resources:
+  - configmaps
+  verbs:
+  - watch
+  - list
+  - get
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:
