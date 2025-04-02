@@ -61,3 +61,6 @@ spec:
         - name: guest-kubeconfig
           secret:
             secretName: service-network-admin-kubeconfig
+      securityContext:
+        # Hypershift on AKS does not support SCC and needs a specific user ID
+        runAsUser: 1001

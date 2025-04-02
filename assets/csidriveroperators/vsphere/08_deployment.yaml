@@ -67,6 +67,11 @@ spec:
         - mountPath: /var/run/secrets/serving-cert
           name: vmware-vsphere-csi-driver-operator-metrics-serving-cert
         terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
       priorityClassName: system-cluster-critical
       serviceAccountName: vmware-vsphere-csi-driver-operator
       nodeSelector:
@@ -88,3 +93,7 @@ spec:
         secret:
           secretName: vmware-vsphere-csi-driver-operator-metrics-serving-cert
           optional: true
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
