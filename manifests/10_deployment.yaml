@@ -146,4 +146,3 @@ spec:
         - name: cluster-storage-operator-serving-cert
           secret:
             secretName: cluster-storage-operator-serving-cert
-            optional: true
