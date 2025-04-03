@@ -93,10 +93,13 @@ spec:
           capabilities:
             drop:
             - ALL
+          readOnlyRootFilesystem: false
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /etc/guest-kubeconfig
           name: guest-kubeconfig
+        - mountPath: /tmp
+          name: tmp
       priorityClassName: hypershift-control-plane
       securityContext:
         runAsNonRoot: true
@@ -119,3 +122,6 @@ spec:
       - name: guest-kubeconfig
         secret:
           secretName: service-network-admin-kubeconfig
+      - emptyDir:
+          medium: Memory
+        name: tmp

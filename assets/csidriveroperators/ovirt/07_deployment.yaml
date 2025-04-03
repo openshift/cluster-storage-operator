@@ -134,6 +134,7 @@ spec:
               mountPath: /tmp/config
           terminationMessagePolicy: FallbackToLogsOnError
           securityContext:
+            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             capabilities:
               drop:

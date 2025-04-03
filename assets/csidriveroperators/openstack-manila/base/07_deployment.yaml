@@ -56,12 +56,15 @@ spec:
         - name: cloud-credentials
           # Create /etc/openstack/clouds.yaml
           mountPath: /etc/openstack/
+        - name: tmp
+          mountPath: /tmp
         resources:
           requests:
             memory: 50Mi
             cpu: 10m
         terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
+          readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           capabilities:
             drop:
@@ -84,6 +87,9 @@ spec:
         secret:
           secretName: manila-cloud-credentials
           optional: false
+      - name: tmp
+        emptyDir:
+          medium: Memory
       securityContext:
         runAsNonRoot: true
         seccompProfile:

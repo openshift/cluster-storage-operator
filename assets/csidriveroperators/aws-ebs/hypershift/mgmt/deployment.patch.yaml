@@ -50,6 +50,8 @@ spec:
           - mountPath: /var/run/secrets/openshift/serviceaccount
             name: web-identity-token
         terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          readOnlyRootFilesystem: false
       priorityClassName: hypershift-control-plane
       tolerations:
         - key: CriticalAddonsOnly

@@ -68,6 +68,7 @@ spec:
           name: vmware-vsphere-csi-driver-operator-metrics-serving-cert
         terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
+          readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           capabilities:
             drop:

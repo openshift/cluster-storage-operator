@@ -55,6 +55,8 @@ spec:
           - mountPath: /etc/guest-kubeconfig
             name: guest-kubeconfig
         terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          readOnlyRootFilesystem: false
       priorityClassName: hypershift-control-plane
       volumes:
         - configMap:

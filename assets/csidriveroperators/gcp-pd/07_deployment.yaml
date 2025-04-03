@@ -53,10 +53,14 @@ spec:
             memory: 50Mi
             cpu: 10m
         securityContext:
+          readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           capabilities:
             drop:
             - ALL
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
       priorityClassName: system-cluster-critical
       serviceAccountName: gcp-pd-csi-driver-operator
       nodeSelector:
@@ -71,3 +75,7 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
+      volumes:
+      - name: tmp
+        emptyDir:
+          medium: Memory

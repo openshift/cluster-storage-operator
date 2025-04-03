@@ -90,6 +90,7 @@ spec:
           capabilities:
             drop:
             - ALL
+          readOnlyRootFilesystem: false
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /etc/guest-kubeconfig
@@ -98,6 +99,8 @@ spec:
           name: cacert
         - mountPath: /etc/openstack/
           name: cloud-credentials
+        - mountPath: /tmp
+          name: tmp
       priorityClassName: hypershift-control-plane
       securityContext:
         runAsNonRoot: true
@@ -130,3 +133,6 @@ spec:
         secret:
           optional: false
           secretName: manila-cloud-credentials
+      - emptyDir:
+          medium: Memory
+        name: tmp

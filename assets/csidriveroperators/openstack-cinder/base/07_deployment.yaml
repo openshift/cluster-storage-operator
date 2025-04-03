@@ -53,6 +53,8 @@ spec:
           readOnly: true
         - name: cacert
           mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
+        - name: tmp
+          mountPath: /tmp
         name: openstack-cinder-csi-driver-operator
         resources:
           requests:
@@ -60,6 +62,7 @@ spec:
             memory: 50Mi
         terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
+          readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           capabilities:
             drop:
@@ -85,6 +88,9 @@ spec:
           items:
             - key: clouds.yaml
               path: clouds.yaml
+      - name: tmp
+        emptyDir:
+          medium: Memory
       securityContext:
         runAsNonRoot: true
         seccompProfile:

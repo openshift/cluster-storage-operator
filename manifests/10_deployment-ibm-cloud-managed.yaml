@@ -114,6 +114,7 @@ spec:
           capabilities:
             drop:
             - ALL
+          readOnlyRootFilesystem: false
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /var/run/secrets/serving-cert
@@ -140,5 +141,4 @@ spec:
       volumes:
       - name: cluster-storage-operator-serving-cert
         secret:
-          optional: true
           secretName: cluster-storage-operator-serving-cert
