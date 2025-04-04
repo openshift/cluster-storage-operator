@@ -94,10 +94,12 @@ spec:
         volumeMounts:
         - mountPath: /etc/guest-kubeconfig
           name: guest-kubeconfig
-        - mountPath: /etc/openstack-ca/
-          name: cacert
-        - mountPath: /etc/openstack/
+        - mountPath: /etc/openstack
           name: cloud-credentials
+          readOnly: true
+        - mountPath: /etc/openstack-ca
+          name: legacy-cacert
+          readOnly: true
       priorityClassName: hypershift-control-plane
       securityContext:
         runAsNonRoot: true
@@ -125,8 +127,18 @@ spec:
             path: ca-bundle.pem
           name: openstack-cloud-config
           optional: true
-        name: cacert
+        name: legacy-cacert
       - name: cloud-credentials
-        secret:
-          optional: false
-          secretName: manila-cloud-credentials
+        projected:
+          sources:
+          - secret:
+              items:
+              - key: cacert
+                path: ca.crt
+              name: openstack-cloud-credentials
+              optional: true
+          - secret:
+              items:
+              - key: clouds.yaml
+                path: clouds.yaml
+              name: openstack-cloud-credentials
