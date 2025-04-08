@@ -51,11 +51,12 @@ spec:
         imagePullPolicy: IfNotPresent
         name: manila-csi-driver-operator
         volumeMounts:
+        - name: cloud-credentials
+          mountPath: /etc/openstack/
+          readOnly: true
         - name: cacert
           mountPath: /etc/openstack-ca/
-        - name: cloud-credentials
-          # Create /etc/openstack/clouds.yaml
-          mountPath: /etc/openstack/
+          readOnly: true
         - name: tmp
           mountPath: /tmp
         resources:
@@ -72,6 +73,9 @@ spec:
       priorityClassName: system-cluster-critical
       serviceAccountName: manila-csi-driver-operator
       volumes:
+      - name: cloud-credentials
+        secret:
+          secretName: manila-cloud-credentials
       - name: cacert
         # Extract ca-bundle.pem to /usr/share/pki/ca-trust-source if present.
         # Let the pod start when the ConfigMap does not exist or the certificate
@@ -83,10 +87,6 @@ spec:
             - key: ca-bundle.pem
               path: ca-bundle.pem
           optional: true
-      - name: cloud-credentials
-        secret:
-          secretName: manila-cloud-credentials
-          optional: false
       - name: tmp
         emptyDir:
           medium: Memory
