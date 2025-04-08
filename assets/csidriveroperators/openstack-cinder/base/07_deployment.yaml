@@ -54,6 +54,7 @@ spec:
         # NOTE(stephenfin): The volumes definition for this mount varies
         # between standalone and hypershift configurations, thus it is defined
         # in overlay patches
+        # TODO(stephenfin): Remove in 4.20
         - name: legacy-cacert
           mountPath: /etc/kubernetes/static-pod-resources/configmaps/cloud-config
           readOnly: true
@@ -75,11 +76,19 @@ spec:
       serviceAccountName: openstack-cinder-csi-driver-operator
       volumes:
       - name: cloud-credentials
-        secret:
-          secretName: openstack-cloud-credentials
-          items:
-          - key: clouds.yaml
-            path: clouds.yaml
+        projected:
+          sources:
+            - secret:
+                name: openstack-cloud-credentials
+                items:
+                - key: cacert
+                  path: ca.crt
+                optional: true
+            - secret:
+                name: openstack-cloud-credentials
+                items:
+                - key: clouds.yaml
+                  path: clouds.yaml
       - name: tmp
         emptyDir:
           medium: Memory

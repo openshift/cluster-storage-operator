@@ -91,11 +91,19 @@ spec:
           optional: true
         name: legacy-cacert
       - name: cloud-credentials
-        secret:
-          items:
-          - key: clouds.yaml
-            path: clouds.yaml
-          secretName: openstack-cloud-credentials
+        projected:
+          sources:
+          - secret:
+              items:
+              - key: cacert
+                path: ca.crt
+              name: openstack-cloud-credentials
+              optional: true
+          - secret:
+              items:
+              - key: clouds.yaml
+                path: clouds.yaml
+              name: openstack-cloud-credentials
       - emptyDir:
           medium: Memory
         name: tmp
