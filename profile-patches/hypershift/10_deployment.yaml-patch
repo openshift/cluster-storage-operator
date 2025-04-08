@@ -86,3 +86,9 @@
   value:
     openshift.io/required-scc: restricted-v2
     target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+
+# Remove changes for readOnlyRootFilesystem
+- op: replace
+  path: /spec/template/spec/containers/0/securityContext/readOnlyRootFilesystem
+  value:
+    false

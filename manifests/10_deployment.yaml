@@ -138,6 +138,7 @@ spec:
             capabilities:
               drop:
               - ALL
+            readOnlyRootFilesystem: true
           volumeMounts:
             - mountPath: /var/run/secrets/serving-cert
               name: cluster-storage-operator-serving-cert
@@ -145,4 +146,3 @@ spec:
         - name: cluster-storage-operator-serving-cert
           secret:
             secretName: cluster-storage-operator-serving-cert
-            optional: true
