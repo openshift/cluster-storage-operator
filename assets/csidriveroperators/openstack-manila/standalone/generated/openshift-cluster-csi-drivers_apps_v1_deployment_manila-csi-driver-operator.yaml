@@ -85,9 +85,6 @@ spec:
         key: node-role.kubernetes.io/master
         operator: Exists
       volumes:
-      - name: cloud-credentials
-        secret:
-          secretName: manila-cloud-credentials
       - configMap:
           items:
           - key: ca-bundle.pem
@@ -95,6 +92,9 @@ spec:
           name: cloud-provider-config
           optional: true
         name: cacert
+      - name: cloud-credentials
+        secret:
+          secretName: manila-cloud-credentials
       - emptyDir:
           medium: Memory
         name: tmp

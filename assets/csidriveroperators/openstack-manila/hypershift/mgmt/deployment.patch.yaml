@@ -62,3 +62,10 @@ spec:
         - name: guest-kubeconfig
           secret:
             secretName: service-network-admin-kubeconfig
+        - name: cacert
+          configMap:
+            name: openstack-cloud-config
+            items:
+              - key: ca-bundle.pem
+                path: ca-bundle.pem
+            optional: true

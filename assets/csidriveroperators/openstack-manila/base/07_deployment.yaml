@@ -54,6 +54,9 @@ spec:
         - name: cloud-credentials
           mountPath: /etc/openstack/
           readOnly: true
+        # NOTE(stephenfin): This volumes definiton for this mount varies
+        # between standalone and hypershift configurations, thus it is defined
+        # in overlay patches
         - name: cacert
           mountPath: /etc/openstack-ca/
           readOnly: true
@@ -76,17 +79,6 @@ spec:
       - name: cloud-credentials
         secret:
           secretName: manila-cloud-credentials
-      - name: cacert
-        # Extract ca-bundle.pem to /usr/share/pki/ca-trust-source if present.
-        # Let the pod start when the ConfigMap does not exist or the certificate
-        # is not preset there. The certificate file will be created once the
-        # ConfigMap is created / the cerificate is added to it.
-        configMap:
-          name: cloud-provider-config
-          items:
-            - key: ca-bundle.pem
-              path: ca-bundle.pem
-          optional: true
       - name: tmp
         emptyDir:
           medium: Memory
