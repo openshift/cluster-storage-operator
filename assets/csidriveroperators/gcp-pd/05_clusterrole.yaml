@@ -279,11 +279,21 @@ rules:
   - update
   - delete
 - apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattributesclasses
+  verbs:
+   - get
+   - list
+   - watch
+- apiGroups:
   - config.openshift.io
   resources:
   - infrastructures
   - proxies
   - apiservers
+  - featuregates
+  - clusterversions
   verbs:
   - get
   - list
