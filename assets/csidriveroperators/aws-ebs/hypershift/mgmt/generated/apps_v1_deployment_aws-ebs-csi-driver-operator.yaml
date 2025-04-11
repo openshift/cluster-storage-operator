@@ -133,7 +133,7 @@ spec:
       - key: CriticalAddonsOnly
         operator: Exists
       - effect: NoSchedule
-        key: node-role.kubernetes.io/master
+        key: node-role.kubernetes.io/control-plane
         operator: Exists
       - key: hypershift.openshift.io/control-plane
         operator: Exists
