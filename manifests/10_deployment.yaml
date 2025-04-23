@@ -23,7 +23,11 @@ spec:
       nodeSelector:
         node-role.kubernetes.io/master: ""
       tolerations:
-      - key: node-role.kubernetes.io/master  # Just tolerate NoSchedule taint on master node. If there are other conditions like disk-pressure etc, let's not schedule the control-plane pods onto that node.
+      # Just tolerate NoSchedule taint on control-plane/master node. If there are other conditions like disk-pressure etc, let's not schedule the control-plane pods onto that node.
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: "NoSchedule"
+      - key: node-role.kubernetes.io/master
         operator: Exists
         effect: "NoSchedule"
       - key: "node.kubernetes.io/unreachable"
