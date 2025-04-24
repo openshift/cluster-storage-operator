@@ -56,4 +56,21 @@ spec:
             memory: 50Mi
             cpu: 10m
         terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
       serviceAccountName: aws-ebs-csi-driver-operator
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+      - name: tmp
+        emptyDir:
+          medium: Memory

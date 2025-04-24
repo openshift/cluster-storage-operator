@@ -17,6 +17,7 @@ func GetGCPPDCSIOperatorConfig() CSIOperatorConfig {
 	pairs := []string{
 		"${OPERATOR_IMAGE}", os.Getenv(envGCPPDDriverOperatorImage),
 		"${DRIVER_IMAGE}", os.Getenv(envGCPPDDriverImage),
+		"${OPERATOR_IMAGE_VERSION}", os.Getenv(envOperatorImageVersion),
 	}
 
 	return CSIOperatorConfig{

@@ -46,6 +46,8 @@ spec:
           - mountPath: /etc/guest-kubeconfig
             name: guest-kubeconfig
         terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          readOnlyRootFilesystem: false
       priorityClassName: hypershift-control-plane
       tolerations:
         - key: CriticalAddonsOnly
@@ -62,3 +64,6 @@ spec:
         - name: guest-kubeconfig
           secret:
             secretName: service-network-admin-kubeconfig
+      securityContext:
+        # Hypershift on AKS does not support SCC and needs a specific user ID
+        runAsUser: 1001

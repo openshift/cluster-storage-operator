@@ -85,15 +85,29 @@ spec:
           requests:
             cpu: 10m
             memory: 50Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /etc/guest-kubeconfig
           name: guest-kubeconfig
-        - mountPath: /etc/openstack-ca/
-          name: cacert
-        - mountPath: /etc/openstack/
+        - mountPath: /etc/openstack
           name: cloud-credentials
+          readOnly: true
+        - mountPath: /etc/openstack-ca
+          name: legacy-cacert
+          readOnly: true
+        - mountPath: /tmp
+          name: tmp
       priorityClassName: hypershift-control-plane
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: manila-csi-driver-operator
       tolerations:
       - key: CriticalAddonsOnly
@@ -116,8 +130,21 @@ spec:
             path: ca-bundle.pem
           name: openstack-cloud-config
           optional: true
-        name: cacert
+        name: legacy-cacert
       - name: cloud-credentials
-        secret:
-          optional: false
-          secretName: manila-cloud-credentials
+        projected:
+          sources:
+          - secret:
+              items:
+              - key: cacert
+                path: ca.crt
+              name: openstack-cloud-credentials
+              optional: true
+          - secret:
+              items:
+              - key: clouds.yaml
+                path: clouds.yaml
+              name: openstack-cloud-credentials
+      - emptyDir:
+          medium: Memory
+        name: tmp
