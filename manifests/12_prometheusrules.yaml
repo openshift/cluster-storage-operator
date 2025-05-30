@@ -47,11 +47,18 @@ spec:
         labels:
           severity: info
         annotations:
-          summary: "Pods can't start because {{ $labels.operation_name }} of volume plugin {{ $labels.volume_plugin }} is permanently failing on node {{ $labels.node }}."
+          summary: "Pods can't start because {{ $labels.operation_name }} of volume plugin {{ $labels.volume_plugin }} is permanently failing{{ if $labels.node }} on node {{ $labels.node }}{{ end }}."
           description: |
-            Failing storage operation "{{ $labels.operation_name }}" of volume plugin {{ $labels.volume_plugin }} was preventing Pods on node {{ $labels.node }}
+            Failing storage operation "{{ $labels.operation_name }}" of volume plugin {{ $labels.volume_plugin }} was preventing Pods{{ if $labels.node }} on node {{ $labels.node }}{{ end }}
             from starting for past 5 minutes.
+            {{ if eq $labels.operation_name "volume_mount" -}}
             Please investigate Pods that are "ContainerCreating" on the node: "oc get pod --field-selector=spec.nodeName={{ $labels.node }} --all-namespaces | grep ContainerCreating".
+            {{- else if eq $labels.operation_name "volume_attach" -}}
+            Please investigate Pods that are "ContainerCreating" across all nodes: "oc get pod --all-namespaces | grep ContainerCreating".
+            Check volume attachment status: "oc get volumeattachment" and controller manager logs.
+            {{- else -}}
+            Please investigate Pods that are "ContainerCreating"{{ if $labels.node }} on node {{ $labels.node }}{{ end }}.
+            {{- end }}
             Events of the Pods should contain exact error message: "oc describe pod -n <pod namespace> <pod name>".
 
     - name: storage-selinux.rules
