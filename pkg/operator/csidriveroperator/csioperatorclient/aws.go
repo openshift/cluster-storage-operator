@@ -40,6 +40,7 @@ func GetAWSEBSCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/aws-ebs/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_aws-ebs-csi-driver-operator-clusterrolebinding.yaml",
 			"csidriveroperators/aws-ebs/standalone/07_role_aws_config.yaml",
 			"csidriveroperators/aws-ebs/standalone/08_rolebinding_aws_config.yaml",
+			"csidriveroperators/aws-ebs/standalone/09_network-policy-deny-all.yaml",
 		}
 		csiDriverConfig.CRAsset = "csidriveroperators/aws-ebs/standalone/generated/operator.openshift.io_v1_clustercsidriver_ebs.csi.aws.com.yaml"
 		csiDriverConfig.DeploymentAsset = "csidriveroperators/aws-ebs/standalone/generated/apps_v1_deployment_aws-ebs-csi-driver-operator.yaml"
