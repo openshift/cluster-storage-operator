@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
- name: allow-ingress-to-operator-metrics
+ name: allow-all-egress
  namespace: openshift-cluster-storage-operator
  annotations:
   include.release.openshift.io/hypershift: "true"
@@ -12,12 +12,11 @@ metadata:
 spec:
  podSelector:
    matchLabels:
-     openshift.storage.network-policy.operator-metrics: allow
- ingress:
+     openshift.storage.network-policy.all-egress: allow
+ egress:
  - ports:
    - protocol: TCP
-     port: 8443
-   - protocol: TCP
-     port: 8444
+     port: 1
+     endPort: 65535
  policyTypes:
- - Ingress
+ - Egress
