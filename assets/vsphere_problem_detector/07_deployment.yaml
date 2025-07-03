@@ -18,10 +18,6 @@ spec:
         openshift.io/required-scc: restricted-v2
       labels:
         name: vsphere-problem-detector-operator
-        openshift.storage.network-policy.dns: allow
-        openshift.storage.network-policy.api-server: allow
-        openshift.storage.network-policy.operator-metrics: allow
-        openshift.storage.network-policy.all-egress: allow
     spec:
       containers:
       - args:
