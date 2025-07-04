@@ -1,0 +1,32 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: volume-data-source-validator
+  namespace: openshift-cluster-storage-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: volume-data-source-validator
+  template:
+    metadata:
+      labels:
+        app: volume-data-source-validator
+    spec:
+      serviceAccountName: volume-data-source-validator
+      containers:
+        - name: volume-data-source-validator
+          image: ${VOLUME_DATA_SOURCE_VALIDATOR_IMAGE}
+          args:
+            - "--v=${LOG_LEVEL}"
+            - "--http-endpoint=:8080"
+            - "--leader-election=true"
+            - "--leader-election-lease-duration=137s"
+            - "--leader-election-renew-deadline=107s"
+            - "--leader-election-retry-period=26s"
+            - "--leader-election-namespace=openshift-cluster-storage-operator"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http-endpoint
+              protocol: TCP
