@@ -19,6 +19,9 @@ spec:
         openshift.io/required-scc: nonroot-v2
       labels:
         name: cluster-storage-operator
+        openshift.storage.network-policy.dns: allow
+        openshift.storage.network-policy.api-server: allow
+        openshift.storage.network-policy.operator-metrics: allow
     spec:
       nodeSelector:
         node-role.kubernetes.io/master: ""
