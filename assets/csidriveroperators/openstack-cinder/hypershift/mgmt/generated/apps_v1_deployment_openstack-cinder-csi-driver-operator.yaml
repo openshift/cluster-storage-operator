@@ -20,6 +20,10 @@ spec:
       labels:
         hypershift.openshift.io/need-management-kas-access: "true"
         name: openstack-cinder-csi-driver-operator
+        openshift.storage.network-policy.all-egress: allow
+        openshift.storage.network-policy.api-server: allow
+        openshift.storage.network-policy.dns: allow
+        openshift.storage.network-policy.operator-metrics-range: allow
     spec:
       affinity:
         nodeAffinity:
