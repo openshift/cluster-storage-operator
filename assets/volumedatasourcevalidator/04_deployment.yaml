@@ -1,0 +1,87 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: volume-data-source-validator
+  namespace: openshift-cluster-storage-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: volume-data-source-validator
+  template:
+    metadata:
+      annotations:
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+        openshift.io/required-scc: restricted-v2
+      labels:
+        name: volume-data-source-validator
+        openshift.storage.network-policy.dns: allow
+        openshift.storage.network-policy.api-server: allow
+        openshift.storage.network-policy.operator-metrics: allow
+    spec:
+      serviceAccountName: volume-data-source-validator
+      containers:
+        - name: volume-data-source-validator
+          image: ${VOLUME_DATA_SOURCE_VALIDATOR_IMAGE}
+          args:
+            - "--v=${LOG_LEVEL}"
+            - "--http-endpoint=127.0.0.1:8443"
+            - "--leader-election=true"
+            - "--leader-election-lease-duration=${LEADER_ELECTION_LEASE_DURATION}"
+            - "--leader-election-renew-deadline=${LEADER_ELECTION_RENEW_DEADLINE}"
+            - "--leader-election-retry-period=${LEADER_ELECTION_RETRY_PERIOD}"
+            - "--leader-election-namespace=openshift-cluster-storage-operator"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8443
+              name: validator-http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          terminationMessagePolicy: FallbackToLogsOnError
+        - name: kube-rbac-proxy
+          image: ${KUBE_RBAC_PROXY_IMAGE}
+          args:
+            - "--secure-listen-address=0.0.0.0:8444"
+            - "--upstream=http://127.0.0.1:8443/"
+            - "--tls-cert-file=/var/run/secrets/serving-cert/tls.crt"
+            - "--tls-private-key-file=/var/run/secrets/serving-cert/tls.key"
+            - "--logtostderr=true"
+            - "--v=${LOG_LEVEL}"
+          ports:
+            - containerPort: 8444
+              name: validator-m
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /var/run/secrets/serving-cert
+              name: volume-data-source-validator-serving-cert
+              readOnly: true
+          resources:
+            requests:
+              memory: 20Mi
+              cpu: 1m
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          terminationMessagePolicy: FallbackToLogsOnError
+      priorityClassName: system-cluster-critical
+      volumes:
+        - name: volume-data-source-validator-serving-cert
+          secret:
+            secretName: volume-data-source-validator-serving-cert
+            optional: true
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
