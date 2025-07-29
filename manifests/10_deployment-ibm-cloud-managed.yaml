@@ -100,6 +100,8 @@ spec:
           value: quay.io/openshift/origin-powervs-block-csi-driver-operator:latest
         - name: POWERVS_BLOCK_CSI_DRIVER_IMAGE
           value: quay.io/openshift/origin-powervs-block-csi-driver:latest
+        - name: VOLUME_DATA_SOURCE_VALIDATOR_IMAGE
+          value: quay.io/openshift/origin-volume-data-source-validator:latest
         - name: TOOLS_IMAGE
           value: quay.io/openshift/origin-tools:latest
         image: quay.io/openshift/origin-cluster-storage-operator:latest

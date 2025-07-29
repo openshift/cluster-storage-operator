@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/volumedatasourcevalidator"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/vsphereproblemdetector"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/controller/factory"
@@ -93,6 +94,12 @@ func (csr *commonStarter) CreateCommonControllers() error {
 		csr.eventRecorder,
 	)
 	csr.controllers = append(csr.controllers, storageClassController)
+
+	volumeDataSourceValidatorController := volumedatasourcevalidator.NewController(
+		csr.commonClients,
+		csr.eventRecorder,
+	)
+	csr.controllers = append(csr.controllers, volumeDataSourceValidatorController)
 
 	relatedObjects := []configv1.ObjectReference{
 		{Resource: "namespaces", Name: operatorNamespace},
