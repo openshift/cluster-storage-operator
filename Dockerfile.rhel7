@@ -3,7 +3,7 @@ WORKDIR /go/src/github.com/openshift/cluster-storage-operator
 COPY . .
 RUN make && \
     mkdir -p /tmp/build && \
-    cp /go/src/github.com/openshift/cluster-storage-operator/bin/cluster-storage-operator-tests-ext /tmp/build/cluster-storage-operator-tests-ext && \
+    cp /go/src/github.com/openshift/cluster-storage-operator/cluster-storage-operator-tests-ext /tmp/build/cluster-storage-operator-tests-ext && \
     gzip /tmp/build/cluster-storage-operator-tests-ext
 
 FROM registry.ci.openshift.org/ocp/4.8:base

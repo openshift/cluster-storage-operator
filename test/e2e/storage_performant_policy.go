@@ -21,6 +21,7 @@ const (
 	clientName         = "cluster-storage-operator-e2e"
 	storageCOName      = "storage"
 	fsGroupPolicyLabel = "storage.openshift.io/fsgroup-change-policy"
+	selinuxPolicyLabel = "storage.openshift.io/selinux-change-policy"
 )
 
 var (
@@ -50,8 +51,9 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:StoragePerformantPolicy] Storag
 	})
 
 	g.Context("namespace has fsgroup change policy label", func() {
-		g.It("it should set fsgroup change policy to OnRootMismatch if pod has none", func(ctx context.Context) {
-			nsObj := &v1.Namespace{
+		var nsObj *v1.Namespace
+		g.BeforeEach(func(ctx context.Context) {
+			nsObj = &v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "fsgroup-policy-test-",
 					Labels: map[string]string{
@@ -68,7 +70,17 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:StoragePerformantPolicy] Storag
 				g.Fail(fmt.Sprintf("Failed to create test namespace: %v", err))
 			}
 			g.GinkgoLogr.Info("Created namespace with label storage.openshift.io/fsgroup-change-policy=OnRootMismatch", "namespace", nsObj.Name)
-			g.DeferCleanup(cleanupNamespace, testContext, kubeClient, nsObj.Name)
+		})
+
+		g.AfterEach(func(ctx context.Context) {
+			testContext, cancel := context.WithTimeout(ctx, 5*time.Minute)
+			defer cancel()
+			cleanupNamespace(testContext, kubeClient, nsObj.Name)
+		})
+
+		g.It("it should set fsgroup change policy to OnRootMismatch if pod has none", func(ctx context.Context) {
+			testContext, cancel := context.WithTimeout(ctx, 5*time.Minute)
+			defer cancel()
 			pod := getPod(nsObj.Name)
 
 			createdPod, err := kubeClient.CoreV1().Pods(nsObj.Name).Create(testContext, pod, metav1.CreateOptions{})
@@ -103,6 +115,109 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:StoragePerformantPolicy] Storag
 			g.GinkgoLogr.Info("Pod FSGroupChangePolicy correctly set to", "policy", *runningPod.Spec.SecurityContext.FSGroupChangePolicy)
 		})
 
+		g.It("it should not override fsgroup change policy if pod already has one", func(ctx context.Context) {
+			testContext, cancel := context.WithTimeout(ctx, 5*time.Minute)
+			defer cancel()
+			pod := getPod(nsObj.Name)
+
+			alwaysChangePolicy := v1.FSGroupChangeAlways
+			pod.Spec.SecurityContext.FSGroupChangePolicy = &alwaysChangePolicy
+
+			createdPod, err := kubeClient.CoreV1().Pods(nsObj.Name).Create(testContext, pod, metav1.CreateOptions{})
+			if err != nil {
+				g.Fail(fmt.Sprintf("Failed to create test pod: %v", err))
+			}
+			g.GinkgoLogr.Info("Created pod in namespace", "pod", createdPod.Name, "namespace", nsObj.Name)
+			// check if pod has correct fsgroup change policy
+			runningPod, err := kubeClient.CoreV1().Pods(nsObj.Name).Get(testContext, createdPod.Name, metav1.GetOptions{})
+			if err != nil {
+				g.Fail(fmt.Sprintf("Failed to get pod: %v", err))
+			}
+			if runningPod.Spec.SecurityContext == nil || runningPod.Spec.SecurityContext.FSGroupChangePolicy == nil {
+				g.Fail("FSGroupChangePolicy not set on pod")
+			}
+			if *runningPod.Spec.SecurityContext.FSGroupChangePolicy != v1.FSGroupChangeAlways {
+				g.Fail(fmt.Sprintf("FSGroupChangePolicy = %v, want %v", *runningPod.Spec.SecurityContext.FSGroupChangePolicy, v1.FSGroupChangeAlways))
+			}
+		})
+	})
+
+	g.Context("namespace has selinux change policy label", func() {
+		var nsObj *v1.Namespace
+		g.BeforeEach(func(ctx context.Context) {
+			nsObj = &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "selinux-policy-test-",
+					Labels: map[string]string{
+						selinuxPolicyLabel: string(v1.SELinuxChangePolicyRecursive),
+					},
+				},
+			}
+			testContext, cancel := context.WithTimeout(ctx, 5*time.Minute)
+			defer cancel()
+
+			var err error
+			nsObj, err = kubeClient.CoreV1().Namespaces().Create(testContext, nsObj, metav1.CreateOptions{})
+			if err != nil && !apierrors.IsAlreadyExists(err) {
+				g.Fail(fmt.Sprintf("Failed to create test namespace: %v", err))
+			}
+			g.GinkgoLogr.Info("Created namespace with label storage.openshift.io/selinux-change-policy=Recursive", "namespace", nsObj.Name)
+		})
+
+		g.AfterEach(func(ctx context.Context) {
+			testContext, cancel := context.WithTimeout(ctx, 5*time.Minute)
+			defer cancel()
+			cleanupNamespace(testContext, kubeClient, nsObj.Name)
+		})
+
+		g.It("it should set selinux change policy to Recursive if pod has none", func(ctx context.Context) {
+			testContext, cancel := context.WithTimeout(ctx, 5*time.Minute)
+			defer cancel()
+			pod := getPod(nsObj.Name)
+			createdPod, err := kubeClient.CoreV1().Pods(nsObj.Name).Create(testContext, pod, metav1.CreateOptions{})
+			if err != nil {
+				g.Fail(fmt.Sprintf("Failed to create test pod: %v", err))
+			}
+			g.GinkgoLogr.Info("Created pod in namespace", "pod", createdPod.Name, "namespace", nsObj.Name)
+
+			// check if pod has correct selinux change policy
+			runningPod, err := kubeClient.CoreV1().Pods(nsObj.Name).Get(testContext, createdPod.Name, metav1.GetOptions{})
+			if err != nil {
+				g.Fail(fmt.Sprintf("Failed to get pod: %v", err))
+			}
+			if runningPod.Spec.SecurityContext == nil || runningPod.Spec.SecurityContext.SELinuxChangePolicy == nil {
+				g.Fail("SELinuxChangePolicy not set on pod")
+			}
+			if *runningPod.Spec.SecurityContext.SELinuxChangePolicy != v1.SELinuxChangePolicyRecursive {
+				g.Fail(fmt.Sprintf("SELinuxChangePolicy = %v, want %v", *runningPod.Spec.SecurityContext.SELinuxChangePolicy, v1.SELinuxChangePolicyRecursive))
+			}
+		})
+
+		g.It("it should not override selinux change policy if pod already has one", func(ctx context.Context) {
+			testContext, cancel := context.WithTimeout(ctx, 5*time.Minute)
+			defer cancel()
+			pod := getPod(nsObj.Name)
+			recursiveChangePolicy := v1.SELinuxChangePolicyRecursive
+			pod.Spec.SecurityContext.SELinuxChangePolicy = &recursiveChangePolicy
+
+			createdPod, err := kubeClient.CoreV1().Pods(nsObj.Name).Create(testContext, pod, metav1.CreateOptions{})
+			if err != nil {
+				g.Fail(fmt.Sprintf("Failed to create test pod: %v", err))
+			}
+			g.GinkgoLogr.Info("Created pod in namespace", "pod", createdPod.Name, "namespace", nsObj.Name)
+
+			// check if pod has correct selinux change policy
+			runningPod, err := kubeClient.CoreV1().Pods(nsObj.Name).Get(testContext, createdPod.Name, metav1.GetOptions{})
+			if err != nil {
+				g.Fail(fmt.Sprintf("Failed to get pod: %v", err))
+			}
+			if runningPod.Spec.SecurityContext == nil || runningPod.Spec.SecurityContext.SELinuxChangePolicy == nil {
+				g.Fail("SELinuxChangePolicy not set on pod")
+			}
+			if *runningPod.Spec.SecurityContext.SELinuxChangePolicy != v1.SELinuxChangePolicyRecursive {
+				g.Fail(fmt.Sprintf("SELinuxChangePolicy = %v, want %v", *runningPod.Spec.SecurityContext.SELinuxChangePolicy, v1.SELinuxChangePolicyRecursive))
+			}
+		})
 	})
 })
 
