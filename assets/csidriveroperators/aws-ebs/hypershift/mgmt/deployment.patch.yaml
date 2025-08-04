@@ -8,6 +8,7 @@ spec:
       annotations:
         openshift.io/required-scc: restricted-v2
       labels:
+        app: aws-ebs-csi-driver-operator
         hypershift.openshift.io/need-management-kas-access: "true"
     spec:
       affinity:

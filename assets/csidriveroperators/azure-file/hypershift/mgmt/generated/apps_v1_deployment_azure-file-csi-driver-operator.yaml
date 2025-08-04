@@ -18,6 +18,7 @@ spec:
         openshift.io/required-scc: restricted-v2
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
+        app: azure-file-csi-driver-operator
         hypershift.openshift.io/need-management-kas-access: "true"
         name: azure-file-csi-driver-operator
     spec:

@@ -17,6 +17,7 @@ spec:
         openshift.io/required-scc: restricted-v2
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
+        app: aws-ebs-csi-driver-operator
         hypershift.openshift.io/need-management-kas-access: "true"
         name: aws-ebs-csi-driver-operator
     spec:
