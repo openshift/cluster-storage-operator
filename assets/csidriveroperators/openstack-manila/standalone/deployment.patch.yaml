@@ -4,6 +4,12 @@ metadata:
   name: manila-csi-driver-operator
 spec:
   template:
+    metadata:
+      labels:
+        openshift.storage.network-policy.all-egress: allow
+        openshift.storage.network-policy.api-server: allow
+        openshift.storage.network-policy.dns: allow
+        openshift.storage.network-policy.operator-metrics-range: allow
     spec:
       nodeSelector:
         node-role.kubernetes.io/master: ""
