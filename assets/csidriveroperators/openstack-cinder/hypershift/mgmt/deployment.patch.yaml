@@ -6,6 +6,7 @@ spec:
   template:
     metadata:
       labels:
+        app: openstack-cinder-csi-driver-operator
         hypershift.openshift.io/need-management-kas-access: "true"
         openshift.storage.network-policy.all-egress: allow
         openshift.storage.network-policy.api-server: allow
