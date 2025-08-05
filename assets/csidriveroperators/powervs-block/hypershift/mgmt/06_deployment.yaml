@@ -15,6 +15,7 @@ spec:
         openshift.io/required-scc: restricted-v2
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
+        app: powervs-block-csi-driver-operator
         name: powervs-block-csi-driver-operator
     spec:
       containers:

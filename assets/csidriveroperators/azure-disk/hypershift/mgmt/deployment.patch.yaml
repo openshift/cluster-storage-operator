@@ -6,6 +6,7 @@ spec:
   template:
     metadata:
       labels:
+        app: azure-disk-csi-driver-operator
         hypershift.openshift.io/need-management-kas-access: "true"
     spec:
       affinity:
