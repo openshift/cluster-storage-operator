@@ -1,0 +1,60 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: "openshift-storage-policy-validation"
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade,CustomNoUpgrade"
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["namespaces"]
+  variables:
+  # Check if fsgroup policy label exists
+  - name: hasFsGroupPolicyLabel
+    expression: |
+      has(object.metadata.labels) && "storage.openshift.io/fsgroup-change-policy" in object.metadata.labels
+  # Extract fsgroup policy label value if present
+  - name: fsGroupPolicy
+    expression: |
+      variables.hasFsGroupPolicyLabel ?
+      object.metadata.labels["storage.openshift.io/fsgroup-change-policy"] : ""
+  # Check if selinux policy label exists
+  - name: hasSeLinuxPolicyLabel
+    expression: |
+      has(object.metadata.labels) && "storage.openshift.io/selinux-change-policy" in object.metadata.labels
+  # Extract selinux policy label value if present
+  - name: seLinuxPolicy
+    expression: |
+      variables.hasSeLinuxPolicyLabel ?
+      object.metadata.labels["storage.openshift.io/selinux-change-policy"] : ""
+  # Valid fsgroup policy values
+  - name: validFsGroupPolicies
+    expression: '["Always", "OnRootMismatch"]'
+  # Valid selinux policy values
+  - name: validSeLinuxPolicies
+    expression: '["Recursive", "MountOption"]'
+  validations:
+  # Validate fsgroup-change-policy label if present - must have valid non-empty value
+  - expression: |
+      variables.hasFsGroupPolicyLabel ? variables.fsGroupPolicy in variables.validFsGroupPolicies : true
+    messageExpression: |
+      "Invalid value '" + variables.fsGroupPolicy + "' for label storage.openshift.io/fsgroup-change-policy. Valid values are: " +
+      variables.validFsGroupPolicies.join(", ")
+    reason: Invalid
+  # Validate selinux-change-policy label if present - must have valid non-empty value
+  - expression: |
+      variables.hasSeLinuxPolicyLabel ? variables.seLinuxPolicy in variables.validSeLinuxPolicies : true
+    messageExpression: |
+      "Invalid value '" + variables.seLinuxPolicy + "' for label storage.openshift.io/selinux-change-policy. Valid values are: " +
+      variables.validSeLinuxPolicies.join(", ")
+    reason: Invalid
+
