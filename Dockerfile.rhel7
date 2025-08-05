@@ -2,13 +2,11 @@ FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.16-openshift-4.8 AS b
 WORKDIR /go/src/github.com/openshift/cluster-storage-operator
 COPY . .
 RUN make && \
-    mkdir -p /tmp/build && \
-    cp /go/src/github.com/openshift/cluster-storage-operator/cluster-storage-operator-tests-ext /tmp/build/cluster-storage-operator-tests-ext && \
-    gzip /tmp/build/cluster-storage-operator-tests-ext
+    gzip /go/src/github.com/openshift/cluster-storage-operator/cluster-storage-operator-tests-ext
 
 FROM registry.ci.openshift.org/ocp/4.8:base
 COPY --from=builder /go/src/github.com/openshift/cluster-storage-operator/cluster-storage-operator /usr/bin/
-COPY --from=builder /tmp/build/cluster-storage-operator-tests-ext.gz /usr/bin/
+COPY --from=builder /go/src/github.com/openshift/cluster-storage-operator/cluster-storage-operator-tests-ext.gz /usr/bin/
 COPY manifests /manifests
 ENTRYPOINT ["/usr/bin/cluster-storage-operator"]
 LABEL io.openshift.release.operator true

@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 
 	"github.com/openshift-eng/openshift-tests-extension/pkg/cmd"
 	e "github.com/openshift-eng/openshift-tests-extension/pkg/extension"
@@ -11,7 +12,7 @@ import (
 	utilflag "k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/logs"
 
-	_ "github.com/openshift/cluster-storage-operator/test/e2e"
+	e2e "github.com/openshift/cluster-storage-operator/test/e2e"
 )
 
 func main() {
@@ -47,13 +48,17 @@ func main() {
 		panic(err)
 	}
 
-       kubeTestsExtension.RegisterImage(
-               e.Image{
-                       Index:    0,
-                       Registry: "k8s.gcr.io",
-                       Name:     "pause",
-                       Version:  "3.2",
-               })
+	pauseImage := e.Image{
+		Index: 0,
+	}
+
+	pauseImageParts := strings.Split(e2e.PauseImage, "/")
+	pauseImage.Registry = pauseImageParts[0]
+	nameVersionParts := strings.Split(pauseImageParts[1], ":")
+	pauseImage.Name = nameVersionParts[0]
+	pauseImage.Version = nameVersionParts[1]
+
+	kubeTestsExtension.RegisterImage(pauseImage)
 	kubeTestsExtension.AddSpecs(specs)
 
 	// Cobra stuff

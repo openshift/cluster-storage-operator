@@ -21,6 +21,8 @@ const (
 	clientName         = "cluster-storage-operator-e2e"
 	fsGroupPolicyLabel = "storage.openshift.io/fsgroup-change-policy"
 	selinuxPolicyLabel = "storage.openshift.io/selinux-change-policy"
+
+	PauseImage = "k8s.gcr.io/pause:3.2"
 )
 
 var (
@@ -172,7 +174,7 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:StoragePerformantSecurityPolicy
 					}
 
 					if !tc.checkSecurityContext(runningPod) {
-						g.Fail(fmt.Sprintf("security context policy not set to %v on pod %+s", tc.namespaceLabelValue, runningPod.Name))
+						g.Fail(fmt.Sprintf("security context policy not set to %v on pod %+s with context: %+v", tc.namespaceLabelValue, runningPod.Name, runningPod.Spec.SecurityContext))
 					}
 				})
 			})
@@ -270,7 +272,7 @@ func getPod(ns string) *v1.Pod {
 			Containers: []v1.Container{
 				{
 					Name:    "pause",
-					Image:   "k8s.gcr.io/pause:3.2",
+					Image:   PauseImage,
 					Command: []string{"/pause"},
 					SecurityContext: &v1.SecurityContext{
 						Capabilities: &v1.Capabilities{

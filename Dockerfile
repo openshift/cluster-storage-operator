@@ -6,7 +6,7 @@ RUN make && \
 
 FROM registry.ci.openshift.org/ocp/4.20:base-rhel9
 COPY --from=builder /go/src/github.com/openshift/cluster-storage-operator/cluster-storage-operator /usr/bin/
-COPY --from=builder /tmp/build/cluster-storage-operator-tests-ext.gz /usr/bin/
+COPY --from=builder /go/src/github.com/openshift/cluster-storage-operator/cluster-storage-operator-tests-ext.gz /usr/bin/
 COPY manifests /manifests
 ENTRYPOINT ["/usr/bin/cluster-storage-operator"]
 LABEL io.openshift.release.operator true
