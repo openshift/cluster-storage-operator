@@ -47,6 +47,13 @@ func main() {
 		panic(err)
 	}
 
+       kubeTestsExtension.RegisterImage(
+               e.Image{
+                       Index:    0,
+                       Registry: "k8s.gcr.io",
+                       Name:     "pause",
+                       Version:  "3.2",
+               })
 	kubeTestsExtension.AddSpecs(specs)
 
 	// Cobra stuff
