@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: volume-data-source-validator
+  namespace: openshift-cluster-storage-operator
+spec:
+  endpoints:
+  - interval: 30s
+    path: /metrics
+    port: validator-m
+    scheme: https
+    tlsConfig:
+      caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
+      serverName: volume-data-source-validator-metrics.openshift-cluster-storage-operator.svc
+      certFile: /etc/prometheus/secrets/metrics-client-certs/tls.crt
+      keyFile: /etc/prometheus/secrets/metrics-client-certs/tls.key
+  jobLabel: component
+  selector:
+    matchLabels:
+      app: volume-data-source-validator-metrics

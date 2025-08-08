@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.alpha.openshift.io/serving-cert-secret-name: volume-data-source-validator-serving-cert
+  labels:
+    app: volume-data-source-validator-metrics
+  name: volume-data-source-validator-metrics
+  namespace: openshift-cluster-storage-operator
+spec:
+  ports:
+    - name: validator-metrics
+      port: 8444
+      protocol: TCP
+      targetPort: validator-m
+  selector:
+    name: volume-data-source-validator
+  sessionAffinity: None
+  type: ClusterIP
+
