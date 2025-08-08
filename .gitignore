@@ -1,4 +1,5 @@
 /cluster-storage-operator
+/cluster-storage-operator-tests-ext
 
 # Temporary Build Files
 build/_output

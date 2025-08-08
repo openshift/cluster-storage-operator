@@ -44,3 +44,4 @@ clean:
 .PHONY: clean
 
 GO_TEST_PACKAGES :=./pkg/... ./cmd/...
+

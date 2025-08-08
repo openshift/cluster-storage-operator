@@ -1,0 +1,20 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: "openshift-storage-policy-validation-binding"
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade,CustomNoUpgrade"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+spec:
+  policyName: "openshift-storage-policy-validation"
+  validationActions: [Deny]
+  matchResources:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["namespaces"]
