@@ -5,7 +5,11 @@ metadata:
 spec:
   template:
     metadata:
+      annotations:
+        release.openshift.io/version: ${RELEASE_VERSION}
       labels:
+        app: manila-csi-driver-operator
+        hypershift.openshift.io/managed-by: cluster-storage-operator
         hypershift.openshift.io/need-management-kas-access: "true"
         openshift.storage.network-policy.all-egress: allow
         openshift.storage.network-policy.api-server: allow

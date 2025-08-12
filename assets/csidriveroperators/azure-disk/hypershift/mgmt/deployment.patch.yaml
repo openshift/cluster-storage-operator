@@ -5,8 +5,11 @@ metadata:
 spec:
   template:
     metadata:
+      annotations:
+        release.openshift.io/version: ${RELEASE_VERSION}
       labels:
         app: azure-disk-csi-driver-operator
+        hypershift.openshift.io/managed-by: cluster-storage-operator
         hypershift.openshift.io/need-management-kas-access: "true"
     spec:
       affinity:
