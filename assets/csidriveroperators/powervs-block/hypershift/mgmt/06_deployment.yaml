@@ -13,9 +13,11 @@ spec:
     metadata:
       annotations:
         openshift.io/required-scc: restricted-v2
+        release.openshift.io/version: ${RELEASE_VERSION}
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         app: powervs-block-csi-driver-operator
+        hypershift.openshift.io/managed-by: cluster-storage-operator
         name: powervs-block-csi-driver-operator
         openshift.storage.network-policy.dns: allow
         openshift.storage.network-policy.api-server: allow
