@@ -1,0 +1,54 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: volume-data-source-validator
+  namespace: openshift-cluster-storage-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: volume-data-source-validator
+  template:
+    metadata:
+      annotations:
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+        openshift.io/required-scc: restricted-v2
+      labels:
+        name: volume-data-source-validator
+        openshift.storage.network-policy.dns: allow
+        openshift.storage.network-policy.api-server: allow
+
+    spec:
+      serviceAccountName: volume-data-source-validator
+      containers:
+        - name: volume-data-source-validator
+          image: ${VOLUME_DATA_SOURCE_VALIDATOR_IMAGE}
+          args:
+            - "--v=${LOG_LEVEL}"
+            - "--http-endpoint=127.0.0.1:8443"
+            - "--leader-election=true"
+            - "--leader-election-lease-duration=${LEADER_ELECTION_LEASE_DURATION}"
+            - "--leader-election-renew-deadline=${LEADER_ELECTION_RENEW_DEADLINE}"
+            - "--leader-election-retry-period=${LEADER_ELECTION_RETRY_PERIOD}"
+            - "--leader-election-namespace=openshift-cluster-storage-operator"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8443
+              name: validator-http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          terminationMessagePolicy: FallbackToLogsOnError
+      priorityClassName: system-cluster-critical
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
