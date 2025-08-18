@@ -62,6 +62,10 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-csi-external-resizer:latest
+  - name: csi-external-snapshot-metadata
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-csi-external-snapshot-metadata:latest
   - name: csi-external-snapshotter
     from:
       kind: DockerImage
