@@ -4,7 +4,6 @@ kind: ValidatingAdmissionPolicyBinding
 metadata:
   name: "openshift-storage-policy-validation-binding"
   annotations:
-    release.openshift.io/feature-set: "TechPreviewNoUpgrade,CustomNoUpgrade"
     include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
