@@ -75,6 +75,10 @@ spec:
       # Pod with set SELinux context successfuly uses a volume (i.e. "mount -o context" would work).
       - expr: sum by(volume_plugin) (volume_manager_selinux_volumes_admitted_total{volume_plugin !~".*-e2e-.*"})
         record: cluster:volume_manager_selinux_volumes_admitted_total
+      # Number of conflicts reported by the SELinux warning controller, i.e. pods that may conflict, if they land on the same node.
+      # The controller does not emit metrics with other properties than "SELinuxLabel" or "SELinuxChangePolicy". Still, let's filter them to be future proof and keep the cardinality low.
+      - expr: sum by(property) (selinux_warning_controller_selinux_volume_conflict{property =~ "SELinuxLabel|SELinuxChangePolicy"})
+        record: cluster:selinux_warning_controller_selinux_volume_conflict:total
     - name: kubernetes-storage
     # These alerts originate from https://github.com/kubernetes-monitoring/kubernetes-mixin/blob/de834e9a291b49396125768f041e2078763f48b5/alerts/storage_alerts.libsonnet
       rules:
