@@ -138,3 +138,7 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-tools:latest
+  - name: volume-data-source-validator
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-volume-data-source-validator:latest
