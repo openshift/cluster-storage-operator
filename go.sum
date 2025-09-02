@@ -129,8 +129,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/onsi/gomega v1.36.1 h1:bJDPBO7ibjxcbHMgSCoo4Yj18UWbKDlLwX1x9sybDcw=
 github.com/onsi/gomega v1.36.1/go.mod h1:PvZbdDc8J6XJEpDK4HCuRBm8a6Fzp9/DmhC9C7yFlog=
-github.com/openshift-eng/openshift-tests-extension v0.0.0-20250722101414-8083129ab8f9 h1:4ZeSM80DVCb5WWB3Q/fyCI9jYXAl9bfrGnFvFONqzN4=
-github.com/openshift-eng/openshift-tests-extension v0.0.0-20250722101414-8083129ab8f9/go.mod h1:6gkP5f2HL0meusT0Aim8icAspcD1cG055xxBZ9yC68M=
+github.com/openshift-eng/openshift-tests-extension v0.0.0-20250825124651-f7d932f33eb1 h1:8jwKHSxfOwosTKWiJ1oygRV2rwfkUPe2GrfHbI+DkEw=
+github.com/openshift-eng/openshift-tests-extension v0.0.0-20250825124651-f7d932f33eb1/go.mod h1:6gkP5f2HL0meusT0Aim8icAspcD1cG055xxBZ9yC68M=
 github.com/openshift/api v0.0.0-20250717162127-ba53b2ac17c1 h1:fEnC6YdLRhkyl55TDbBqK4fcDhifD/OlHO2pC2iHskQ=
 github.com/openshift/api v0.0.0-20250717162127-ba53b2ac17c1/go.mod h1:SPLf21TYPipzCO67BURkCfK6dcIIxx0oNRVWaOyRcXM=
 github.com/openshift/build-machinery-go v0.0.0-20250530140348-dc5b2804eeee h1:+Sp5GGnjHDhT/a/nQ1xdp43UscBMr7G5wxsYotyhzJ4=
