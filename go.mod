@@ -7,7 +7,7 @@ toolchain go1.24.4
 require (
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/google/go-cmp v0.7.0
-	github.com/openshift-eng/openshift-tests-extension v0.0.0-20250722101414-8083129ab8f9
+	github.com/openshift-eng/openshift-tests-extension v0.0.0-20250825124651-f7d932f33eb1
 	github.com/openshift/api v0.0.0-20250717162127-ba53b2ac17c1
 	github.com/openshift/build-machinery-go v0.0.0-20250530140348-dc5b2804eeee
 	github.com/openshift/client-go v0.0.0-20250710075018-396b36f983ee
