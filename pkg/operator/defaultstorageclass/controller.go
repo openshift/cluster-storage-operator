@@ -205,8 +205,6 @@ func newStorageClassForCluster(infrastructure *configv1.Infrastructure) (*storag
 		return nil, supportedByCSIError
 	case configv1.OpenStackPlatformType:
 		return nil, supportedByCSIError
-	case configv1.OvirtPlatformType:
-		return nil, supportedByCSIError
 	default:
 		return nil, unsupportedPlatformError
 	}

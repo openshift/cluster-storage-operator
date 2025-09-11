@@ -67,17 +67,6 @@ metadata:
 apiVersion: cloudcredential.openshift.io/v1
 kind: CredentialsRequest
 metadata:
-  name: ovirt-csi-driver-operator
-  namespace: openshift-cloud-credential-operator
-  annotations:
-    capability.openshift.io/name: CloudCredential
-    include.release.openshift.io/hypershift: "true"
-    include.release.openshift.io/ibm-cloud-managed: "true"
-    release.openshift.io/delete: "true"
----
-apiVersion: cloudcredential.openshift.io/v1
-kind: CredentialsRequest
-metadata:
   name: openshift-vmware-vsphere-csi-driver-operator
   namespace: openshift-cloud-credential-operator
   annotations:
