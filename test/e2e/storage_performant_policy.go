@@ -131,6 +131,7 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:StoragePerformantSecurityPolicy
 			tc := test
 			g.When(tc.whenCondition, func() {
 				var nsObj *v1.Namespace
+				var pod *v1.Pod
 
 				g.BeforeEach(func(ctx context.Context) {
 					nsObj = &v1.Namespace{
@@ -144,6 +145,7 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:StoragePerformantSecurityPolicy
 					testContext, cancel := context.WithTimeout(ctx, testTimeout)
 					defer cancel()
 					var err error
+					g.By("Creating namespace for testing storage-performant-policy")
 					nsObj, err = kubeClient.CoreV1().Namespaces().Create(testContext, nsObj, metav1.CreateOptions{})
 					if err != nil && !apierrors.IsAlreadyExists(err) {
 						g.Fail(fmt.Sprintf("Failed to create test namespace: %v", err))
@@ -153,28 +155,45 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:StoragePerformantSecurityPolicy
 				g.AfterEach(func(ctx context.Context) {
 					testContext, cancel := context.WithTimeout(ctx, testTimeout)
 					defer cancel()
-					cleanupNamespace(testContext, kubeClient, nsObj.Name)
+					g.By(fmt.Sprintf("Deleting namespace %s", nsObj.Name))
+					err := cleanupNamespace(testContext, kubeClient, nsObj.Name)
+					if err != nil {
+						g.Fail(fmt.Sprintf("Failed to delete namespace: %v", err))
+					}
 				})
 
 				g.It(tc.name, func(ctx context.Context) {
 					testContext, cancel := context.WithTimeout(ctx, testTimeout)
 					defer cancel()
-					pod := getPod(nsObj.Name)
+					pod = getPod(nsObj.Name)
 					pod = tc.applySecurityContext(pod)
-					createdPod, err := kubeClient.CoreV1().Pods(nsObj.Name).Create(testContext, pod, metav1.CreateOptions{})
+
+					var err error
+
+					g.By("Creating pod for storage-performant-policy")
+					pod, err = kubeClient.CoreV1().Pods(nsObj.Name).Create(testContext, pod, metav1.CreateOptions{})
 					if err != nil {
 						g.Fail(fmt.Sprintf("Failed to create test pod: %v", err))
 					}
-					g.GinkgoLogr.Info("Created pod in namespace", "pod", createdPod.Name, "namespace", nsObj.Name)
+					g.GinkgoLogr.Info("Created pod in namespace", "pod", pod.Name, "namespace", nsObj.Name)
+					defer func() {
+						g.By(fmt.Sprintf("Deleting pod %s in namespace %s", pod.Name, nsObj.Name))
+						err := deletePodWithWait(testContext, kubeClient, pod.Name, nsObj.Name)
+						if err != nil {
+							g.Fail(fmt.Sprintf("Failed to delete pod: %v", err))
+						}
+					}()
 
+					g.By("Fetching pod to verify storage security policies")
 					// Get the pod and check security context policy
-					runningPod, err := kubeClient.CoreV1().Pods(nsObj.Name).Get(testContext, createdPod.Name, metav1.GetOptions{})
+					pod, err = kubeClient.CoreV1().Pods(nsObj.Name).Get(testContext, pod.Name, metav1.GetOptions{})
 					if err != nil {
 						g.Fail(fmt.Sprintf("Failed to get pod: %v", err))
 					}
 
-					if !tc.checkSecurityContext(runningPod) {
-						g.Fail(fmt.Sprintf("security context policy not set to %v on pod %+s with context: %+v", tc.namespaceLabelValue, runningPod.Name, runningPod.Spec.SecurityContext))
+					g.By("Checking if pod has expected security policy")
+					if !tc.checkSecurityContext(pod) {
+						g.Fail(fmt.Sprintf("security context policy not set to %v on pod %+s with context: %+v", tc.namespaceLabelValue, pod.Name, pod.Spec.SecurityContext))
 					}
 				})
 			})
@@ -216,9 +235,16 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:StoragePerformantSecurityPolicy
 				testContext, cancel := context.WithTimeout(ctx, testTimeout)
 				defer cancel()
 				var err error
+				g.By("Creating invalid namespace for storage-performant-policy")
 				nsObj, err = kubeClient.CoreV1().Namespaces().Create(testContext, nsObj, metav1.CreateOptions{})
 				if err == nil {
-					defer cleanupNamespace(testContext, kubeClient, nsObj.Name)
+					defer func() {
+						err = cleanupNamespace(testContext, kubeClient, nsObj.Name)
+						if err != nil {
+							g.Fail(fmt.Sprintf("Failed to delete namespace: %v", err))
+						}
+					}()
+
 					if tc.shouldFail {
 						g.Fail(fmt.Sprintf("Expected error to be returned when creating namespace with invalid label: %+v", nsObj))
 					}
@@ -232,31 +258,64 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:StoragePerformantSecurityPolicy
 
 })
 
-func cleanupNamespace(ctx context.Context, kubeClient kubernetes.Interface, namespace string) {
+func cleanupNamespace(ctx context.Context, kubeClient kubernetes.Interface, namespace string) error {
 	g.GinkgoLogr.Info("Cleaning up namespace", "namespace", namespace)
 	err := kubeClient.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
-	if err != nil && !apierrors.IsNotFound(err) {
-		g.Fail(fmt.Sprintf("Failed to delete test namespace %q: %v", namespace, err))
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to delete namespace %s: %w", namespace, err)
 	}
 
 	// Wait for the namespace to be deleted
 	err = wait.PollUntilContextCancel(ctx, waitPollInterval, false, func(ctx context.Context) (bool, error) {
 		_, err := kubeClient.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
-		if apierrors.IsNotFound(err) {
-			return true, nil // Namespace deleted successfully
-		}
 		if err != nil {
-			g.GinkgoLogr.Error(err, "Error checking namespace", "namespace", namespace)
-			return false, err // Error occurred, retry
+			if apierrors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, err
 		}
 		return false, nil // Namespace still exists, keep waiting
 	})
 
 	if err != nil {
-		g.Fail(fmt.Sprintf("Failed to wait for namespace %q deletion: %v", namespace, err))
+		return fmt.Errorf("failed to wait for namespace %s deletion: %w", namespace, err)
 	}
 	// Log successful deletion
 	g.GinkgoLogr.Info("Namespace deleted successfully", "namespace", namespace)
+	return nil
+}
+
+func deletePodWithWait(ctx context.Context, kubeClient kubernetes.Interface, podName, podNamespace string) error {
+	if podName == "" || podNamespace == "" {
+		return nil
+	}
+	g.GinkgoLogr.Info("Deleting pod", "pod", podName, "namespace", podNamespace)
+	err := kubeClient.CoreV1().Pods(podNamespace).Delete(ctx, podName, metav1.DeleteOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+
+		return fmt.Errorf("error deleting pod %s/%s: %w", podNamespace, podName, err)
+	}
+	err = wait.PollUntilContextCancel(ctx, waitPollInterval, false, func(ctx context.Context) (bool, error) {
+		_, err := kubeClient.CoreV1().Pods(podNamespace).Get(ctx, podName, metav1.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, err
+		}
+		return false, nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to wait for pod %s/%s deletion: %w", podNamespace, podName, err)
+	}
+	g.GinkgoLogr.Info("Pod deleted successfully", "pod", podName, "namespace", podNamespace)
+	return nil
 }
 
 func getPod(ns string) *v1.Pod {
