@@ -20,6 +20,7 @@ spec:
         app: azure-disk-csi-driver-operator
         hypershift.openshift.io/need-management-kas-access: "true"
         name: azure-disk-csi-driver-operator
+        openshift.storage.network-policy.all-egress: allow
         openshift.storage.network-policy.api-server: allow
         openshift.storage.network-policy.dns: allow
         openshift.storage.network-policy.operator-metrics-range: allow
