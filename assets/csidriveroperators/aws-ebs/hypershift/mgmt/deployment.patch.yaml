@@ -10,6 +10,10 @@ spec:
       labels:
         app: aws-ebs-csi-driver-operator
         hypershift.openshift.io/need-management-kas-access: "true"
+        # Hypershift allows the API server port to be defined in
+        # hostedcluster.spec.networking.apiServer.port so in this case we add the
+        # all-egress network policy to allow reaching the server on any port.
+        openshift.storage.network-policy.all-egress: allow
     spec:
       affinity:
         nodeAffinity:

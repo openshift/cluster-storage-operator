@@ -12,3 +12,15 @@
   path: /spec/template/spec/containers/0/securityContext/readOnlyRootFilesystem
   value:
     false
+
+# Hypershift allows the API server port to be defined in
+# hostedcluster.spec.networking.apiServer.port so in this case we add the
+# all-egress network policy to allow reaching the server on any port.
+- op: replace
+  path: /spec/template/metadata/labels
+  value:
+    name: cluster-storage-operator
+    openshift.storage.network-policy.all-egress: allow
+    openshift.storage.network-policy.api-server: allow
+    openshift.storage.network-policy.dns: allow
+    openshift.storage.network-policy.operator-metrics: allow
