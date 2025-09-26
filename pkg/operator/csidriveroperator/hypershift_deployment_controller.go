@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/status"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -158,6 +160,12 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 		requiredCopy.Spec.Template.Spec.Containers[0].Env = append(requiredCopy.Spec.Template.Spec.Containers[0].Env, envVars...)
 	}
 
+	// Handle RUN_AS_USER environment variable for Hypershift deployments
+	err = c.applyRunAsUserIfSet(requiredCopy)
+	if err != nil {
+		return err
+	}
+
 	lastGeneration := resourcemerge.ExpectedDeploymentGeneration(requiredCopy, opStatus.Generations)
 	deployment, _, err := resourceapply.ApplyDeployment(ctx, c.mgmtClient.KubeClient.AppsV1(), c.eventRecorder, requiredCopy, lastGeneration)
 	if err != nil {
@@ -293,4 +301,44 @@ func (c *HyperShiftDeploymentController) getHostedControlPlane() (*unstructured.
 		return nil, fmt.Errorf("unknown type of HostedControlPlane found in namespace %s", c.controlNamespace)
 	}
 	return hcp, nil
+}
+
+// applyRunAsUserIfSet handles the RUN_AS_USER environment variable for Hypershift deployments.
+// This is required for deploying control planes on clusters that do not have Security Context Constraints (SCCs), for example AKS.
+// If RUN_AS_USER is set, it adds the environment variable to the CSI operator container and sets runAsUser in the pod security context.
+func (c *HyperShiftDeploymentController) applyRunAsUserIfSet(deployment *appsv1.Deployment) error {
+	uid := os.Getenv("RUN_AS_USER")
+	if uid == "" {
+		return nil
+	}
+
+	runAsUserValue, err := strconv.ParseInt(uid, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid RUN_AS_USER value %q: must be a valid integer: %w", uid, err)
+	}
+	if runAsUserValue < 0 {
+		return fmt.Errorf("invalid RUN_AS_USER value %q: must be non-negative", uid)
+	}
+
+	runAsUserEnvVar := corev1.EnvVar{
+		Name:  "RUN_AS_USER",
+		Value: uid,
+	}
+
+	for i := range deployment.Spec.Template.Spec.Containers {
+		if strings.Contains(deployment.Spec.Template.Spec.Containers[i].Name, "csi-driver-operator") {
+			deployment.Spec.Template.Spec.Containers[i].Env = append(
+				deployment.Spec.Template.Spec.Containers[i].Env,
+				runAsUserEnvVar,
+			)
+			break
+		}
+	}
+
+	if deployment.Spec.Template.Spec.SecurityContext == nil {
+		deployment.Spec.Template.Spec.SecurityContext = &corev1.PodSecurityContext{}
+	}
+	deployment.Spec.Template.Spec.SecurityContext.RunAsUser = &runAsUserValue
+
+	return nil
 }
