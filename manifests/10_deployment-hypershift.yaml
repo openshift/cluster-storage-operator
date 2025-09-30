@@ -47,10 +47,6 @@ spec:
           value: quay.io/openshift/origin-openstack-cinder-csi-driver-operator:latest
         - name: OPENSTACK_CINDER_DRIVER_IMAGE
           value: quay.io/openshift/origin-openstack-cinder-csi-driver:latest
-        - name: OVIRT_DRIVER_OPERATOR_IMAGE
-          value: quay.io/openshift/origin-ovirt-csi-driver-operator:latest
-        - name: OVIRT_DRIVER_IMAGE
-          value: quay.io/openshift/origin-ovirt-csi-driver:latest
         - name: MANILA_DRIVER_OPERATOR_IMAGE
           value: quay.io/openshift/origin-csi-driver-manila-operator:latest
         - name: MANILA_DRIVER_IMAGE
@@ -97,6 +93,10 @@ spec:
           value: quay.io/openshift/origin-powervs-block-csi-driver-operator:latest
         - name: POWERVS_BLOCK_CSI_DRIVER_IMAGE
           value: quay.io/openshift/origin-powervs-block-csi-driver:latest
+        - name: VOLUME_DATA_SOURCE_VALIDATOR_IMAGE
+          value: quay.io/openshift/origin-volume-data-source-validator:latest
+        - name: TOOLS_IMAGE
+          value: quay.io/openshift/origin-tools:latest
         - name: HYPERSHIFT_IMAGE
           value: quay.io/openshift/origin-control-plane:latest
         - name: AWS_EBS_DRIVER_CONTROL_PLANE_IMAGE
@@ -113,10 +113,6 @@ spec:
           value: quay.io/openshift/origin-csi-driver-manila-operator:latest
         - name: KUBE_RBAC_PROXY_CONTROL_PLANE_IMAGE
           value: quay.io/openshift/origin-kube-rbac-proxy:latest
-        - name: VOLUME_DATA_SOURCE_VALIDATOR_IMAGE
-          value: quay.io/openshift/origin-volume-data-source-validator:latest
-        - name: TOOLS_IMAGE
-          value: quay.io/openshift/origin-tools:latest
         image: quay.io/openshift/origin-cluster-storage-operator:latest
         imagePullPolicy: IfNotPresent
         name: cluster-storage-operator

@@ -30,14 +30,6 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-openstack-cinder-csi-driver:latest
-  - name: ovirt-csi-driver-operator
-    from:
-      kind: DockerImage
-      name: quay.io/openshift/origin-ovirt-csi-driver-operator:latest
-  - name: ovirt-csi-driver
-    from:
-      kind: DockerImage
-      name: quay.io/openshift/origin-ovirt-csi-driver:latest
   - name: csi-driver-manila-operator
     from:
       kind: DockerImage
