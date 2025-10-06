@@ -4,6 +4,8 @@ metadata:
   annotations:
     config.openshift.io/inject-proxy: manila-csi-driver-operator
     storage.openshift.io/remove-from: guest
+  labels:
+    hypershift.openshift.io/managed-by: cluster-storage-operator
   name: manila-csi-driver-operator
   namespace: ${CONTROLPLANE_NAMESPACE}
 spec:

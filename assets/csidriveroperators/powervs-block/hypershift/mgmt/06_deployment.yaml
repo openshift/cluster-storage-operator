@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: powervs-block-csi-driver-operator
   namespace: ${CONTROLPLANE_NAMESPACE}
+  labels:
+    hypershift.openshift.io/managed-by: cluster-storage-operator
 spec:
   replicas: 1
   selector:
