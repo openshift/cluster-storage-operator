@@ -87,12 +87,6 @@
     openshift.io/required-scc: restricted-v2
     target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
 
-# Remove changes for readOnlyRootFilesystem
-- op: replace
-  path: /spec/template/spec/containers/0/securityContext/readOnlyRootFilesystem
-  value:
-    false
-
 # Hypershift allows the API server port to be defined in
 # hostedcluster.spec.networking.apiServer.port so in this case we add the
 # all-egress network policy to allow reaching the server on any port.
