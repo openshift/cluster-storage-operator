@@ -108,7 +108,6 @@ spec:
       priorityClassName: hypershift-control-plane
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1001
         seccompProfile:
           type: RuntimeDefault
       serviceAccountName: azure-file-csi-driver-operator
