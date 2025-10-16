@@ -132,6 +132,9 @@ func initCommonDeploymentParams(
 		c.getReplacerHook(),
 		c.getLogLevelHook(),
 	}
+	c.deploymentHooks = []deploymentcontroller.DeploymentHookFunc{
+		c.getProxyHook(),
+	}
 
 	// Common replacers
 	c.replacers = []*strings.Replacer{sidecarReplacer}
@@ -202,6 +205,12 @@ func (c *CommonCSIDeploymentController) getLogLevelHook() deploymentcontroller.M
 	}
 }
 
+func (c *CommonCSIDeploymentController) getProxyHook() deploymentcontroller.DeploymentHookFunc {
+	return func(spec *operatorv1.OperatorSpec, deployment *appsv1.Deployment) error {
+		return util.InjectObservedProxyInDeploymentContainers(deployment, spec)
+	}
+}
+
 func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCtx factory.SyncContext) error {
 	klog.V(4).Infof("CSIDriverOperatorDeploymentController sync started")
 	defer klog.V(4).Infof("CSIDriverOperatorDeploymentController sync finished")
@@ -221,10 +230,6 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 	}
 
 	requiredCopy := required.DeepCopy()
-	err = util.InjectObservedProxyInDeploymentContainers(requiredCopy, opSpec)
-	if err != nil {
-		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)
-	}
 
 	infra, err := c.infraLister.Get(infraConfigName)
 	if err != nil {

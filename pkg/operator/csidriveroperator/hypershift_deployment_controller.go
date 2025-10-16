@@ -10,7 +10,6 @@ import (
 
 	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
-	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/util"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	csoutils "github.com/openshift/cluster-storage-operator/pkg/utils"
 	"github.com/openshift/library-go/pkg/controller/factory"
@@ -150,10 +149,6 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 	}
 
 	requiredCopy := required.DeepCopy()
-	err = util.InjectObservedProxyInDeploymentContainers(requiredCopy, opSpec)
-	if err != nil {
-		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)
-	}
 
 	// The existence of the environment variable, ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE, means this is an ARO HCP
 	// deployment. We need to pass along additional environment variables for ARO HCP in order to mount the backing
