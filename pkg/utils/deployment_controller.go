@@ -14,7 +14,6 @@ import (
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -92,7 +91,7 @@ func CreateDeployment(ctx context.Context, depOpts DeploymentOptions) (*appsv1.D
 
 // GetRequiredDeployment returns a deployment from given assset after replacing necessary strings and setting
 // correct log level.
-func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpec, nodeSelector map[string]string, labels map[string]string, tolerations []corev1.Toleration, manifestHooks []deploymentcontroller.ManifestHookFunc, deploymentHooks []deploymentcontroller.DeploymentHookFunc) (*appsv1.Deployment, error) {
+func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpec, manifestHooks []deploymentcontroller.ManifestHookFunc, deploymentHooks []deploymentcontroller.DeploymentHookFunc) (*appsv1.Deployment, error) {
 	deploymentBytes, err := assets.ReadFile(deploymentAsset)
 	if err != nil {
 		return nil, err
@@ -108,9 +107,6 @@ func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpe
 	deploymentString := string(deploymentBytes)
 
 	deployment := resourceread.ReadDeploymentV1OrDie([]byte(deploymentString))
-	if nodeSelector != nil {
-		deployment.Spec.Template.Spec.NodeSelector = nodeSelector
-	}
 
 	for i, deploymentHook := range deploymentHooks {
 		err = deploymentHook(spec, deployment)
@@ -118,15 +114,6 @@ func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpe
 			return nil, fmt.Errorf("error running deployment hook (index=%d): %w", i, err)
 		}
 	}
-
-	for key, value := range labels {
-		// don't replace existing labels as they are used in the deployment's labelSelector.
-		if _, exist := deployment.Spec.Template.Labels[key]; !exist {
-			deployment.Spec.Template.Labels[key] = value
-		}
-	}
-
-	deployment.Spec.Template.Spec.Tolerations = append(deployment.Spec.Template.Spec.Tolerations, tolerations...)
 
 	return deployment, nil
 }

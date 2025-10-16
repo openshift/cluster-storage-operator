@@ -215,7 +215,7 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 		return nil
 	}
 
-	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nil, nil, nil, c.manifestHooks, nil)
+	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, c.manifestHooks, nil)
 	if err != nil {
 		return fmt.Errorf("failed to generate required Deployment: %s", err)
 	}

@@ -8,11 +8,13 @@ import (
 	"strings"
 	"time"
 
+	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/util"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	csoutils "github.com/openshift/cluster-storage-operator/pkg/utils"
 	"github.com/openshift/library-go/pkg/controller/factory"
+	"github.com/openshift/library-go/pkg/operator/deploymentcontroller"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
@@ -85,6 +87,9 @@ func NewHyperShiftControllerDeployment(
 	hyperShiftImageReplacer := strings.NewReplacer("${HYPERSHIFT_IMAGE}", envHyperShiftImage)
 	c.CommonCSIDeploymentController.replacers = append(c.CommonCSIDeploymentController.replacers, namespaceReplacer, hyperShiftImageReplacer)
 
+	// HyperShift specific deployment hooks
+	c.CommonCSIDeploymentController.deploymentHooks = append(c.CommonCSIDeploymentController.deploymentHooks, c.getHyperShiftHook())
+
 	f := c.initController(func(f *factory.Factory) {
 		f.WithInformers(
 			c.mgmtClient.KubeInformers.InformersFor(controlNamespace).Apps().V1().Deployments().Informer(),
@@ -93,6 +98,37 @@ func NewHyperShiftControllerDeployment(
 	})
 	c.factory = f
 	return c
+}
+
+func (c *HyperShiftDeploymentController) getHyperShiftHook() deploymentcontroller.DeploymentHookFunc {
+	return func(spec *operatorv1.OperatorSpec, deployment *appsv1.Deployment) error {
+		nodeSelector, err := c.getHostedControlPlaneNodeSelector()
+		if err != nil {
+			return err
+		}
+		if nodeSelector != nil {
+			deployment.Spec.Template.Spec.NodeSelector = nodeSelector
+		}
+
+		labels, err := c.getHostedControlPlaneLabels()
+		if err != nil {
+			return err
+		}
+		for key, value := range labels {
+			// don't replace existing labels as they are used in the deployment's labelSelector.
+			if _, exist := deployment.Spec.Template.Labels[key]; !exist {
+				deployment.Spec.Template.Labels[key] = value
+			}
+		}
+
+		tolerations, err := c.getHostedControlPlaneCustomTolerations()
+		if err != nil {
+			return err
+		}
+		deployment.Spec.Template.Spec.Tolerations = append(deployment.Spec.Template.Spec.Tolerations, tolerations...)
+
+		return nil
+	}
 }
 
 func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx factory.SyncContext) error {
@@ -108,22 +144,7 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 		return nil
 	}
 
-	nodeSelector, err := c.getHostedControlPlaneNodeSelector()
-	if err != nil {
-		return err
-	}
-
-	labels, err := c.getHostedControlPlaneLabels()
-	if err != nil {
-		return err
-	}
-
-	tolerations, err := c.getHostedControlPlaneCustomTolerations()
-	if err != nil {
-		return err
-	}
-
-	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nodeSelector, labels, tolerations, c.manifestHooks, c.deploymentHooks)
+	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, c.manifestHooks, c.deploymentHooks)
 	if err != nil {
 		return fmt.Errorf("failed to generate required Deployment: %s", err)
 	}
