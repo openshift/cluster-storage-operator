@@ -177,6 +177,10 @@ func NewCSIDriverOperatorDeploymentController(
 			c.commonClients.KubeInformers.InformersFor(csoclients.CSIOperatorNamespace).Apps().V1().Deployments().Informer(),
 			c.commonClients.ConfigInformers.Config().V1().Infrastructures().Informer())
 	})
+
+	// Standalone specific deployment hooks
+	c.deploymentHooks = append(c.deploymentHooks, c.getStandaloneNodeSelectorHook())
+
 	c.factory = f
 	return c
 }
@@ -211,6 +215,19 @@ func (c *CommonCSIDeploymentController) getProxyHook() deploymentcontroller.Depl
 	}
 }
 
+func (c *CSIDriverOperatorDeploymentController) getStandaloneNodeSelectorHook() deploymentcontroller.DeploymentHookFunc {
+	return func(spec *operatorv1.OperatorSpec, deployment *appsv1.Deployment) error {
+		infra, err := c.infraLister.Get(infraConfigName)
+		if err != nil {
+			return fmt.Errorf("failed to get infrastructure resource: %w", err)
+		}
+		if infra.Status.ControlPlaneTopology == configv1.ExternalTopologyMode {
+			deployment.Spec.Template.Spec.NodeSelector = map[string]string{}
+		}
+		return nil
+	}
+}
+
 func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCtx factory.SyncContext) error {
 	klog.V(4).Infof("CSIDriverOperatorDeploymentController sync started")
 	defer klog.V(4).Infof("CSIDriverOperatorDeploymentController sync finished")
@@ -230,14 +247,6 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 	}
 
 	requiredCopy := required.DeepCopy()
-
-	infra, err := c.infraLister.Get(infraConfigName)
-	if err != nil {
-		return fmt.Errorf("failed to get infrastructure resource: %w", err)
-	}
-	if infra.Status.ControlPlaneTopology == configv1.ExternalTopologyMode {
-		requiredCopy.Spec.Template.Spec.NodeSelector = map[string]string{}
-	}
 
 	lastGeneration := resourcemerge.ExpectedDeploymentGeneration(requiredCopy, opStatus.Generations)
 	deployment, _, err := resourceapply.ApplyDeployment(ctx, c.kubeClient.AppsV1(), c.eventRecorder, requiredCopy, lastGeneration)
