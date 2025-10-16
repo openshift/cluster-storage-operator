@@ -43,6 +43,7 @@ type CommonCSIDeploymentController struct {
 	infraLister       configv1listers.InfrastructureLister
 	resyncInterval    time.Duration
 	factory           *factory.Factory
+	replacers         []*strings.Replacer
 	manifestHooks     []deploymentcontroller.ManifestHookFunc
 	deploymentHooks   []deploymentcontroller.DeploymentHookFunc
 }
@@ -124,6 +125,14 @@ func initCommonDeploymentParams(
 		eventRecorder:     eventRecorder.WithComponentSuffix(csiOperatorConfig.ConditionPrefix),
 		infraLister:       client.ConfigInformers.Config().V1().Infrastructures().Lister(),
 	}
+	c.manifestHooks = []deploymentcontroller.ManifestHookFunc{c.getReplacerHook()}
+
+	// Common replacers
+	c.replacers = []*strings.Replacer{sidecarReplacer}
+	if csiOperatorConfig.ImageReplacer != nil {
+		c.replacers = append(c.replacers, csiOperatorConfig.ImageReplacer)
+	}
+
 	return c
 }
 
@@ -163,6 +172,22 @@ func NewCSIDriverOperatorDeploymentController(
 	return c
 }
 
+func (c *CommonCSIDeploymentController) getReplacerHook() deploymentcontroller.ManifestHookFunc {
+	return func(spec *operatorv1.OperatorSpec, deploymentBytes []byte) ([]byte, error) {
+		deploymentString := string(deploymentBytes)
+
+		// Replace images
+		for _, replacer := range c.replacers {
+			// Replace images
+			if replacer != nil {
+				deploymentString = replacer.Replace(deploymentString)
+			}
+		}
+
+		return []byte(deploymentString), nil
+	}
+}
+
 func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCtx factory.SyncContext) error {
 	klog.V(4).Infof("CSIDriverOperatorDeploymentController sync started")
 	defer klog.V(4).Infof("CSIDriverOperatorDeploymentController sync finished")
@@ -176,13 +201,7 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 		return nil
 	}
 
-	replacers := []*strings.Replacer{sidecarReplacer}
-	// Replace images
-	if c.csiOperatorConfig.ImageReplacer != nil {
-		replacers = append(replacers, c.csiOperatorConfig.ImageReplacer)
-	}
-
-	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nil, nil, nil, replacers, nil, nil)
+	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nil, nil, nil, c.manifestHooks, c.deploymentHooks)
 	if err != nil {
 		return fmt.Errorf("failed to generate required Deployment: %s", err)
 	}

@@ -79,6 +79,12 @@ func NewHyperShiftControllerDeployment(
 		controlNamespace:         controlNamespace,
 		hostedControlPlaneLister: hostedControlPlaneInformer.Lister(),
 	}
+
+	// HyperShift specific replacers
+	namespaceReplacer := strings.NewReplacer("${CONTROLPLANE_NAMESPACE}", controlNamespace)
+	hyperShiftImageReplacer := strings.NewReplacer("${HYPERSHIFT_IMAGE}", envHyperShiftImage)
+	c.CommonCSIDeploymentController.replacers = append(c.CommonCSIDeploymentController.replacers, namespaceReplacer, hyperShiftImageReplacer)
+
 	f := c.initController(func(f *factory.Factory) {
 		f.WithInformers(
 			c.mgmtClient.KubeInformers.InformersFor(controlNamespace).Apps().V1().Deployments().Informer(),
@@ -102,17 +108,6 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 		return nil
 	}
 
-	replacers := []*strings.Replacer{sidecarReplacer}
-	// Replace images
-	if c.csiOperatorConfig.ImageReplacer != nil {
-		replacers = append(replacers, c.csiOperatorConfig.ImageReplacer)
-	}
-
-	namespaceReplacer := strings.NewReplacer("${CONTROLPLANE_NAMESPACE}", c.controlNamespace)
-	hyperShiftImageReplacer := strings.NewReplacer("${HYPERSHIFT_IMAGE}", envHyperShiftImage)
-	replacers = append(replacers, namespaceReplacer)
-	replacers = append(replacers, hyperShiftImageReplacer)
-
 	nodeSelector, err := c.getHostedControlPlaneNodeSelector()
 	if err != nil {
 		return err
@@ -128,7 +123,7 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 		return err
 	}
 
-	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nodeSelector, labels, tolerations, replacers, nil, nil)
+	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nodeSelector, labels, tolerations, c.manifestHooks, c.deploymentHooks)
 	if err != nil {
 		return fmt.Errorf("failed to generate required Deployment: %s", err)
 	}

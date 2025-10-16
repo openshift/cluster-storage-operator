@@ -95,7 +95,7 @@ func CreateDeployment(ctx context.Context, depOpts DeploymentOptions) (*appsv1.D
 
 // GetRequiredDeployment returns a deployment from given assset after replacing necessary strings and setting
 // correct log level.
-func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpec, nodeSelector map[string]string, labels map[string]string, tolerations []corev1.Toleration, replacers []*strings.Replacer, manifestHooks []deploymentcontroller.ManifestHookFunc, deploymentHooks []deploymentcontroller.DeploymentHookFunc) (*appsv1.Deployment, error) {
+func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpec, nodeSelector map[string]string, labels map[string]string, tolerations []corev1.Toleration, manifestHooks []deploymentcontroller.ManifestHookFunc, deploymentHooks []deploymentcontroller.DeploymentHookFunc) (*appsv1.Deployment, error) {
 	deploymentBytes, err := assets.ReadFile(deploymentAsset)
 	if err != nil {
 		return nil, err
@@ -109,13 +109,6 @@ func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpe
 	}
 
 	deploymentString := string(deploymentBytes)
-
-	for _, replacer := range replacers {
-		// Replace images
-		if replacer != nil {
-			deploymentString = replacer.Replace(deploymentString)
-		}
-	}
 
 	// Replace log level
 	logLevel := loglevel.LogLevelToVerbosity(spec.LogLevel)
