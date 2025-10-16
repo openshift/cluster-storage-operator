@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: manila-csi-driver-operator
+  labels:
+    hypershift.openshift.io/managed-by: cluster-storage-operator
 spec:
   template:
     metadata:
