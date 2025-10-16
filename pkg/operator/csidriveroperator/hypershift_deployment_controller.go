@@ -90,6 +90,7 @@ func NewHyperShiftControllerDeployment(
 	c.CommonCSIDeploymentController.deploymentHooks = append(c.CommonCSIDeploymentController.deploymentHooks,
 		c.getHyperShiftHook(),
 		c.getAROEnvVarsHook(),
+		c.getRunAsUserHook(),
 	)
 
 	f := c.initController(func(f *factory.Factory) {
@@ -179,12 +180,6 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 	}
 
 	requiredCopy := required.DeepCopy()
-
-	// Handle RUN_AS_USER environment variable for Hypershift deployments
-	err = c.applyRunAsUserIfSet(requiredCopy)
-	if err != nil {
-		return err
-	}
 
 	lastGeneration := resourcemerge.ExpectedDeploymentGeneration(requiredCopy, opStatus.Generations)
 	deployment, _, err := resourceapply.ApplyDeployment(ctx, c.mgmtClient.KubeClient.AppsV1(), c.eventRecorder, requiredCopy, lastGeneration)
@@ -323,42 +318,44 @@ func (c *HyperShiftDeploymentController) getHostedControlPlane() (*unstructured.
 	return hcp, nil
 }
 
-// applyRunAsUserIfSet handles the RUN_AS_USER environment variable for Hypershift deployments.
+// getRunAsUserHook handles the RUN_AS_USER environment variable for Hypershift deployments.
 // This is required for deploying control planes on clusters that do not have Security Context Constraints (SCCs), for example AKS.
 // If RUN_AS_USER is set, it adds the environment variable to the CSI operator container and sets runAsUser in the pod security context.
-func (c *HyperShiftDeploymentController) applyRunAsUserIfSet(deployment *appsv1.Deployment) error {
-	uid := os.Getenv("RUN_AS_USER")
-	if uid == "" {
+func (c *HyperShiftDeploymentController) getRunAsUserHook() deploymentcontroller.DeploymentHookFunc {
+	return func(spec *operatorv1.OperatorSpec, deployment *appsv1.Deployment) error {
+		uid := os.Getenv("RUN_AS_USER")
+		if uid == "" {
+			return nil
+		}
+
+		runAsUserValue, err := strconv.ParseInt(uid, 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid RUN_AS_USER value %q: must be a valid integer: %w", uid, err)
+		}
+		if runAsUserValue < 0 {
+			return fmt.Errorf("invalid RUN_AS_USER value %q: must be non-negative", uid)
+		}
+
+		runAsUserEnvVar := corev1.EnvVar{
+			Name:  "RUN_AS_USER",
+			Value: uid,
+		}
+
+		for i := range deployment.Spec.Template.Spec.Containers {
+			if strings.Contains(deployment.Spec.Template.Spec.Containers[i].Name, "csi-driver-operator") {
+				deployment.Spec.Template.Spec.Containers[i].Env = append(
+					deployment.Spec.Template.Spec.Containers[i].Env,
+					runAsUserEnvVar,
+				)
+				break
+			}
+		}
+
+		if deployment.Spec.Template.Spec.SecurityContext == nil {
+			deployment.Spec.Template.Spec.SecurityContext = &corev1.PodSecurityContext{}
+		}
+		deployment.Spec.Template.Spec.SecurityContext.RunAsUser = &runAsUserValue
+
 		return nil
 	}
-
-	runAsUserValue, err := strconv.ParseInt(uid, 10, 64)
-	if err != nil {
-		return fmt.Errorf("invalid RUN_AS_USER value %q: must be a valid integer: %w", uid, err)
-	}
-	if runAsUserValue < 0 {
-		return fmt.Errorf("invalid RUN_AS_USER value %q: must be non-negative", uid)
-	}
-
-	runAsUserEnvVar := corev1.EnvVar{
-		Name:  "RUN_AS_USER",
-		Value: uid,
-	}
-
-	for i := range deployment.Spec.Template.Spec.Containers {
-		if strings.Contains(deployment.Spec.Template.Spec.Containers[i].Name, "csi-driver-operator") {
-			deployment.Spec.Template.Spec.Containers[i].Env = append(
-				deployment.Spec.Template.Spec.Containers[i].Env,
-				runAsUserEnvVar,
-			)
-			break
-		}
-	}
-
-	if deployment.Spec.Template.Spec.SecurityContext == nil {
-		deployment.Spec.Template.Spec.SecurityContext = &corev1.PodSecurityContext{}
-	}
-	deployment.Spec.Template.Spec.SecurityContext.RunAsUser = &runAsUserValue
-
-	return nil
 }
