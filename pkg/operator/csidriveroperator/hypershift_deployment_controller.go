@@ -65,7 +65,7 @@ func NewHyperShiftControllerDeployment(
 	)
 
 	c, err := deploymentcontroller.NewDeploymentControllerBuilder(
-		csiOperatorConfig.ConditionPrefix,
+		csiOperatorConfig.ConditionPrefix+deploymentControllerName,
 		deploymentBytes,
 		eventRecorder,
 		guestClient.OperatorClient,

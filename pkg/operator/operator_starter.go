@@ -197,6 +197,10 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 		csiDriverConfigs)
 	ssr.controllers = append(ssr.controllers, csiDriverController)
 
+	// In 4.21 we renamed <short-name>Progressing to <short-name>CSIDriverOperatorDeploymentProgressing
+	staleProgressingConditionController := getStaleProgressingConditionController(ssr.commonClients, ssr.eventRecorder, csiDriverConfigs)
+	ssr.controllers = append(ssr.controllers, staleProgressingConditionController)
+
 	vsphereProblemDetector := vsphereproblemdetector.NewVSphereProblemDetectorStarter(
 		ssr.commonClients,
 		resync,
@@ -319,4 +323,17 @@ func (hsr *HyperShiftStarter) populateConfigs(clients *csoclients.Clients) []csi
 		csioperatorclient.GetOpenStackCinderCSIOperatorConfig(true),
 		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(true),
 	}
+}
+
+func getStaleProgressingConditionController(client *csoclients.Clients, eventRecorder events.Recorder, csiDriverConfigs []csioperatorclient.CSIOperatorConfig) factory.Controller {
+	var conditionTypes []string
+	for _, csiDriverConfig := range csiDriverConfigs {
+		conditionTypes = append(conditionTypes, csiDriverConfig.ConditionPrefix+"Progressing")
+	}
+	return staleconditions.NewRemoveStaleConditionsController(
+		"RemoveStaleProgressingConditionsController",
+		conditionTypes,
+		client.OperatorClient,
+		eventRecorder,
+	)
 }
