@@ -45,3 +45,17 @@ spec:
             "oc edit clustercsidriver csi.vsphere.vmware.com" and removing the whole
             "topologyCategories" section.
           message: "vSphere topology is erroneously configured both in ClusterCSIDriver and Infrastructure objects, only the one in Infrastructure is used."
+
+    # Rules to remove unnecessary labels before sending metrics through telemetry.
+    - name: vmware-vsphere-csi-driver-operator-telemetry.rules
+      rules:
+      - expr: sum by(version)(vsphere_vcenter_info)
+        record: cluster:vsphere_vcenter_info:sum
+      - expr: sum by(version)(vsphere_esxi_version_total)
+        record: cluster:vsphere_esxi_version_total:sum
+      - expr: sum by(hw_version)(vsphere_node_hw_version_total)
+        record: cluster:vsphere_node_hw_version_total:sum
+      - expr: max by(source)(vsphere_topology_tags)
+        record: cluster:vsphere_topology_tags:max
+      - expr: max by(scope)(vsphere_infrastructure_failure_domains)
+        record: cluster:vsphere_infrastructure_failure_domains:max
