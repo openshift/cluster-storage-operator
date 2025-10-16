@@ -1,7 +1,6 @@
 package csidriveroperator
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -9,14 +8,12 @@ import (
 	"time"
 
 	operatorv1 "github.com/openshift/api/operator/v1"
+	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
-	csoutils "github.com/openshift/cluster-storage-operator/pkg/utils"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/deploymentcontroller"
 	"github.com/openshift/library-go/pkg/operator/events"
-	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
-	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/status"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -26,8 +23,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 )
-
-var _ factory.Controller = &HyperShiftDeploymentController{}
 
 var (
 	envHyperShiftImage = os.Getenv("HYPERSHIFT_IMAGE")
@@ -39,23 +34,6 @@ var (
 	}
 )
 
-// This HyperShiftDeploymentController installs and syncs CSI driver operator Deployment.
-// It replace ${LOG_LEVEL} in the Deployment with current log level.
-// It replaces images in the Deployment using  CSIOperatorConfig.ImageReplacer.
-// It produces following Conditions:
-// <CSI driver name>CSIDriverOperatorDeploymentProgressing
-// <CSI driver name>CSIDriverOperatorDeploymentDegraded
-// This controller doesn't set the Available condition to avoid prematurely cascading
-// up to the clusteroperator CR a potential Available=false. On the other hand it
-// does a better in making sure the Degraded condition is properly set if the
-// Deployment isn't healthy.
-type HyperShiftDeploymentController struct {
-	CommonCSIDeploymentController
-	mgmtClient               *csoclients.Clients
-	controlNamespace         string
-	hostedControlPlaneLister cache.GenericLister
-}
-
 func NewHyperShiftControllerDeployment(
 	mgtClient *csoclients.Clients,
 	guestClient *csoclients.Clients,
@@ -66,46 +44,59 @@ func NewHyperShiftControllerDeployment(
 	eventRecorder events.Recorder,
 	resyncInterval time.Duration,
 ) factory.Controller {
-	hostedControlPlaneInformer := mgtClient.DynamicInformer.ForResource(hostedControlPlaneGVR)
-	c := &HyperShiftDeploymentController{
-		CommonCSIDeploymentController: initCommonDeploymentParams(
-			guestClient,
-			csiOperatorConfig,
-			resyncInterval,
-			versionGetter,
-			targetVersion,
-			eventRecorder,
-		),
-		mgmtClient:               mgtClient,
-		controlNamespace:         controlNamespace,
-		hostedControlPlaneLister: hostedControlPlaneInformer.Lister(),
+
+	deploymentBytes, err := assets.ReadFile(csiOperatorConfig.DeploymentAsset)
+	if err != nil {
+		panic(err)
 	}
 
-	// HyperShift specific replacers
+	replacers := getCommonReplacers(csiOperatorConfig)
 	namespaceReplacer := strings.NewReplacer("${CONTROLPLANE_NAMESPACE}", controlNamespace)
 	hyperShiftImageReplacer := strings.NewReplacer("${HYPERSHIFT_IMAGE}", envHyperShiftImage)
-	c.CommonCSIDeploymentController.replacers = append(c.CommonCSIDeploymentController.replacers, namespaceReplacer, hyperShiftImageReplacer)
+	replacers = append(replacers, namespaceReplacer, hyperShiftImageReplacer)
 
-	// HyperShift specific deployment hooks
-	c.CommonCSIDeploymentController.deploymentHooks = append(c.CommonCSIDeploymentController.deploymentHooks,
-		c.getHyperShiftHook(),
-		c.getAROEnvVarsHook(),
-		c.getRunAsUserHook(),
+	manifestHooks, deploymentHooks := getCommonHooks(replacers)
+
+	hostedControlPlaneInformer := mgtClient.DynamicInformer.ForResource(hostedControlPlaneGVR)
+	deploymentHooks = append(deploymentHooks,
+		getHyperShiftHook(controlNamespace, hostedControlPlaneInformer.Lister()),
+		getAROEnvVarsHook(),
+		getRunAsUserHook(),
 	)
 
-	f := c.initController(func(f *factory.Factory) {
-		f.WithInformers(
-			c.mgmtClient.KubeInformers.InformersFor(controlNamespace).Apps().V1().Deployments().Informer(),
-			hostedControlPlaneInformer.Informer(),
-		)
-	})
-	c.factory = f
+	c, err := deploymentcontroller.NewDeploymentControllerBuilder(
+		csiOperatorConfig.ConditionPrefix,
+		deploymentBytes,
+		eventRecorder,
+		guestClient.OperatorClient,
+		mgtClient.KubeClient,
+		mgtClient.KubeInformers.InformersFor(controlNamespace).Apps().V1().Deployments(),
+	).WithConditions(
+		operatorv1.OperatorStatusTypeProgressing,
+		operatorv1.OperatorStatusTypeDegraded,
+	).WithExtraInformers(
+		guestClient.ConfigInformers.Config().V1().Infrastructures().Informer(),
+	).WithManifestHooks(
+		manifestHooks...,
+	).WithDeploymentHooks(
+		deploymentHooks...,
+	).WithPostStartHooks(
+		initalSync,
+	).ToController()
+
+	if err != nil {
+		panic(err)
+	}
 	return c
 }
 
-func (c *HyperShiftDeploymentController) getHyperShiftHook() deploymentcontroller.DeploymentHookFunc {
+func getHyperShiftHook(controlNamespace string, hostedControlPlaneLister cache.GenericLister) deploymentcontroller.DeploymentHookFunc {
 	return func(spec *operatorv1.OperatorSpec, deployment *appsv1.Deployment) error {
-		nodeSelector, err := c.getHostedControlPlaneNodeSelector()
+		hcp, err := getHostedControlPlane(controlNamespace, hostedControlPlaneLister)
+		if err != nil {
+			return err
+		}
+		nodeSelector, err := getHostedControlPlaneNodeSelector(hcp)
 		if err != nil {
 			return err
 		}
@@ -113,7 +104,7 @@ func (c *HyperShiftDeploymentController) getHyperShiftHook() deploymentcontrolle
 			deployment.Spec.Template.Spec.NodeSelector = nodeSelector
 		}
 
-		labels, err := c.getHostedControlPlaneLabels()
+		labels, err := getHostedControlPlaneLabels(hcp)
 		if err != nil {
 			return err
 		}
@@ -124,7 +115,7 @@ func (c *HyperShiftDeploymentController) getHyperShiftHook() deploymentcontrolle
 			}
 		}
 
-		tolerations, err := c.getHostedControlPlaneCustomTolerations()
+		tolerations, err := getHostedControlPlaneCustomTolerations(hcp)
 		if err != nil {
 			return err
 		}
@@ -134,7 +125,7 @@ func (c *HyperShiftDeploymentController) getHyperShiftHook() deploymentcontrolle
 	}
 }
 
-func (c *HyperShiftDeploymentController) getAROEnvVarsHook() deploymentcontroller.DeploymentHookFunc {
+func getAROEnvVarsHook() deploymentcontroller.DeploymentHookFunc {
 	return func(spec *operatorv1.OperatorSpec, deployment *appsv1.Deployment) error {
 		// The existence of the environment variable, ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE, means this is an ARO HCP
 		// deployment. We need to pass along additional environment variables for ARO HCP in order to mount the backing
@@ -161,59 +152,14 @@ func (c *HyperShiftDeploymentController) getAROEnvVarsHook() deploymentcontrolle
 	}
 }
 
-func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx factory.SyncContext) error {
-	klog.V(4).Infof("CSIDriverOperatorDeploymentController sync started")
-	defer klog.V(4).Infof("CSIDriverOperatorDeploymentController sync finished")
-
-	runSync, opStatus, opSpec, err := c.preCheckSync(ctx, syncCtx)
-	if err != nil {
-		return err
-	}
-
-	if !runSync {
-		return nil
-	}
-
-	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, c.manifestHooks, c.deploymentHooks)
-	if err != nil {
-		return fmt.Errorf("failed to generate required Deployment: %s", err)
-	}
-
-	requiredCopy := required.DeepCopy()
-
-	lastGeneration := resourcemerge.ExpectedDeploymentGeneration(requiredCopy, opStatus.Generations)
-	deployment, _, err := resourceapply.ApplyDeployment(ctx, c.mgmtClient.KubeClient.AppsV1(), c.eventRecorder, requiredCopy, lastGeneration)
-	if err != nil {
-		return err
-	}
-	err = c.postSync(ctx, deployment)
-	if err != nil {
-		return err
-	}
-
-	return checkDeploymentHealth(ctx, c.mgmtClient.KubeClient.AppsV1(), deployment)
-}
-
-func (c *HyperShiftDeploymentController) Run(ctx context.Context, workers int) {
-	// This adds event handlers to informers.
-	ctrl := c.factory.WithSync(c.Sync).ToController(c.Name(), c.eventRecorder)
-	ctrl.Run(ctx, workers)
-}
-
-func (c *HyperShiftDeploymentController) Name() string {
-	return c.name + deploymentControllerName
-}
-
-func (c *HyperShiftDeploymentController) getHostedControlPlaneCustomTolerations() ([]corev1.Toleration, error) {
-	hcp, err := c.getHostedControlPlane()
-	if err != nil {
-		return nil, err
-	}
-
+func getHostedControlPlaneCustomTolerations(hcp *unstructured.Unstructured) ([]corev1.Toleration, error) {
 	var tolerations []corev1.Toleration
 	tolerationsArray, tolerationsArrayFound, err := unstructured.NestedFieldCopy(hcp.UnstructuredContent(), "spec", "tolerations")
 	if !tolerationsArrayFound {
 		return tolerations, nil
+	}
+	if err != nil {
+		return nil, err
 	}
 	tolerationsArrayConverted, hasConverted := tolerationsArray.([]interface{})
 	if !hasConverted {
@@ -267,11 +213,7 @@ func (c *HyperShiftDeploymentController) getHostedControlPlaneCustomTolerations(
 	return tolerations, nil
 }
 
-func (c *HyperShiftDeploymentController) getHostedControlPlaneNodeSelector() (map[string]string, error) {
-	hcp, err := c.getHostedControlPlane()
-	if err != nil {
-		return nil, err
-	}
+func getHostedControlPlaneNodeSelector(hcp *unstructured.Unstructured) (map[string]string, error) {
 	nodeSelector, exists, err := unstructured.NestedStringMap(hcp.UnstructuredContent(), "spec", "nodeSelector")
 	if !exists {
 		return nil, nil
@@ -283,11 +225,7 @@ func (c *HyperShiftDeploymentController) getHostedControlPlaneNodeSelector() (ma
 	return nodeSelector, nil
 }
 
-func (c *HyperShiftDeploymentController) getHostedControlPlaneLabels() (map[string]string, error) {
-	hcp, err := c.getHostedControlPlane()
-	if err != nil {
-		return nil, err
-	}
+func getHostedControlPlaneLabels(hcp *unstructured.Unstructured) (map[string]string, error) {
 	labels, exists, err := unstructured.NestedStringMap(hcp.UnstructuredContent(), "spec", "labels")
 	if !exists {
 		return nil, nil
@@ -299,21 +237,21 @@ func (c *HyperShiftDeploymentController) getHostedControlPlaneLabels() (map[stri
 	return labels, nil
 }
 
-func (c *HyperShiftDeploymentController) getHostedControlPlane() (*unstructured.Unstructured, error) {
-	list, err := c.hostedControlPlaneLister.ByNamespace(c.controlNamespace).List(labels.Everything())
+func getHostedControlPlane(controlNamespace string, hostedControlPlaneLister cache.GenericLister) (*unstructured.Unstructured, error) {
+	list, err := hostedControlPlaneLister.ByNamespace(controlNamespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("no HostedControlPlane found in namespace %s", c.controlNamespace)
+		return nil, fmt.Errorf("no HostedControlPlane found in namespace %s", controlNamespace)
 	}
 	if len(list) > 1 {
-		return nil, fmt.Errorf("more than one HostedControlPlane found in namespace %s", c.controlNamespace)
+		return nil, fmt.Errorf("more than one HostedControlPlane found in namespace %s", controlNamespace)
 	}
 
 	hcp := list[0].(*unstructured.Unstructured)
 	if hcp == nil {
-		return nil, fmt.Errorf("unknown type of HostedControlPlane found in namespace %s", c.controlNamespace)
+		return nil, fmt.Errorf("unknown type of HostedControlPlane found in namespace %s", controlNamespace)
 	}
 	return hcp, nil
 }
@@ -321,7 +259,7 @@ func (c *HyperShiftDeploymentController) getHostedControlPlane() (*unstructured.
 // getRunAsUserHook handles the RUN_AS_USER environment variable for Hypershift deployments.
 // This is required for deploying control planes on clusters that do not have Security Context Constraints (SCCs), for example AKS.
 // If RUN_AS_USER is set, it adds the environment variable to the CSI operator container and sets runAsUser in the pod security context.
-func (c *HyperShiftDeploymentController) getRunAsUserHook() deploymentcontroller.DeploymentHookFunc {
+func getRunAsUserHook() deploymentcontroller.DeploymentHookFunc {
 	return func(spec *operatorv1.OperatorSpec, deployment *appsv1.Deployment) error {
 		uid := os.Getenv("RUN_AS_USER")
 		if uid == "" {
