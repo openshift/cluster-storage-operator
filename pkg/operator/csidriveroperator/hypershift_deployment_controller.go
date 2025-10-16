@@ -128,7 +128,7 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 		return err
 	}
 
-	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nodeSelector, labels, tolerations, replacers...)
+	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nodeSelector, labels, tolerations, replacers, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to generate required Deployment: %s", err)
 	}

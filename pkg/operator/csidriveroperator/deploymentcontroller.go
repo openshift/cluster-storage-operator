@@ -14,6 +14,7 @@ import (
 	operatorv1 "github.com/openshift/api/operator/v1"
 	configv1listers "github.com/openshift/client-go/config/listers/config/v1"
 	"github.com/openshift/library-go/pkg/controller/factory"
+	"github.com/openshift/library-go/pkg/operator/deploymentcontroller"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
@@ -42,6 +43,8 @@ type CommonCSIDeploymentController struct {
 	infraLister       configv1listers.InfrastructureLister
 	resyncInterval    time.Duration
 	factory           *factory.Factory
+	manifestHooks     []deploymentcontroller.ManifestHookFunc
+	deploymentHooks   []deploymentcontroller.DeploymentHookFunc
 }
 
 func (c *CommonCSIDeploymentController) initController(factoryHookFunc func(*factory.Factory)) *factory.Factory {
@@ -179,7 +182,7 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 		replacers = append(replacers, c.csiOperatorConfig.ImageReplacer)
 	}
 
-	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nil, nil, nil, replacers...)
+	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nil, nil, nil, replacers, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to generate required Deployment: %s", err)
 	}
