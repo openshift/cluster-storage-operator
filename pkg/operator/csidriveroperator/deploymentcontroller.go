@@ -1,8 +1,10 @@
 package csidriveroperator
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/deploymentcontroller"
 	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/loglevel"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/status"
@@ -125,7 +128,10 @@ func initCommonDeploymentParams(
 		eventRecorder:     eventRecorder.WithComponentSuffix(csiOperatorConfig.ConditionPrefix),
 		infraLister:       client.ConfigInformers.Config().V1().Infrastructures().Lister(),
 	}
-	c.manifestHooks = []deploymentcontroller.ManifestHookFunc{c.getReplacerHook()}
+	c.manifestHooks = []deploymentcontroller.ManifestHookFunc{
+		c.getReplacerHook(),
+		c.getLogLevelHook(),
+	}
 
 	// Common replacers
 	c.replacers = []*strings.Replacer{sidecarReplacer}
@@ -188,6 +194,14 @@ func (c *CommonCSIDeploymentController) getReplacerHook() deploymentcontroller.M
 	}
 }
 
+func (c *CommonCSIDeploymentController) getLogLevelHook() deploymentcontroller.ManifestHookFunc {
+	return func(spec *operatorv1.OperatorSpec, deploymentBytes []byte) ([]byte, error) {
+		logLevel := loglevel.LogLevelToVerbosity(spec.LogLevel)
+		deploymentBytes = bytes.ReplaceAll(deploymentBytes, []byte("${LOG_LEVEL}"), []byte(strconv.Itoa(logLevel)))
+		return deploymentBytes, nil
+	}
+}
+
 func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCtx factory.SyncContext) error {
 	klog.V(4).Infof("CSIDriverOperatorDeploymentController sync started")
 	defer klog.V(4).Infof("CSIDriverOperatorDeploymentController sync finished")
@@ -201,7 +215,7 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 		return nil
 	}
 
-	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nil, nil, nil, c.manifestHooks, c.deploymentHooks)
+	required, err := csoutils.GetRequiredDeployment(c.csiOperatorConfig.DeploymentAsset, opSpec, nil, nil, nil, c.manifestHooks, nil)
 	if err != nil {
 		return fmt.Errorf("failed to generate required Deployment: %s", err)
 	}

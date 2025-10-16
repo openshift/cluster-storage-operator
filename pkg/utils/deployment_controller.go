@@ -3,14 +3,11 @@ package utils
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
 	operatorapi "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/library-go/pkg/operator/deploymentcontroller"
 	"github.com/openshift/library-go/pkg/operator/events"
-	"github.com/openshift/library-go/pkg/operator/loglevel"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
@@ -109,10 +106,6 @@ func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpe
 	}
 
 	deploymentString := string(deploymentBytes)
-
-	// Replace log level
-	logLevel := loglevel.LogLevelToVerbosity(spec.LogLevel)
-	deploymentString = strings.ReplaceAll(deploymentString, "${LOG_LEVEL}", strconv.Itoa(logLevel))
 
 	deployment := resourceread.ReadDeploymentV1OrDie([]byte(deploymentString))
 	if nodeSelector != nil {
