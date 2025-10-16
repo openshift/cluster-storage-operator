@@ -87,7 +87,10 @@ func NewHyperShiftControllerDeployment(
 	c.CommonCSIDeploymentController.replacers = append(c.CommonCSIDeploymentController.replacers, namespaceReplacer, hyperShiftImageReplacer)
 
 	// HyperShift specific deployment hooks
-	c.CommonCSIDeploymentController.deploymentHooks = append(c.CommonCSIDeploymentController.deploymentHooks, c.getHyperShiftHook())
+	c.CommonCSIDeploymentController.deploymentHooks = append(c.CommonCSIDeploymentController.deploymentHooks,
+		c.getHyperShiftHook(),
+		c.getAROEnvVarsHook(),
+	)
 
 	f := c.initController(func(f *factory.Factory) {
 		f.WithInformers(
@@ -130,6 +133,33 @@ func (c *HyperShiftDeploymentController) getHyperShiftHook() deploymentcontrolle
 	}
 }
 
+func (c *HyperShiftDeploymentController) getAROEnvVarsHook() deploymentcontroller.DeploymentHookFunc {
+	return func(spec *operatorv1.OperatorSpec, deployment *appsv1.Deployment) error {
+		// The existence of the environment variable, ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE, means this is an ARO HCP
+		// deployment. We need to pass along additional environment variables for ARO HCP in order to mount the backing
+		// certificates, related to the client IDs, in a volume on the azure-disk-csi-controller and
+		// azure-file-csi-controller deployments.
+		var envVars []corev1.EnvVar
+		if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK") != "" && deployment.Name == "azure-disk-csi-driver-operator" {
+			envVars = []corev1.EnvVar{
+				{Name: "ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK", Value: os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK")},
+			}
+		}
+
+		if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE") != "" && deployment.Name == "azure-file-csi-driver-operator" {
+			envVars = []corev1.EnvVar{
+				{Name: "ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE", Value: os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE")},
+			}
+		}
+
+		if len(envVars) > 0 {
+			deployment.Spec.Template.Spec.Containers[0].Env = append(deployment.Spec.Template.Spec.Containers[0].Env, envVars...)
+		}
+
+		return nil
+	}
+}
+
 func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx factory.SyncContext) error {
 	klog.V(4).Infof("CSIDriverOperatorDeploymentController sync started")
 	defer klog.V(4).Infof("CSIDriverOperatorDeploymentController sync finished")
@@ -149,27 +179,6 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 	}
 
 	requiredCopy := required.DeepCopy()
-
-	// The existence of the environment variable, ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE, means this is an ARO HCP
-	// deployment. We need to pass along additional environment variables for ARO HCP in order to mount the backing
-	// certificates, related to the client IDs, in a volume on the azure-disk-csi-controller and
-	// azure-file-csi-controller deployments.
-	var envVars []corev1.EnvVar
-	if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK") != "" && requiredCopy.Name == "azure-disk-csi-driver-operator" {
-		envVars = []corev1.EnvVar{
-			{Name: "ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK", Value: os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK")},
-		}
-	}
-
-	if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE") != "" && requiredCopy.Name == "azure-file-csi-driver-operator" {
-		envVars = []corev1.EnvVar{
-			{Name: "ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE", Value: os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE")},
-		}
-	}
-
-	if len(envVars) > 0 {
-		requiredCopy.Spec.Template.Spec.Containers[0].Env = append(requiredCopy.Spec.Template.Spec.Containers[0].Env, envVars...)
-	}
 
 	// Handle RUN_AS_USER environment variable for Hypershift deployments
 	err = c.applyRunAsUserIfSet(requiredCopy)
