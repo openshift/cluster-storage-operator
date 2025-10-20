@@ -1,6 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  annotations:
+    release.openshift.io/desired-version: ${RELEASE_VERSION}
   labels:
     hypershift.openshift.io/managed-by: cluster-storage-operator
   name: aws-ebs-csi-driver-operator

@@ -5,6 +5,8 @@ metadata:
   namespace: ${CONTROLPLANE_NAMESPACE}
   labels:
     hypershift.openshift.io/managed-by: cluster-storage-operator
+  annotations:
+    release.openshift.io/desired-version: ${RELEASE_VERSION}
 spec:
   replicas: 1
   selector:
