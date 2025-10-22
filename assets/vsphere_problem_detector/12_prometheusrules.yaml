@@ -105,19 +105,6 @@ spec:
             The cluster is using vCenter version less than 8, which is being deprecated by Openshift. A future version of
             Openshift will remove support for vCenter versions less than 8 and it is recommended to update your vCenter to a supported version.
 
-      - alert: VSphereUnsupportedVCenterPresent
-        # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
-        # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the alerting rule.
-        expr: |
-          min_over_time(vsphere_vcenter_info{api_version=~"^9.*"}[5m]) > 0
-        for: 10m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Detected vSphere vCenter version 9 in Openshift cluster."
-          description: |
-            The cluster is using vCenter version 9, which has not been tested by Openshift. A future version of Openshift will add support for vCenter version 9.
-
       - alert: VSphereOpenshiftVmsCBTMismatch
         # Using min_over_time to make sure the metric is `1` for whole 5 minutes.
         # A missed scraping (e.g. due to a pod restart) will result in prometheus re-evaluating the the alerting rule.
