@@ -36,4 +36,4 @@ combined to generate the resulting assets, which are dumped to the `generated`
 subdirectory in the `standalone`, `hypershift/guest` and `hypershift/mgmt`
 directories.
 
-[hcp]: https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html-single/hosted_control_planes/index
+[hcp]: https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/hosted_control_planes/index
