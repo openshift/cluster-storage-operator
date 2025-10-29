@@ -17,6 +17,7 @@ func GetPowerVSBlockCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 	pairs := []string{
 		"${OPERATOR_IMAGE}", os.Getenv(envPowerVSBlockCSIDriverOperatorImage),
 		"${DRIVER_IMAGE}", os.Getenv(envPowerVSBlockCSIDriverImage),
+		"${OPERATOR_IMAGE_VERSION}", os.Getenv(envOperatorImageVersion),
 	}
 
 	csiDriverConfig := CSIOperatorConfig{
