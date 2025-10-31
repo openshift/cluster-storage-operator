@@ -343,10 +343,16 @@ rules:
   - update
   - patch
   - delete
-# Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
+# Allow kube-rbac-proxy to create TokenReview and SubjectAccessReview to be able to authenticate Prometheus when collecting metrics
 - apiGroups:
   - "authentication.k8s.io"
   resources:
   - "tokenreviews"
+  verbs:
+  - "create"
+- apiGroups:
+  - "authorization.k8s.io"
+  resources:
+  - "subjectaccessreviews"
   verbs:
   - "create"
