@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   annotations:
     config.openshift.io/inject-proxy: azure-file-csi-driver-operator
+    release.openshift.io/desired-version: ${RELEASE_VERSION}
   labels:
     hypershift.openshift.io/managed-by: cluster-storage-operator
   name: azure-file-csi-driver-operator
