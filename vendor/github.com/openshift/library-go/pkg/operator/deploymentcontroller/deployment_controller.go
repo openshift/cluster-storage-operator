@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
@@ -71,6 +72,8 @@ type DeploymentController struct {
 	// errors contains any errors that occur during the configuration
 	// and setup of the DeploymentController.
 	errors []error
+
+	postStartHooks []factory.PostStartHook
 }
 
 // NewDeploymentController creates a new instance of DeploymentController,
@@ -177,6 +180,11 @@ func (c *DeploymentController) WithConditions(conditions ...string) *DeploymentC
 	return c
 }
 
+func (c *DeploymentController) WithPostStartHooks(hooks ...factory.PostStartHook) *DeploymentController {
+	c.postStartHooks = hooks
+	return c
+}
+
 // ToController converts the DeploymentController into a factory.Controller.
 // It aggregates and returns all errors reported during the builder phase.
 func (c *DeploymentController) ToController() (factory.Controller, error) {
@@ -192,6 +200,11 @@ func (c *DeploymentController) ToController() (factory.Controller, error) {
 	).ResyncEvery(
 		time.Minute,
 	)
+
+	if len(c.postStartHooks) > 0 {
+		controller = controller.WithPostStartHooks(c.postStartHooks...)
+	}
+
 	if slices.Contains(c.conditions, opv1.OperatorStatusTypeDegraded) {
 		controller = controller.WithSyncDegradedOnError(c.operatorClient)
 	}
@@ -256,7 +269,6 @@ func (c *DeploymentController) syncManaged(ctx context.Context, opSpec *opv1.Ope
 	if err != nil {
 		return err
 	}
-
 	// Create an OperatorStatusApplyConfiguration with generations
 	status := applyoperatorv1.OperatorStatus().
 		WithGenerations(&applyoperatorv1.GenerationStatusApplyConfiguration{
@@ -357,6 +369,7 @@ func (c *DeploymentController) getDeployment(opSpec *opv1.OperatorSpec) (*appsv1
 }
 
 func isProgressing(deployment *appsv1.Deployment) (bool, string) {
+
 	var deploymentExpectedReplicas int32
 	if deployment.Spec.Replicas != nil {
 		deploymentExpectedReplicas = *deployment.Spec.Replicas
@@ -365,6 +378,8 @@ func isProgressing(deployment *appsv1.Deployment) (bool, string) {
 	switch {
 	case deployment.Generation != deployment.Status.ObservedGeneration:
 		return true, "Waiting for Deployment to act on changes"
+	case hasFinishedProgressing(deployment):
+		return false, ""
 	case deployment.Status.UnavailableReplicas > 0:
 		return true, "Waiting for Deployment to deploy pods"
 	case deployment.Status.UpdatedReplicas < deploymentExpectedReplicas:
@@ -373,4 +388,21 @@ func isProgressing(deployment *appsv1.Deployment) (bool, string) {
 		return true, "Waiting for Deployment to deploy pods"
 	}
 	return false, ""
+}
+
+func hasFinishedProgressing(deployment *appsv1.Deployment) bool {
+	if deployment.Status.ObservedGeneration != deployment.Generation {
+		// The Deployment controller in KCM did not act on the Deployment spec change yet.
+		// Any condition in the status may be stale.
+		return false
+	}
+	// Deployment whose rollout is complete gets Progressing condition with Reason NewReplicaSetAvailable condition.
+	// https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#complete-deployment
+	// Any subsequent missing replicas (e.g. caused by a node reboot) must not not change the Progressing condition.
+	for _, cond := range deployment.Status.Conditions {
+		if cond.Type == appsv1.DeploymentProgressing {
+			return cond.Status == corev1.ConditionTrue && cond.Reason == "NewReplicaSetAvailable"
+		}
+	}
+	return false
 }
