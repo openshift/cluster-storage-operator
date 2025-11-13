@@ -16,7 +16,7 @@ spec:
   template:
     metadata:
       annotations:
-        openshift.io/required-scc: nonroot-v2
+        openshift.io/required-scc: restricted-v3
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         name: cluster-storage-operator
@@ -121,10 +121,11 @@ spec:
         volumeMounts:
         - mountPath: /var/run/secrets/serving-cert
           name: cluster-storage-operator-serving-cert
+      hostUsers: false
       priorityClassName: system-cluster-critical
       securityContext:
         runAsNonRoot: true
-        runAsUser: 11411
+        runAsUser: 1000
         seccompProfile:
           type: RuntimeDefault
       serviceAccountName: cluster-storage-operator
