@@ -133,6 +133,7 @@ spec:
         volumeMounts:
         - mountPath: /etc/guest-kubeconfig
           name: guest-kubeconfig
+      hostUsers: false
       securityContext:
         runAsNonRoot: true
         seccompProfile:
