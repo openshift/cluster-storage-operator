@@ -72,6 +72,8 @@ type DeploymentController struct {
 	// errors contains any errors that occur during the configuration
 	// and setup of the DeploymentController.
 	errors []error
+
+	postStartHooks []factory.PostStartHook
 }
 
 // NewDeploymentController creates a new instance of DeploymentController,
@@ -178,6 +180,11 @@ func (c *DeploymentController) WithConditions(conditions ...string) *DeploymentC
 	return c
 }
 
+func (c *DeploymentController) WithPostStartHooks(hooks ...factory.PostStartHook) *DeploymentController {
+	c.postStartHooks = hooks
+	return c
+}
+
 // ToController converts the DeploymentController into a factory.Controller.
 // It aggregates and returns all errors reported during the builder phase.
 func (c *DeploymentController) ToController() (factory.Controller, error) {
@@ -193,6 +200,11 @@ func (c *DeploymentController) ToController() (factory.Controller, error) {
 	).ResyncEvery(
 		time.Minute,
 	)
+
+	if len(c.postStartHooks) > 0 {
+		controller = controller.WithPostStartHooks(c.postStartHooks...)
+	}
+
 	if slices.Contains(c.conditions, opv1.OperatorStatusTypeDegraded) {
 		controller = controller.WithSyncDegradedOnError(c.operatorClient)
 	}

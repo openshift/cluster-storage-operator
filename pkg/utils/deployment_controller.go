@@ -3,20 +3,17 @@ package utils
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
 	operatorapi "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/assets"
+	"github.com/openshift/library-go/pkg/operator/deploymentcontroller"
 	"github.com/openshift/library-go/pkg/operator/events"
-	"github.com/openshift/library-go/pkg/operator/loglevel"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -94,37 +91,29 @@ func CreateDeployment(ctx context.Context, depOpts DeploymentOptions) (*appsv1.D
 
 // GetRequiredDeployment returns a deployment from given assset after replacing necessary strings and setting
 // correct log level.
-func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpec, nodeSelector map[string]string, labels map[string]string, tolerations []corev1.Toleration, replacers ...*strings.Replacer) (*appsv1.Deployment, error) {
+func GetRequiredDeployment(deploymentAsset string, spec *operatorapi.OperatorSpec, manifestHooks []deploymentcontroller.ManifestHookFunc, deploymentHooks []deploymentcontroller.DeploymentHookFunc) (*appsv1.Deployment, error) {
 	deploymentBytes, err := assets.ReadFile(deploymentAsset)
 	if err != nil {
 		return nil, err
 	}
+
+	for i, manifestHook := range manifestHooks {
+		deploymentBytes, err = manifestHook(spec, deploymentBytes)
+		if err != nil {
+			return nil, fmt.Errorf("error running manifest hook (index=%d): %w", i, err)
+		}
+	}
+
 	deploymentString := string(deploymentBytes)
 
-	for _, replacer := range replacers {
-		// Replace images
-		if replacer != nil {
-			deploymentString = replacer.Replace(deploymentString)
-		}
-	}
-
-	// Replace log level
-	logLevel := loglevel.LogLevelToVerbosity(spec.LogLevel)
-	deploymentString = strings.ReplaceAll(deploymentString, "${LOG_LEVEL}", strconv.Itoa(logLevel))
-
 	deployment := resourceread.ReadDeploymentV1OrDie([]byte(deploymentString))
-	if nodeSelector != nil {
-		deployment.Spec.Template.Spec.NodeSelector = nodeSelector
-	}
 
-	for key, value := range labels {
-		// don't replace existing labels as they are used in the deployment's labelSelector.
-		if _, exist := deployment.Spec.Template.Labels[key]; !exist {
-			deployment.Spec.Template.Labels[key] = value
+	for i, deploymentHook := range deploymentHooks {
+		err = deploymentHook(spec, deployment)
+		if err != nil {
+			return nil, fmt.Errorf("error running deployment hook (index=%d): %w", i, err)
 		}
 	}
-
-	deployment.Spec.Template.Spec.Tolerations = append(deployment.Spec.Template.Spec.Tolerations, tolerations...)
 
 	return deployment, nil
 }
