@@ -27,6 +27,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
+	metrics "github.com/openshift/cluster-storage-operator/pkg/operator/metrics"
 )
 
 type OperatorStarter interface {
@@ -184,7 +185,7 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 		return err
 	}
 
-	countStorageClasses(ssr.commonClients)
+	metrics.CountStorageClasses(ssr.commonClients)
 
 	csiDriverConfigs := ssr.populateConfigs(ssr.commonClients)
 	csiDriverController, _ := csidriveroperator.NewStandaloneDriverStarter(
