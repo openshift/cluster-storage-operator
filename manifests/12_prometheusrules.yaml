@@ -27,6 +27,19 @@ spec:
             and checks there is not more than one default StorageClass configured.
           message: "StorageClass count check is failing (there should not be more than one default StorageClass)"
 
+    - name: volume-attributes-class.rules
+      rules:
+      - alert: VolumeAttributesClassParameterMismatch
+        expr: max_over_time(openshift_cluster_storage_vac_mismatch_parameters[5m]) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "VAC parameters mismatch detected for a CSI driver"
+          description: |
+            VolumeAttributeClasses (VAC) for driver {{ $labels.driver }} have mismatching parameters. Please make sure that all VACs of the CSI driver {{ $labels.driver }} have the same parameter names specified.
+          message: "VolumeAttributeClasses (VAC) for driver {{ $labels.driver }} have mismatching parameters. Please make sure that all VACs of the CSI driver {{ $labels.driver }} have the same parameter names specified."
+
     - name: storage-operations.rules
       rules:
       - alert: PodStartupStorageOperationsFailing

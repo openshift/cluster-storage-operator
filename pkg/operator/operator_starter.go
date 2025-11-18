@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
+	metrics "github.com/openshift/cluster-storage-operator/pkg/operator/metrics"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/volumedatasourcevalidator"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/vsphereproblemdetector"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
@@ -27,7 +28,6 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
-	metrics "github.com/openshift/cluster-storage-operator/pkg/operator/metrics"
 )
 
 type OperatorStarter interface {
@@ -186,6 +186,7 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 	}
 
 	metrics.CountStorageClasses(ssr.commonClients)
+	metrics.InitializeVACMismatchMetrics(ssr.commonClients)
 
 	csiDriverConfigs := ssr.populateConfigs(ssr.commonClients)
 	csiDriverController, _ := csidriveroperator.NewStandaloneDriverStarter(
@@ -287,6 +288,8 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	metrics.InitializeVACMismatchMetrics(hsr.commonClients)
 
 	csiDriverController, _ := csidriveroperator.NewHypershiftDriverStarter(
 		hsr.commonClients,
