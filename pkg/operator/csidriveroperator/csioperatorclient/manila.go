@@ -68,6 +68,8 @@ func GetOpenStackManilaOperatorConfig(isHypershift bool, clients *csoclients.Cli
 		csiDriverConfig.DeploymentAsset = "csidriveroperators/openstack-manila/hypershift/mgmt/generated/apps_v1_deployment_manila-csi-driver-operator.yaml"
 	}
 
+	csiDriverConfig.CSIDriverOperatorName = getCSIDriverOperatorName(csiDriverConfig.DeploymentAsset)
+
 	return csiDriverConfig
 }
 
