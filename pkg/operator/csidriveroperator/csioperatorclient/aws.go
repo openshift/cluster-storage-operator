@@ -60,5 +60,7 @@ func GetAWSEBSCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 		csiDriverConfig.CRAsset = "csidriveroperators/aws-ebs/hypershift/guest/generated/operator.openshift.io_v1_clustercsidriver_ebs.csi.aws.com.yaml"
 	}
 
+	csiDriverConfig.CSIDriverDeploymentName = getCSIDriverDeploymentName(csiDriverConfig.DeploymentAsset)
+
 	return csiDriverConfig
 }

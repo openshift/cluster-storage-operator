@@ -59,5 +59,8 @@ func GetAzureDiskCSIOperatorConfig(isHyperShift bool) CSIOperatorConfig {
 		csiDriverConfig.DeploymentAsset = "csidriveroperators/azure-disk/hypershift/mgmt/generated/apps_v1_deployment_azure-disk-csi-driver-operator.yaml"
 		csiDriverConfig.CRAsset = "csidriveroperators/azure-disk/hypershift/guest/generated/operator.openshift.io_v1_clustercsidriver_disk.csi.azure.com.yaml"
 	}
+
+	csiDriverConfig.CSIDriverDeploymentName = getCSIDriverDeploymentName(csiDriverConfig.DeploymentAsset)
+
 	return csiDriverConfig
 }
