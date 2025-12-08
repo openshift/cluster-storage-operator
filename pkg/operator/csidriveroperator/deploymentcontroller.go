@@ -247,7 +247,7 @@ func isProgressing(deployment *appsv1.Deployment) (bool, string) {
 func hasFinishedProgressing(deployment *appsv1.Deployment) bool {
 	// Deployment whose rollout is complete gets Progressing condition with Reason NewReplicaSetAvailable condition.
 	// https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#complete-deployment
-	// Any subsequent missing replicas (e.g. caused by a node reboot) must not not change the Progressing condition.
+	// Any subsequent missing replicas (e.g. caused by a node reboot) must not change the Progressing condition.
 	for _, cond := range deployment.Status.Conditions {
 		if cond.Type == appsv1.DeploymentProgressing {
 			return cond.Status == corev1.ConditionTrue && cond.Reason == "NewReplicaSetAvailable"
