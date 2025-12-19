@@ -7,6 +7,7 @@ import (
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 
@@ -231,6 +232,8 @@ func isProgressing(deployment *appsv1.Deployment) (bool, string) {
 	switch {
 	case deployment.Generation != deployment.Status.ObservedGeneration:
 		return true, "Waiting for Deployment to act on changes"
+	case hasFinishedProgressing(deployment):
+		return false, ""
 	case deployment.Status.UnavailableReplicas > 0:
 		return true, "Waiting for Deployment to deploy pods"
 	case deployment.Status.UpdatedReplicas < deploymentExpectedReplicas:
@@ -239,4 +242,16 @@ func isProgressing(deployment *appsv1.Deployment) (bool, string) {
 		return true, "Waiting for Deployment to deploy pods"
 	}
 	return false, ""
+}
+
+func hasFinishedProgressing(deployment *appsv1.Deployment) bool {
+	// Deployment whose rollout is complete gets Progressing condition with Reason NewReplicaSetAvailable condition.
+	// https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#complete-deployment
+	// Any subsequent missing replicas (e.g. caused by a node reboot) must not change the Progressing condition.
+	for _, cond := range deployment.Status.Conditions {
+		if cond.Type == appsv1.DeploymentProgressing {
+			return cond.Status == corev1.ConditionTrue && cond.Reason == "NewReplicaSetAvailable"
+		}
+	}
+	return false
 }
