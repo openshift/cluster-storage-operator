@@ -156,6 +156,19 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 		}
 	}
 
+	// For self-managed Azure (not ARO HCP), pass HYPERSHIFT_IMAGE to enable token-minter sidecars
+	if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_DISK") == "" && requiredCopy.Name == "azure-disk-csi-driver-operator" {
+		if hyperShiftImage := os.Getenv("HYPERSHIFT_IMAGE"); hyperShiftImage != "" {
+			envVars = append(envVars, corev1.EnvVar{Name: "HYPERSHIFT_IMAGE", Value: hyperShiftImage})
+		}
+	}
+
+	if os.Getenv("ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE") == "" && requiredCopy.Name == "azure-file-csi-driver-operator" {
+		if hyperShiftImage := os.Getenv("HYPERSHIFT_IMAGE"); hyperShiftImage != "" {
+			envVars = append(envVars, corev1.EnvVar{Name: "HYPERSHIFT_IMAGE", Value: hyperShiftImage})
+		}
+	}
+
 	if len(envVars) > 0 {
 		requiredCopy.Spec.Template.Spec.Containers[0].Env = append(requiredCopy.Spec.Template.Spec.Containers[0].Env, envVars...)
 	}
