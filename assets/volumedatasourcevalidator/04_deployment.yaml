@@ -31,7 +31,7 @@ spec:
             - "--leader-election-renew-deadline=${LEADER_ELECTION_RENEW_DEADLINE}"
             - "--leader-election-retry-period=${LEADER_ELECTION_RETRY_PERIOD}"
             - "--leader-election-namespace=openshift-cluster-storage-operator"
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
               name: validator-http
