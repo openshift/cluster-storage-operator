@@ -367,7 +367,7 @@ github.com/openshift/client-go/operator/informers/externalversions/operator/v1
 github.com/openshift/client-go/operator/informers/externalversions/operator/v1alpha1
 github.com/openshift/client-go/operator/listers/operator/v1
 github.com/openshift/client-go/operator/listers/operator/v1alpha1
-# github.com/openshift/library-go v0.0.0-20251107090138-0de9712313a5
+# github.com/openshift/library-go v0.0.0-20251120164824-14a789e09884
 ## explicit; go 1.24.0
 github.com/openshift/library-go/pkg/apiserver/jsonpatch
 github.com/openshift/library-go/pkg/authorization/hardcodedauthorizer
@@ -395,6 +395,7 @@ github.com/openshift/library-go/pkg/operator/csi/csidrivercontrollerservicecontr
 github.com/openshift/library-go/pkg/operator/deploymentcontroller
 github.com/openshift/library-go/pkg/operator/events
 github.com/openshift/library-go/pkg/operator/genericoperatorclient
+github.com/openshift/library-go/pkg/operator/hypershift/deploymentversion
 github.com/openshift/library-go/pkg/operator/loglevel
 github.com/openshift/library-go/pkg/operator/management
 github.com/openshift/library-go/pkg/operator/managementstatecontroller
