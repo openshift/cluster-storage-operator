@@ -4,7 +4,7 @@ COPY . .
 RUN make && \
     gzip /go/src/github.com/openshift/cluster-storage-operator/cluster-storage-operator-tests-ext 
 
-FROM registry.ci.openshift.org/ocp/4.22:base-rhel9
+FROM registry.ci.openshift.org/ocp/4.22:base-rhel9-minimal
 COPY --from=builder /go/src/github.com/openshift/cluster-storage-operator/cluster-storage-operator /usr/bin/
 COPY --from=builder /go/src/github.com/openshift/cluster-storage-operator/cluster-storage-operator-tests-ext.gz /usr/bin/
 COPY manifests /manifests
