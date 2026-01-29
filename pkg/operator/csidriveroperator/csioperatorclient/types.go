@@ -18,6 +18,8 @@ type CSIOperatorConfig struct {
 	// Name of the CSI driver (such as ebs.csi.aws.com) and at the same time
 	// name of ClusterCSIDriver CR.
 	CSIDriverName string
+	// Name of the CSI driver operator deployment (such as aws-ebs-csi-driver-operator)
+	CSIDriverDeploymentName string
 	// Short name of the driver, used to prefix conditions.
 	ConditionPrefix string
 	// Platform where the driver should run.

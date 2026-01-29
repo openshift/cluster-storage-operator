@@ -110,8 +110,12 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 
 	namespaceReplacer := strings.NewReplacer("${CONTROLPLANE_NAMESPACE}", c.controlNamespace)
 	hyperShiftImageReplacer := strings.NewReplacer("${HYPERSHIFT_IMAGE}", envHyperShiftImage)
-	replacers = append(replacers, namespaceReplacer)
-	replacers = append(replacers, hyperShiftImageReplacer)
+	releaseVersionReplacer := strings.NewReplacer("${RELEASE_VERSION}", c.targetVersion)
+	replacers = append(replacers,
+		namespaceReplacer,
+		hyperShiftImageReplacer,
+		releaseVersionReplacer,
+	)
 
 	nodeSelector, err := c.getHostedControlPlaneNodeSelector()
 	if err != nil {

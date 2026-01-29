@@ -55,5 +55,7 @@ func GetPowerVSBlockCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 		csiDriverConfig.CRAsset = "csidriveroperators/powervs-block/hypershift/guest/07_cr.yaml"
 	}
 
+	csiDriverConfig.CSIDriverDeploymentName = getCSIDriverDeploymentName(csiDriverConfig.DeploymentAsset)
+
 	return csiDriverConfig
 }

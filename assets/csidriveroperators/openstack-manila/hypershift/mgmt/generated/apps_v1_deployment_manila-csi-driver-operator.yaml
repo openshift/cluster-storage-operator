@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   annotations:
     config.openshift.io/inject-proxy: manila-csi-driver-operator
+    release.openshift.io/desired-version: ${RELEASE_VERSION}
     storage.openshift.io/remove-from: guest
   labels:
     hypershift.openshift.io/managed-by: cluster-storage-operator

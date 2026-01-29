@@ -20,6 +20,7 @@ import (
 	"github.com/openshift/library-go/pkg/controller/manager"
 	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/hypershift/deploymentversion"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
 	"github.com/openshift/library-go/pkg/operator/status"
@@ -344,6 +345,17 @@ func (h *hypershiftDriverStarter) addExtraControllersToManager(manager manager.C
 		AddCategoryExpander(h.mgmtClient.CategoryExpander)
 
 	manager = manager.WithController(mgmtStaticResourceController, 1)
+
+	mgmtDeploymentVersionController := deploymentversioncontroller.NewDeploymentVersionController(
+		"DeploymentVersionController",
+		h.controllerNamespace,
+		cfg.CSIDriverDeploymentName,
+		h.mgmtClient.KubeInformers.InformersFor(h.controllerNamespace).Apps().V1().Deployments(),
+		h.commonClients.OperatorClient,
+		h.mgmtClient.KubeClient,
+		h.eventRecorder)
+
+	manager = manager.WithController(mgmtDeploymentVersionController, 1)
 
 	manager.WithController(NewHyperShiftControllerDeployment(
 		h.mgmtClient,
