@@ -60,6 +60,8 @@ spec:
           readOnly: true
         - name: tmp
           mountPath: /tmp
+        - mountPath: /var/run/secrets/serving-cert
+          name: serving-cert
         name: openstack-cinder-csi-driver-operator
         resources:
           requests:
@@ -92,6 +94,10 @@ spec:
       - name: tmp
         emptyDir:
           medium: Memory
+      - name: serving-cert
+        secret:
+          defaultMode: 420
+          secretName: openstack-cinder-csi-driver-operator-serving-cert
       securityContext:
         runAsNonRoot: true
         seccompProfile:

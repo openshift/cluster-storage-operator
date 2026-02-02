@@ -33,6 +33,7 @@ func GetOpenStackCinderCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 	if !isHypershift {
 		csiDriverConfig.StaticAssets = []string{
 			"csidriveroperators/openstack-cinder/standalone/generated/v1_serviceaccount_openstack-cinder-csi-driver-operator.yaml",
+			"csidriveroperators/openstack-cinder/standalone/generated/v1_service_openstack-cinder-csi-driver-operator-metrics.yaml",
 			"csidriveroperators/openstack-cinder/standalone/generated/rbac.authorization.k8s.io_v1_role_openstack-cinder-csi-driver-operator-role.yaml",
 			"csidriveroperators/openstack-cinder/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_openstack-cinder-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/openstack-cinder/standalone/generated/rbac.authorization.k8s.io_v1_clusterrole_openstack-cinder-csi-driver-operator-clusterrole.yaml",
@@ -52,6 +53,7 @@ func GetOpenStackCinderCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/openstack-cinder/hypershift/mgmt/generated/rbac.authorization.k8s.io_v1_role_openstack-cinder-csi-driver-operator-role.yaml",
 			"csidriveroperators/openstack-cinder/hypershift/mgmt/generated/rbac.authorization.k8s.io_v1_rolebinding_openstack-cinder-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/openstack-cinder/hypershift/mgmt/generated/v1_serviceaccount_openstack-cinder-csi-driver-operator.yaml",
+			"csidriveroperators/openstack-cinder/hypershift/mgmt/generated/v1_service_openstack-cinder-csi-driver-operator-metrics.yaml",
 		}
 		csiDriverConfig.DeploymentAsset = "csidriveroperators/openstack-cinder/hypershift/mgmt/generated/apps_v1_deployment_openstack-cinder-csi-driver-operator.yaml"
 		csiDriverConfig.CRAsset = "csidriveroperators/openstack-cinder/hypershift/guest/generated/operator.openshift.io_v1_clustercsidriver_cinder.csi.openstack.org.yaml"

@@ -72,6 +72,8 @@ spec:
           readOnly: true
         - mountPath: /tmp
           name: tmp
+        - mountPath: /var/run/secrets/serving-cert
+          name: serving-cert
       nodeSelector:
         node-role.kubernetes.io/master: ""
       priorityClassName: system-cluster-critical
@@ -111,3 +113,7 @@ spec:
       - emptyDir:
           medium: Memory
         name: tmp
+      - name: serving-cert
+        secret:
+          defaultMode: 420
+          secretName: openstack-cinder-csi-driver-operator-serving-cert

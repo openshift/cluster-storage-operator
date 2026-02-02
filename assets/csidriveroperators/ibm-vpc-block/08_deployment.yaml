@@ -65,6 +65,8 @@ spec:
         volumeMounts:
         - mountPath: /tmp
           name: tmp
+        - mountPath: /var/run/secrets/serving-cert
+          name: serving-cert
       priorityClassName: system-cluster-critical
       serviceAccountName: ibm-vpc-block-csi-driver-operator
       nodeSelector:
@@ -83,3 +85,7 @@ spec:
       - name: tmp
         emptyDir:
           medium: Memory
+      - name: serving-cert
+        secret:
+          defaultMode: 420
+          secretName: ibm-vpc-block-csi-driver-operator-serving-cert

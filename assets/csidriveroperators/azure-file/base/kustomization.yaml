@@ -1,4 +1,5 @@
 resources:
+  - 01_service.yaml
   - 03_sa.yaml
   - 04_role.yaml
   - 05_rolebinding.yaml
