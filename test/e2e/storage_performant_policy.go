@@ -41,7 +41,7 @@ func newClientConfigForTest() (*rest.Config, error) {
 	return config, err
 }
 
-var _ = g.Describe("[sig-storage] Storage Performant Policy", g.Label("Conformance"), g.Label("Parallel"), func() {
+var _ = g.Describe("[sig-storage][OCPFeatureGate:StoragePerformantSecurityPolicy] Storage Performant Policy", g.Label("Conformance"), g.Label("Parallel"), func() {
 	var kubeClient *kubernetes.Clientset
 
 	g.BeforeEach(func() {
