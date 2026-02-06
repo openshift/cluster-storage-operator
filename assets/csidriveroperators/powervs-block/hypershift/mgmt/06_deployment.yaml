@@ -64,8 +64,10 @@ spec:
               memory: 50Mi
               cpu: 10m
           volumeMounts:
-            - mountPath: /etc/guest-kubeconfig
-              name: guest-kubeconfig
+          - mountPath: /etc/guest-kubeconfig
+            name: guest-kubeconfig
+          - mountPath: /var/run/secrets/serving-cert
+            name: serving-cert
           terminationMessagePolicy: FallbackToLogsOnError
       priorityClassName: hypershift-control-plane
       serviceAccountName: powervs-block-csi-driver-operator
@@ -76,6 +78,10 @@ spec:
           operator: Exists
           effect: "NoSchedule"
       volumes:
-        - name: guest-kubeconfig
-          secret:
-            secretName: service-network-admin-kubeconfig
+      - name: guest-kubeconfig
+        secret:
+          secretName: service-network-admin-kubeconfig
+      - name: serving-cert
+        secret:
+          defaultMode: 420
+          secretName: powervs-block-csi-driver-operator-serving-cert

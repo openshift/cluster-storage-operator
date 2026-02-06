@@ -66,6 +66,8 @@ spec:
         volumeMounts:
         - mountPath: /tmp
           name: tmp
+        - mountPath: /var/run/secrets/serving-cert
+          name: serving-cert
       priorityClassName: system-cluster-critical
       serviceAccountName: gcp-pd-csi-driver-operator
       nodeSelector:
@@ -84,3 +86,7 @@ spec:
       - name: tmp
         emptyDir:
           medium: Memory
+      - name: serving-cert
+        secret:
+          defaultMode: 420
+          secretName: gcp-pd-csi-driver-operator-serving-cert

@@ -40,6 +40,7 @@ func GetIBMVPCBlockCSIOperatorConfig() CSIOperatorConfig {
 		Platform:        configv1.IBMCloudPlatformType,
 		StatusFilter:    isNotExternalTopologyMode,
 		StaticAssets: []string{
+			"csidriveroperators/ibm-vpc-block/01_service.yaml",
 			"csidriveroperators/ibm-vpc-block/03_sa.yaml",
 			"csidriveroperators/ibm-vpc-block/04_role.yaml",
 			"csidriveroperators/ibm-vpc-block/05_rolebinding.yaml",
