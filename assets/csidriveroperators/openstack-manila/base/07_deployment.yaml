@@ -63,6 +63,8 @@ spec:
           readOnly: true
         - name: tmp
           mountPath: /tmp
+        - mountPath: /var/run/secrets/serving-cert
+          name: serving-cert
         resources:
           requests:
             memory: 50Mi
@@ -94,6 +96,10 @@ spec:
       - name: tmp
         emptyDir:
           medium: Memory
+      - name: serving-cert
+        secret:
+          defaultMode: 420
+          secretName: manila-csi-driver-operator-serving-cert
       securityContext:
         runAsNonRoot: true
         seccompProfile:

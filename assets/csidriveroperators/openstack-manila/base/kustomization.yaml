@@ -7,3 +7,4 @@ resources:
   - 06_clusterrolebinding.yaml
   - 07_deployment.yaml
   - 08_cr.yaml
+  - 09_service.yaml
