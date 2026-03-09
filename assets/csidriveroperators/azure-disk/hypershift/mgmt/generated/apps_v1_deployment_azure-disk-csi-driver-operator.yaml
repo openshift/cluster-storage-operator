@@ -108,8 +108,6 @@ spec:
           name: guest-kubeconfig
         - mountPath: /tmp
           name: tmp
-        - mountPath: /var/run/secrets/serving-cert
-          name: serving-cert
       priorityClassName: hypershift-control-plane
       securityContext:
         runAsNonRoot: true
@@ -134,7 +132,3 @@ spec:
       - emptyDir:
           medium: Memory
         name: tmp
-      - name: serving-cert
-        secret:
-          defaultMode: 420
-          secretName: azure-disk-csi-driver-operator-serving-cert
