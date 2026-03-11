@@ -14,6 +14,6 @@ spec:
     protocol: TCP
     targetPort: 8443
   selector:
-    app: gcp-pd-csi-driver-operator
+    name: gcp-pd-csi-driver-operator
   sessionAffinity: None
   type: ClusterIP

@@ -15,6 +15,6 @@ spec:
     protocol: TCP
     targetPort: 8443
   selector:
-    app: openstack-cinder-csi-driver-operator
+    name: openstack-cinder-csi-driver-operator
   sessionAffinity: None
   type: ClusterIP

@@ -15,6 +15,6 @@ spec:
     protocol: TCP
     targetPort: 8443
   selector:
-    app: azure-file-csi-driver-operator
+    name: azure-file-csi-driver-operator
   sessionAffinity: None
   type: ClusterIP

@@ -15,6 +15,6 @@ spec:
     protocol: TCP
     targetPort: 8443
   selector:
-    app: aws-ebs-csi-driver-operator
+    name: aws-ebs-csi-driver-operator
   sessionAffinity: None
   type: ClusterIP

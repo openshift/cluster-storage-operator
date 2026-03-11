@@ -14,6 +14,6 @@ spec:
     protocol: TCP
     targetPort: 8443
   selector:
-    app: powervs-block-csi-driver-operator
+    name: powervs-block-csi-driver-operator
   sessionAffinity: None
   type: ClusterIP
