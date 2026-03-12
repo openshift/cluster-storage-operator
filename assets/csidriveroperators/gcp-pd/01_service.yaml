@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.beta.openshift.io/serving-cert-secret-name: gcp-pd-csi-driver-operator-serving-cert
+  labels:
+    app: gcp-pd-csi-driver-operator
+  name: gcp-pd-csi-driver-operator-metrics
+  namespace: openshift-cluster-csi-drivers
+spec:
+  ports:
+  - name: https
+    port: 443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    name: gcp-pd-csi-driver-operator
+  sessionAffinity: None
+  type: ClusterIP
