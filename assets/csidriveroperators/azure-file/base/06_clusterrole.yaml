@@ -292,6 +292,15 @@ rules:
   - get
   - list
   - watch
+# Allow Prometheus to discover endpoints via EndpointSlices
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
+  verbs:
+  - get
+  - list
+  - watch
 # Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
 - apiGroups:
   - authentication.k8s.io
