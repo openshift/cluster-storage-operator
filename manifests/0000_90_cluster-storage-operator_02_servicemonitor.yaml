@@ -25,3 +25,4 @@ spec:
   selector:
     matchLabels:
       app: cluster-storage-operator-metrics
+  serviceDiscoveryRole: EndpointSlice

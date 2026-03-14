@@ -18,3 +18,4 @@ spec:
   selector:
     matchLabels:
       app: vmware-vsphere-csi-driver-operator-metrics
+  serviceDiscoveryRole: EndpointSlice
