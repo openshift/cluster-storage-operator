@@ -212,6 +212,14 @@ rules:
   - update
   - delete
 - apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattributesclasses
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - '*'
   resources:
   - events
