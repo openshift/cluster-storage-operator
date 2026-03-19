@@ -113,9 +113,13 @@ func (c *VolumeDataSourceValidatorStarter) createVolumeDataSourceValidatorManage
 		clients.OperatorClient,
 		clients.KubeClient,
 		clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Apps().V1().Deployments(),
+	).WithExtraInformers(
+		clients.ConfigInformers.Config().V1().Infrastructures().Informer(),
 	).WithManifestHooks(
 		c.withReplacerHook(),
 		csidrivercontrollerservicecontroller.WithLeaderElectionReplacerHook(leConfig),
+	).WithDeploymentHooks(
+		csidrivercontrollerservicecontroller.WithControlPlaneTopologyHook(clients.ConfigInformers),
 	).WithConditions(
 		operatorapi.OperatorStatusTypeProgressing,
 		operatorapi.OperatorStatusTypeDegraded,
