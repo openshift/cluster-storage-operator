@@ -69,6 +69,8 @@ spec:
         volumeMounts:
         - mountPath: /tmp
           name: tmp
+        - mountPath: /var/run/secrets/serving-cert
+          name: serving-cert
       serviceAccountName: azure-file-csi-driver-operator
       securityContext:
         runAsNonRoot: true
@@ -78,3 +80,7 @@ spec:
       - name: tmp
         emptyDir:
           medium: Memory
+      - name: serving-cert
+        secret:
+          defaultMode: 420
+          secretName: azure-file-csi-driver-operator-serving-cert
