@@ -16,7 +16,7 @@ spec:
     metadata:
       annotations:
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
-        openshift.io/required-scc: nonroot-v2
+        openshift.io/required-scc: restricted-v3
       labels:
         name: cluster-storage-operator
         openshift.storage.network-policy.dns: allow
@@ -37,14 +37,15 @@ spec:
         operator: "Exists"
         effect: "NoExecute"
         tolerationSeconds: 120 # Evict pods within 2 mins.
+      hostUsers: false
       priorityClassName: system-cluster-critical
       serviceAccountName: cluster-storage-operator
       securityContext:
+        # TODO: remove cluster-admin from the operator
         runAsNonRoot: true
-        # Force a specific UID, just in case this Pod matches a custom SCC with "runAsUser: type: runAsNonRoot".
-        # The UID value was chosen by a fair `echo $RANDOM` call.
-        # TODO: remove cluster-admin from the operator, then a specific UID won't be needed.
-        runAsUser: 11411
+        # runAsUser must be set, otherwise make update fails.
+        # This is the default value set by restricted-v3 scc.
+        runAsUser: 1000
         seccompProfile:
           type: RuntimeDefault
       containers:
