@@ -29,6 +29,8 @@ spec:
       - args:
         - start
         - -v=2
+        - --config=/var/run/configmaps/config/config.yaml
+        - --terminate-on-files=/var/run/configmaps/config/config.yaml
         - --terminate-on-files=/var/run/secrets/serving-cert/tls.crt
         - --terminate-on-files=/var/run/secrets/serving-cert/tls.key
         command:
@@ -121,6 +123,8 @@ spec:
         volumeMounts:
         - mountPath: /var/run/secrets/serving-cert
           name: cluster-storage-operator-serving-cert
+        - mountPath: /var/run/configmaps/config
+          name: config
       priorityClassName: system-cluster-critical
       securityContext:
         runAsNonRoot: true
@@ -144,3 +148,6 @@ spec:
       - name: cluster-storage-operator-serving-cert
         secret:
           secretName: cluster-storage-operator-serving-cert
+      - configMap:
+          name: cluster-storage-operator-config
+        name: config
