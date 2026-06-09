@@ -24,6 +24,8 @@ spec:
       - args:
         - start
         - -v=${LOG_LEVEL}
+        - --config=/var/run/configmaps/config/config.yaml
+        - --terminate-on-files=/var/run/configmaps/config/config.yaml
         env:
         - name: DRIVER_IMAGE
           value: ${DRIVER_IMAGE}
@@ -65,6 +67,8 @@ spec:
           mountPath: /tmp
         - mountPath: /var/run/secrets/serving-cert
           name: serving-cert
+        - mountPath: /var/run/configmaps/config
+          name: operator-config
         resources:
           requests:
             memory: 50Mi
@@ -76,6 +80,10 @@ spec:
           capabilities:
             drop:
             - ALL
+        ports:
+        - containerPort: 8443
+          name: metrics
+          protocol: TCP
       priorityClassName: system-cluster-critical
       serviceAccountName: manila-csi-driver-operator
       volumes:
@@ -100,6 +108,9 @@ spec:
         secret:
           defaultMode: 420
           secretName: manila-csi-driver-operator-serving-cert
+      - name: operator-config
+        configMap:
+          name: manila-csi-driver-operator-config
       securityContext:
         runAsNonRoot: true
         seccompProfile:

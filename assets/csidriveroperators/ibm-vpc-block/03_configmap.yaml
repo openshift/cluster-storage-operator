@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ibm-vpc-block-csi-driver-operator-config
+  namespace: openshift-cluster-csi-drivers
+  annotations:
+    config.openshift.io/inject-tls: "true"
+data:
+  config.yaml: |
+    apiVersion: operator.openshift.io/v1alpha1
+    kind: GenericOperatorConfig
