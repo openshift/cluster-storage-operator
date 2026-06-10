@@ -24,6 +24,8 @@ spec:
       - args:
         - start
         - -v=2
+        - --config=/var/run/configmaps/config/config.yaml
+        - --terminate-on-files=/var/run/configmaps/config/config.yaml
         - --terminate-on-files=/var/run/secrets/serving-cert/tls.crt
         - --terminate-on-files=/var/run/secrets/serving-cert/tls.key
         - --guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig
@@ -131,6 +133,10 @@ spec:
           readOnlyRootFilesystem: true
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
+        - mountPath: /var/run/secrets/serving-cert
+          name: cluster-storage-operator-serving-cert
+        - mountPath: /var/run/configmaps/config
+          name: config
         - mountPath: /etc/guest-kubeconfig
           name: guest-kubeconfig
       securityContext:
@@ -139,6 +145,12 @@ spec:
           type: RuntimeDefault
       serviceAccountName: cluster-storage-operator
       volumes:
+      - name: cluster-storage-operator-serving-cert
+        secret:
+          secretName: cluster-storage-operator-serving-cert
+      - configMap:
+          name: cluster-storage-operator-config
+        name: config
       - name: guest-kubeconfig
         secret:
           secretName: service-network-admin-kubeconfig
