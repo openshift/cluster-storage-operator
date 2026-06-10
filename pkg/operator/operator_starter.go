@@ -212,7 +212,6 @@ func (ssr *StandaloneStarter) populateConfigs(clients *csoclients.Clients) []csi
 		csioperatorclient.GetAWSEBSCSIOperatorConfig(false),
 		csioperatorclient.GetGCPPDCSIOperatorConfig(),
 		csioperatorclient.GetOpenStackCinderCSIOperatorConfig(clients, ssr.eventRecorder),
-		csioperatorclient.GetOVirtCSIOperatorConfig(clients, ssr.eventRecorder),
 		csioperatorclient.GetManilaOperatorConfig(clients, ssr.eventRecorder),
 		csioperatorclient.GetVMwareVSphereCSIOperatorConfig(),
 		csioperatorclient.GetAzureDiskCSIOperatorConfig(false),
