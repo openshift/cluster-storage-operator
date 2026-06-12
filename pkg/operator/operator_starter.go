@@ -289,6 +289,7 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 		return err
 	}
 
+	metrics.CountStorageClasses(hsr.commonClients)
 	metrics.InitializeVACMismatchMetrics(hsr.commonClients)
 
 	csiDriverController, _ := csidriveroperator.NewHypershiftDriverStarter(
