@@ -39,6 +39,12 @@ type CSIOperatorConfig struct {
 	// when starting the driver in hypershift clusters
 	MgmtStaticAssets []string
 
+	// MgmtOperatorConfigAsset is the asset path of the operator config ConfigMap
+	// deployed in the mgmt cluster in HyperShift. When set, the HyperShift deployment
+	// controller injects TLS settings (minTLSVersion, cipherSuites) from the
+	// HostedControlPlane into this ConfigMap instead of deploying it as a static asset.
+	MgmtOperatorConfigAsset string
+
 	// CRAsset is name of the bindata asset with ClusterCSIDriver of the
 	// operator. Its logLevel & operatorLoglevel will be set by CSO.
 	CRAsset string
