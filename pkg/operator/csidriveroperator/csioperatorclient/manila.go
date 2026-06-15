@@ -43,6 +43,7 @@ func GetOpenStackManilaOperatorConfig(isHypershift bool, clients *csoclients.Cli
 	}
 
 	if !isHypershift {
+		csiDriverConfig.StandaloneOperatorConfigAsset = "csidriveroperators/openstack-manila/standalone/generated/openshift-cluster-csi-drivers_v1_configmap_manila-csi-driver-operator-config.yaml"
 		csiDriverConfig.StaticAssets = []string{
 			"csidriveroperators/openstack-manila/standalone/generated/v1_namespace_openshift-manila-csi-driver.yaml",
 			"csidriveroperators/openstack-manila/standalone/generated/openshift-cluster-csi-drivers_v1_serviceaccount_manila-csi-driver-operator.yaml",

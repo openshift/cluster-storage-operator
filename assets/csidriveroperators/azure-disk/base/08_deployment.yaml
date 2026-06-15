@@ -27,6 +27,8 @@ spec:
       - args:
         - start
         - -v=${LOG_LEVEL}
+        - --config=/var/run/configmaps/config/config.yaml
+        - --terminate-on-files=/var/run/configmaps/config/config.yaml
         env:
         - name: DRIVER_IMAGE
           value: ${DRIVER_IMAGE}
@@ -66,11 +68,17 @@ spec:
           capabilities:
             drop:
             - ALL
+        ports:
+        - containerPort: 8443
+          name: metrics
+          protocol: TCP
         volumeMounts:
         - mountPath: /tmp
           name: tmp
         - mountPath: /var/run/secrets/serving-cert
           name: serving-cert
+        - mountPath: /var/run/configmaps/config
+          name: operator-config
       serviceAccountName: azure-disk-csi-driver-operator
       securityContext:
         runAsNonRoot: true
@@ -84,3 +92,6 @@ spec:
         secret:
           defaultMode: 420
           secretName: azure-disk-csi-driver-operator-serving-cert
+      - name: operator-config
+        configMap:
+          name: azure-disk-csi-driver-operator-config

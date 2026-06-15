@@ -27,3 +27,8 @@ patches:
       kind: Kustomization
       metadata:
         name: PLACEHOLDER
+  - target:
+      annotationSelector: "storage.openshift.io/remove-from=guest"
+    patch: |
+      - op: "remove"
+        path: "/metadata/annotations/storage.openshift.io~1remove-from"

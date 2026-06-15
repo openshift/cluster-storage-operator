@@ -28,6 +28,8 @@ spec:
         - start
         - --listen=0.0.0.0:8445
         - -v=${LOG_LEVEL}
+        - --config=/var/run/configmaps/config/config.yaml
+        - --terminate-on-files=/var/run/configmaps/config/config.yaml
         - --terminate-on-files=/var/run/secrets/serving-cert/tls.crt
         - --terminate-on-files=/var/run/secrets/serving-cert/tls.key
         env:
@@ -70,6 +72,8 @@ spec:
           mountPath: /etc/pki/ca-trust/extracted/pem
         - mountPath: /var/run/secrets/serving-cert
           name: vmware-vsphere-csi-driver-operator-metrics-serving-cert
+        - mountPath: /var/run/configmaps/config
+          name: operator-config
         terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
           readOnlyRootFilesystem: true
@@ -97,6 +101,9 @@ spec:
       - name: vmware-vsphere-csi-driver-operator-metrics-serving-cert
         secret:
           secretName: vmware-vsphere-csi-driver-operator-metrics-serving-cert
+      - name: operator-config
+        configMap:
+          name: vmware-vsphere-csi-driver-operator-config
       securityContext:
         runAsNonRoot: true
         seccompProfile:

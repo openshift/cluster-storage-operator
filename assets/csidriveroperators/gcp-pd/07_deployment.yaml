@@ -26,6 +26,8 @@ spec:
       - args:
         - start
         - -v=${LOG_LEVEL}
+        - --config=/var/run/configmaps/config/config.yaml
+        - --terminate-on-files=/var/run/configmaps/config/config.yaml
         env:
         - name: DRIVER_IMAGE
           value: ${DRIVER_IMAGE}
@@ -63,11 +65,17 @@ spec:
           capabilities:
             drop:
             - ALL
+        ports:
+        - containerPort: 8443
+          name: metrics
+          protocol: TCP
         volumeMounts:
         - mountPath: /tmp
           name: tmp
         - mountPath: /var/run/secrets/serving-cert
           name: serving-cert
+        - mountPath: /var/run/configmaps/config
+          name: operator-config
       priorityClassName: system-cluster-critical
       serviceAccountName: gcp-pd-csi-driver-operator
       nodeSelector:
@@ -90,3 +98,6 @@ spec:
         secret:
           defaultMode: 420
           secretName: gcp-pd-csi-driver-operator-serving-cert
+      - name: operator-config
+        configMap:
+          name: gcp-pd-csi-driver-operator-config

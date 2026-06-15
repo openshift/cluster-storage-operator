@@ -22,9 +22,10 @@ func GetVMwareVSphereCSIOperatorConfig() CSIOperatorConfig {
 	}
 
 	return CSIOperatorConfig{
-		CSIDriverName:   VMwareVSphereDriverName,
-		ConditionPrefix: "VSphere",
-		Platform:        configv1.VSpherePlatformType,
+		CSIDriverName:                 VMwareVSphereDriverName,
+		ConditionPrefix:               "VSphere",
+		Platform:                      configv1.VSpherePlatformType,
+		StandaloneOperatorConfigAsset: "csidriveroperators/vsphere/03_configmap.yaml",
 		StaticAssets: []string{
 			"csidriveroperators/vsphere/02_configmap.yaml",
 			"csidriveroperators/vsphere/03_sa.yaml",

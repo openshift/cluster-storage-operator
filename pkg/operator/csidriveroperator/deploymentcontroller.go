@@ -8,19 +8,24 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
+	sigsyaml "sigs.k8s.io/yaml"
 
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
+	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 	configv1listers "github.com/openshift/client-go/config/listers/config/v1"
 	"github.com/openshift/library-go/pkg/controller/factory"
+	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 
+	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/util"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
@@ -41,6 +46,7 @@ type CommonCSIDeploymentController struct {
 	targetVersion     string
 	eventRecorder     events.Recorder
 	infraLister       configv1listers.InfrastructureLister
+	apiServerLister   configv1listers.APIServerLister
 	resyncInterval    time.Duration
 	factory           *factory.Factory
 }
@@ -121,6 +127,7 @@ func initCommonDeploymentParams(
 		resyncInterval:    resyncInterval,
 		eventRecorder:     eventRecorder.WithComponentSuffix(csiOperatorConfig.ConditionPrefix),
 		infraLister:       client.ConfigInformers.Config().V1().Infrastructures().Lister(),
+		apiServerLister:   client.ConfigInformers.Config().V1().APIServers().Lister(),
 	}
 	return c
 }
@@ -155,7 +162,8 @@ func NewCSIDriverOperatorDeploymentController(
 	f := c.initController(func(f *factory.Factory) {
 		f.WithInformers(
 			c.commonClients.KubeInformers.InformersFor(csoclients.CSIOperatorNamespace).Apps().V1().Deployments().Informer(),
-			c.commonClients.ConfigInformers.Config().V1().Infrastructures().Informer())
+			c.commonClients.ConfigInformers.Config().V1().Infrastructures().Informer(),
+			c.commonClients.ConfigInformers.Config().V1().APIServers().Informer())
 	})
 	c.factory = f
 	return c
@@ -197,6 +205,12 @@ func (c *CSIDriverOperatorDeploymentController) Sync(ctx context.Context, syncCt
 	}
 	if infra.Status.ControlPlaneTopology == configv1.ExternalTopologyMode {
 		requiredCopy.Spec.Template.Spec.NodeSelector = map[string]string{}
+	}
+
+	if c.csiOperatorConfig.StandaloneOperatorConfigAsset != "" {
+		if err := c.reconcileOperatorConfigMap(ctx); err != nil {
+			return err
+		}
 	}
 
 	lastGeneration := resourcemerge.ExpectedDeploymentGeneration(requiredCopy, opStatus.Generations)
@@ -254,4 +268,72 @@ func hasFinishedProgressing(deployment *appsv1.Deployment) bool {
 		}
 	}
 	return false
+}
+
+// reconcileOperatorConfigMap reads the standalone ConfigMap asset for name/namespace, builds a
+// typed GenericOperatorConfig with TLS settings from APIServer/cluster, and applies it.
+func (c *CSIDriverOperatorDeploymentController) reconcileOperatorConfigMap(ctx context.Context) error {
+	assetBytes, err := assets.ReadFile(c.csiOperatorConfig.StandaloneOperatorConfigAsset)
+	if err != nil {
+		return fmt.Errorf("failed to read operator config asset: %w", err)
+	}
+
+	cm := &corev1.ConfigMap{}
+	if err := sigsyaml.Unmarshal(assetBytes, cm); err != nil {
+		return fmt.Errorf("failed to decode operator config ConfigMap: %w", err)
+	}
+
+	apiServer, err := c.apiServerLister.Get("cluster")
+	if err != nil {
+		klog.Warningf("Failed to get APIServer cluster, using Intermediate TLS profile: %v", err)
+		apiServer = &configv1.APIServer{}
+	}
+	minTLSVersion, cipherSuites := tlsSettingsFromAPIServer(apiServer)
+
+	cfg := &operatorv1alpha1.GenericOperatorConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "operator.openshift.io/v1alpha1",
+			Kind:       "GenericOperatorConfig",
+		},
+		ServingInfo: configv1.HTTPServingInfo{
+			ServingInfo: configv1.ServingInfo{
+				MinTLSVersion: minTLSVersion,
+				CipherSuites:  cipherSuites,
+			},
+		},
+	}
+
+	configYAML, err := sigsyaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to serialize GenericOperatorConfig: %w", err)
+	}
+	if cm.Data == nil {
+		cm.Data = make(map[string]string)
+	}
+	cm.Data["config.yaml"] = string(configYAML)
+
+	_, _, err = resourceapply.ApplyConfigMap(ctx, c.commonClients.KubeClient.CoreV1(), c.eventRecorder, cm)
+	return err
+}
+
+// tlsSettingsFromAPIServer returns the minTLSVersion and IANA cipher suite names
+// from the cluster APIServer TLS security profile, defaulting to Intermediate.
+func tlsSettingsFromAPIServer(apiServer *configv1.APIServer) (string, []string) {
+	profile := apiServer.Spec.TLSSecurityProfile
+	if profile == nil || profile.Type == "" {
+		spec := configv1.TLSProfiles[configv1.TLSProfileIntermediateType]
+		return string(spec.MinTLSVersion), crypto.OpenSSLToIANACipherSuites(spec.Ciphers)
+	}
+	if profile.Type == configv1.TLSProfileCustomType {
+		if profile.Custom == nil {
+			spec := configv1.TLSProfiles[configv1.TLSProfileIntermediateType]
+			return string(spec.MinTLSVersion), crypto.OpenSSLToIANACipherSuites(spec.Ciphers)
+		}
+		return string(profile.Custom.MinTLSVersion), crypto.OpenSSLToIANACipherSuites(profile.Custom.Ciphers)
+	}
+	spec, ok := configv1.TLSProfiles[profile.Type]
+	if !ok || spec == nil {
+		spec = configv1.TLSProfiles[configv1.TLSProfileIntermediateType]
+	}
+	return string(spec.MinTLSVersion), crypto.OpenSSLToIANACipherSuites(spec.Ciphers)
 }

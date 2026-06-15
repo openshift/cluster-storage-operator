@@ -27,6 +27,8 @@ spec:
       - args:
         - start
         - -v=${LOG_LEVEL}
+        - --config=/var/run/configmaps/config/config.yaml
+        - --terminate-on-files=/var/run/configmaps/config/config.yaml
         env:
         - name: DRIVER_IMAGE
           value: ${DRIVER_IMAGE}
@@ -55,6 +57,10 @@ spec:
         image: ${OPERATOR_IMAGE}
         imagePullPolicy: IfNotPresent
         name: azure-file-csi-driver-operator
+        ports:
+        - containerPort: 8443
+          name: metrics
+          protocol: TCP
         resources:
           requests:
             cpu: 10m
@@ -71,6 +77,8 @@ spec:
           name: tmp
         - mountPath: /var/run/secrets/serving-cert
           name: serving-cert
+        - mountPath: /var/run/configmaps/config
+          name: operator-config
       nodeSelector:
         node-role.kubernetes.io/master: ""
       priorityClassName: system-cluster-critical
@@ -93,3 +101,6 @@ spec:
         secret:
           defaultMode: 420
           secretName: azure-file-csi-driver-operator-serving-cert
+      - configMap:
+          name: azure-file-csi-driver-operator-config
+        name: operator-config
