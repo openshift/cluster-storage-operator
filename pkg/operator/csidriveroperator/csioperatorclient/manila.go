@@ -61,6 +61,7 @@ func GetOpenStackManilaOperatorConfig(isHypershift bool, clients *csoclients.Cli
 			"csidriveroperators/openstack-manila/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrole_manila-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/openstack-manila/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_manila-csi-driver-operator-clusterrolebinding.yaml",
 		}
+		csiDriverConfig.MgmtOperatorConfigAsset = "csidriveroperators/openstack-manila/hypershift/mgmt/generated/v1_configmap_manila-csi-driver-operator-config.yaml"
 		csiDriverConfig.MgmtStaticAssets = []string{
 			"csidriveroperators/openstack-manila/hypershift/mgmt/generated/rbac.authorization.k8s.io_v1_rolebinding_manila-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/openstack-manila/hypershift/mgmt/generated/rbac.authorization.k8s.io_v1_role_manila-csi-driver-operator-role.yaml",

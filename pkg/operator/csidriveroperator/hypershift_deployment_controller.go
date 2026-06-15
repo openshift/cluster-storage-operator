@@ -8,22 +8,28 @@ import (
 	"strings"
 	"time"
 
+	configv1 "github.com/openshift/api/config/v1"
+	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
+	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/util"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	csoutils "github.com/openshift/cluster-storage-operator/pkg/utils"
 	"github.com/openshift/library-go/pkg/controller/factory"
+	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/status"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
+	sigsyaml "sigs.k8s.io/yaml"
 )
 
 var _ factory.Controller = &HyperShiftDeploymentController{}
@@ -183,6 +189,12 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 		return err
 	}
 
+	if c.csiOperatorConfig.MgmtOperatorConfigAsset != "" {
+		if err := c.reconcileOperatorConfigMap(ctx); err != nil {
+			return err
+		}
+	}
+
 	lastGeneration := resourcemerge.ExpectedDeploymentGeneration(requiredCopy, opStatus.Generations)
 	deployment, _, err := resourceapply.ApplyDeployment(ctx, c.mgmtClient.KubeClient.AppsV1(), c.eventRecorder, requiredCopy, lastGeneration)
 	if err != nil {
@@ -194,6 +206,84 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 	}
 
 	return checkDeploymentHealth(ctx, c.mgmtClient.KubeClient.AppsV1(), deployment)
+}
+
+// reconcileOperatorConfigMap reads the mgmt ConfigMap asset for name/namespace, builds a
+// typed GenericOperatorConfig with TLS settings from the HostedControlPlane, and applies it.
+func (c *HyperShiftDeploymentController) reconcileOperatorConfigMap(ctx context.Context) error {
+	assetBytes, err := assets.ReadFile(c.csiOperatorConfig.MgmtOperatorConfigAsset)
+	if err != nil {
+		return fmt.Errorf("failed to read operator config asset: %w", err)
+	}
+
+	nsReplacer := strings.NewReplacer("${CONTROLPLANE_NAMESPACE}", c.controlNamespace)
+	assetContent := nsReplacer.Replace(string(assetBytes))
+
+	cm := &corev1.ConfigMap{}
+	if err := sigsyaml.Unmarshal([]byte(assetContent), cm); err != nil {
+		return fmt.Errorf("failed to decode operator config ConfigMap: %w", err)
+	}
+
+	minTLSVersion, cipherSuites, err := c.getHostedControlPlaneTLSSettings()
+	if err != nil {
+		return err
+	}
+
+	cfg := &operatorv1alpha1.GenericOperatorConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "operator.openshift.io/v1alpha1",
+			Kind:       "GenericOperatorConfig",
+		},
+		ServingInfo: configv1.HTTPServingInfo{
+			ServingInfo: configv1.ServingInfo{
+				MinTLSVersion: minTLSVersion,
+				CipherSuites:  cipherSuites,
+			},
+		},
+	}
+
+	configYAML, err := sigsyaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to serialize GenericOperatorConfig: %w", err)
+	}
+	if cm.Data == nil {
+		cm.Data = make(map[string]string)
+	}
+	cm.Data["config.yaml"] = string(configYAML)
+
+	_, _, err = resourceapply.ApplyConfigMap(ctx, c.mgmtClient.KubeClient.CoreV1(), c.eventRecorder, cm)
+	return err
+}
+
+func (c *HyperShiftDeploymentController) getHostedControlPlaneTLSSettings() (string, []string, error) {
+	hcp, err := c.getHostedControlPlane()
+	if err != nil {
+		klog.Warningf("Failed to get HostedControlPlane, falling back to Intermediate TLS profile: %v", err)
+		hcp = &unstructured.Unstructured{}
+	}
+	return tlsSettingsFromHCP(hcp)
+}
+
+// tlsSettingsFromHCP reads the TLS security profile from an HCP unstructured object
+// and returns the minTLSVersion and IANA cipher suite names.
+func tlsSettingsFromHCP(hcp *unstructured.Unstructured) (string, []string, error) {
+	profileType, _, _ := unstructured.NestedString(hcp.UnstructuredContent(), "spec", "configuration", "apiServer", "tlsSecurityProfile", "type")
+
+	if configv1.TLSProfileType(profileType) == configv1.TLSProfileCustomType {
+		ciphers, _, _ := unstructured.NestedStringSlice(hcp.UnstructuredContent(), "spec", "configuration", "apiServer", "tlsSecurityProfile", "custom", "ciphers")
+		minVersion, _, _ := unstructured.NestedString(hcp.UnstructuredContent(), "spec", "configuration", "apiServer", "tlsSecurityProfile", "custom", "minTLSVersion")
+		return minVersion, crypto.OpenSSLToIANACipherSuites(ciphers), nil
+	}
+
+	pt := configv1.TLSProfileType(profileType)
+	if pt == "" {
+		pt = configv1.TLSProfileIntermediateType
+	}
+	profileSpec, ok := configv1.TLSProfiles[pt]
+	if !ok || profileSpec == nil {
+		profileSpec = configv1.TLSProfiles[configv1.TLSProfileIntermediateType]
+	}
+	return string(profileSpec.MinTLSVersion), crypto.OpenSSLToIANACipherSuites(profileSpec.Ciphers), nil
 }
 
 func (c *HyperShiftDeploymentController) Run(ctx context.Context, workers int) {
