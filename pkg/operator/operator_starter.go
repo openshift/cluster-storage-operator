@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
 	metrics "github.com/openshift/cluster-storage-operator/pkg/operator/metrics"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/selinuxmountreadiness"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/volumedatasourcevalidator"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/vsphereproblemdetector"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
@@ -185,6 +186,12 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 		return err
 	}
 
+	ssr.controllers = append(ssr.controllers, selinuxmountreadiness.NewController(
+		ssr.commonClients,
+		ssr.featureGates,
+		ssr.eventRecorder,
+	))
+
 	metrics.CountStorageClasses(ssr.commonClients)
 	metrics.InitializeVACMismatchMetrics(ssr.commonClients)
 
@@ -288,6 +295,12 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	hsr.controllers = append(hsr.controllers, selinuxmountreadiness.NewController(
+		hsr.commonClients,
+		hsr.featureGates,
+		hsr.eventRecorder,
+	))
 
 	metrics.InitializeVACMismatchMetrics(hsr.commonClients)
 
