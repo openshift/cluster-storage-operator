@@ -19,18 +19,19 @@
 - op: remove
   path: /spec/template/spec/priorityClassName
 
-# Add guest-kubeconfig volume
+# Add guest-kubeconfig volume (append to existing volumes)
 - op: add
-  path: /spec/template/spec/volumes
+  path: /spec/template/spec/volumes/-
   value:
-    - name: guest-kubeconfig
-      secret:
-        secretName: service-network-admin-kubeconfig
+    name: guest-kubeconfig
+    secret:
+      secretName: service-network-admin-kubeconfig
+# Add guest-kubeconfig volumeMount (append to existing volumeMounts)
 - op: add
-  path: /spec/template/spec/containers/0/volumeMounts
+  path: /spec/template/spec/containers/0/volumeMounts/-
   value:
-    - name: guest-kubeconfig
-      mountPath: /etc/guest-kubeconfig
+    name: guest-kubeconfig
+    mountPath: /etc/guest-kubeconfig
 
 - op: add
   path: /spec/template/spec/containers/0/env/33
