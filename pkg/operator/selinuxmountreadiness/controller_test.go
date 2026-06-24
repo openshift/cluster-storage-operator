@@ -139,6 +139,36 @@ func TestSync(t *testing.T) {
 				),
 			},
 		},
+		{
+			name: "missing key sets upgradeable true",
+			initialObjects: testObjects{
+				storage: csoclients.GetCR(),
+				configMap: &corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      selinuxConflictsConfigMapName,
+						Namespace: csoclients.CloudConfigNamespace,
+					},
+					Data: map[string]string{},
+				},
+			},
+			expectedObjects: testObjects{
+				storage: csoclients.GetCR(
+					withUpgradeableCondition(opv1.ConditionTrue, "", ""),
+				),
+			},
+		},
+		{
+			name: "unknown value sets upgradeable true",
+			initialObjects: testObjects{
+				storage:   csoclients.GetCR(),
+				configMap: selinuxConflictsConfigMap(string(metav1.ConditionUnknown)),
+			},
+			expectedObjects: testObjects{
+				storage: csoclients.GetCR(
+					withUpgradeableCondition(opv1.ConditionTrue, "", ""),
+				),
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -199,6 +229,20 @@ func TestConflictsPresent(t *testing.T) {
 			name:        "conflicts true",
 			configMap:   selinuxConflictsConfigMap(string(metav1.ConditionTrue)),
 			wantPresent: true,
+			wantFound:   true,
+		},
+		{
+			name:        "unknown value",
+			configMap:   selinuxConflictsConfigMap(string(metav1.ConditionUnknown)),
+			wantPresent: false,
+			wantFound:   true,
+		},
+		{
+			name: "unrecognized value",
+			configMap: &corev1.ConfigMap{
+				Data: map[string]string{selinuxConflictsDataKey: "maybe"},
+			},
+			wantPresent: false,
 			wantFound:   true,
 		},
 	}
