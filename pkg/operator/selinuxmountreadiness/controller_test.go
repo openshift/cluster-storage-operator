@@ -200,13 +200,13 @@ func TestSync(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := newController(test)
 			stopCh := make(chan struct{})
+			defer close(stopCh)
 			RunConfigMapInformer(ctx.configMapInformer, stopCh)
 			csoclients.StartInformers(ctx.clients, stopCh)
 			csoclients.WaitForSync(ctx.clients, stopCh)
 			if !cache.WaitForCacheSync(stopCh, ctx.configMapInformer.HasSynced) {
 				t.Fatal("timed out waiting for selinux-conflicts informer cache sync")
 			}
-			defer close(stopCh)
 
 			err := ctx.controller.Sync(context.TODO(), nil)
 			if err != nil && !test.expectErr {
