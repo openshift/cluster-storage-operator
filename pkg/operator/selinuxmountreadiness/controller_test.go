@@ -18,8 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	clocktesting "k8s.io/utils/clock/testing"
 	"k8s.io/client-go/tools/cache"
+	clocktesting "k8s.io/utils/clock/testing"
 )
 
 type testContext struct {
@@ -112,7 +112,7 @@ func TestFeatureGateEnabled(t *testing.T) {
 		{
 			name: "enabled feature gate",
 			// TODO(openshift/api#2882): use features.FeatureGateSELinuxMountGAReadiness after vendor bump.
-			fg:   featuregates.NewFeatureGate([]cfgv1.FeatureGateName{SELinuxMountGAReadinessFeatureGate}, nil),
+			fg: featuregates.NewFeatureGate([]cfgv1.FeatureGateName{SELinuxMountGAReadinessFeatureGate}, nil),
 			// fg: featuregates.NewFeatureGate([]cfgv1.FeatureGateName{features.FeatureGateSELinuxMountGAReadiness}, nil),
 			want: true,
 		},
