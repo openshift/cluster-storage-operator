@@ -138,12 +138,6 @@ func (c *Controller) conflictsPresent() (present bool, found bool, err error) {
 		return false, false, err
 	}
 	present, found = conflictsPresentInConfigMap(cm)
-	if found {
-		if _, ok := cm.Data[selinuxConflictsDataKey]; !ok {
-			klog.V(2).Infof("ConfigMap %s/%s exists but is missing key %q, treating as no conflicts",
-				csoclients.CloudConfigNamespace, selinuxConflictsConfigMapName, selinuxConflictsDataKey)
-		}
-	}
 	return present, found, nil
 }
 
@@ -163,6 +157,8 @@ func conflictsPresentInConfigMap(cm *corev1.ConfigMap) (present bool, found bool
 	}
 	value, ok := cm.Data[selinuxConflictsDataKey]
 	if !ok {
+		klog.V(2).Infof("ConfigMap %s/%s exists but is missing key %q, treating as no conflicts",
+			csoclients.CloudConfigNamespace, selinuxConflictsConfigMapName, selinuxConflictsDataKey)
 		return false, true
 	}
 	return metav1.ConditionStatus(value) == metav1.ConditionTrue, true
