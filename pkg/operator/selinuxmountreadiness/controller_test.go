@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	cfgv1 "github.com/openshift/api/config/v1"
+	// features "github.com/openshift/api/features" // TODO(openshift/api#2882): uncomment after openshift/api vendor bump.
 	opv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/library-go/pkg/controller/factory"
@@ -18,16 +19,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clocktesting "k8s.io/utils/clock/testing"
+	"k8s.io/client-go/tools/cache"
 )
 
 type testContext struct {
-	controller factory.Controller
-	clients    *csoclients.Clients
+	controller        factory.Controller
+	clients           *csoclients.Clients
+	configMapInformer cache.SharedIndexInformer
 }
 
 type operatorTest struct {
 	name            string
-	featureGates    featuregates.FeatureGate
 	initialObjects  testObjects
 	expectedObjects testObjects
 	expectErr       bool
@@ -50,15 +52,12 @@ func newController(test operatorTest) *testContext {
 	clients := csoclients.NewFakeClients(initialObjects)
 	recorder := events.NewInMemoryRecorder("operator", clocktesting.NewFakePassiveClock(time.Now()))
 
-	fg := test.featureGates
-	if fg == nil {
-		fg = featuregates.NewFeatureGate([]cfgv1.FeatureGateName{SELinuxMountGAReadinessFeatureGate}, nil)
-	}
+	ctrl, configMapInformer := NewController(clients, recorder)
 
-	ctrl := NewController(clients, fg, recorder)
 	return &testContext{
-		controller: ctrl,
-		clients:    clients,
+		controller:        ctrl,
+		clients:           clients,
+		configMapInformer: configMapInformer,
 	}
 }
 
@@ -89,21 +88,47 @@ func withUpgradeableCondition(status opv1.ConditionStatus, reason, message strin
 	}
 }
 
+func TestFeatureGateEnabled(t *testing.T) {
+	tests := []struct {
+		name string
+		fg   featuregates.FeatureGate
+		want bool
+	}{
+		{
+			name: "nil feature gates",
+			fg:   nil,
+			want: false,
+		},
+		{
+			name: "unknown feature gate",
+			fg:   featuregates.NewFeatureGate(nil, nil),
+			want: false,
+		},
+		{
+			name: "disabled feature gate",
+			fg:   featuregates.NewFeatureGate(nil, []cfgv1.FeatureGateName{SELinuxMountGAReadinessFeatureGate}),
+			want: false,
+		},
+		{
+			name: "enabled feature gate",
+			// TODO(openshift/api#2882): use features.FeatureGateSELinuxMountGAReadiness after vendor bump.
+			fg:   featuregates.NewFeatureGate([]cfgv1.FeatureGateName{SELinuxMountGAReadinessFeatureGate}, nil),
+			// fg: featuregates.NewFeatureGate([]cfgv1.FeatureGateName{features.FeatureGateSELinuxMountGAReadiness}, nil),
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := FeatureGateEnabled(tt.fg); got != tt.want {
+				t.Fatalf("FeatureGateEnabled() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestSync(t *testing.T) {
 	tests := []operatorTest{
-		{
-			name: "feature gate disabled sets upgradeable true",
-			initialObjects: testObjects{
-				storage:   csoclients.GetCR(),
-				configMap: selinuxConflictsConfigMap(string(metav1.ConditionTrue)),
-			},
-			featureGates: featuregates.NewFeatureGate(nil, []cfgv1.FeatureGateName{SELinuxMountGAReadinessFeatureGate}),
-			expectedObjects: testObjects{
-				storage: csoclients.GetCR(
-					withUpgradeableCondition(opv1.ConditionTrue, "", ""),
-				),
-			},
-		},
 		{
 			name: "missing config map sets upgradeable true",
 			initialObjects: testObjects{
@@ -175,8 +200,12 @@ func TestSync(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := newController(test)
 			stopCh := make(chan struct{})
+			RunConfigMapInformer(ctx.configMapInformer, stopCh)
 			csoclients.StartInformers(ctx.clients, stopCh)
 			csoclients.WaitForSync(ctx.clients, stopCh)
+			if !cache.WaitForCacheSync(stopCh, ctx.configMapInformer.HasSynced) {
+				t.Fatal("timed out waiting for selinux-conflicts informer cache sync")
+			}
 			defer close(stopCh)
 
 			err := ctx.controller.Sync(context.TODO(), nil)
@@ -200,12 +229,12 @@ func TestSync(t *testing.T) {
 	}
 }
 
-func TestConflictsPresent(t *testing.T) {
+func TestConflictsPresentInConfigMap(t *testing.T) {
 	tests := []struct {
-		name           string
-		configMap      *corev1.ConfigMap
-		wantPresent    bool
-		wantFound      bool
+		name        string
+		configMap   *corev1.ConfigMap
+		wantPresent bool
+		wantFound   bool
 	}{
 		{
 			name:        "nil config map",
@@ -249,9 +278,9 @@ func TestConflictsPresent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotPresent, gotFound := ConflictsPresent(tt.configMap)
+			gotPresent, gotFound := conflictsPresentInConfigMap(tt.configMap)
 			if gotPresent != tt.wantPresent || gotFound != tt.wantFound {
-				t.Fatalf("ConflictsPresent() = (%v, %v), want (%v, %v)", gotPresent, gotFound, tt.wantPresent, tt.wantFound)
+				t.Fatalf("conflictsPresentInConfigMap() = (%v, %v), want (%v, %v)", gotPresent, gotFound, tt.wantPresent, tt.wantFound)
 			}
 		})
 	}

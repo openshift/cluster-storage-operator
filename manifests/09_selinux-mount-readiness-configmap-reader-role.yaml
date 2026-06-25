@@ -13,6 +13,7 @@ metadata:
     kubernetes.io/cluster-service: "true"
     addonmanager.kubernetes.io/mode: Reconcile
 rules:
+  # get is scoped to the single ConfigMap the controller reads.
   - apiGroups:
       - ""
     resources:
@@ -21,6 +22,13 @@ rules:
       - selinux-conflicts
     verbs:
       - get
+  # list/watch cannot be restricted by resourceNames; the controller uses a
+  # fieldSelector (metadata.name=selinux-conflicts) on its dedicated informer.
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
       - list
       - watch
 ---

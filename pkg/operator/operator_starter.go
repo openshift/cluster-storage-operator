@@ -186,11 +186,11 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 		return err
 	}
 
-	ssr.controllers = append(ssr.controllers, selinuxmountreadiness.NewController(
-		ssr.commonClients,
-		ssr.featureGates,
-		ssr.eventRecorder,
-	))
+	if selinuxmountreadiness.FeatureGateEnabled(ssr.featureGates) {
+		ctrl, configMapInformer := selinuxmountreadiness.NewController(ssr.commonClients, ssr.eventRecorder)
+		ssr.controllers = append(ssr.controllers, ctrl)
+		selinuxmountreadiness.RunConfigMapInformer(configMapInformer, ctx.Done())
+	}
 
 	metrics.CountStorageClasses(ssr.commonClients)
 	metrics.InitializeVACMismatchMetrics(ssr.commonClients)
@@ -296,11 +296,11 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 		return err
 	}
 
-	hsr.controllers = append(hsr.controllers, selinuxmountreadiness.NewController(
-		hsr.commonClients,
-		hsr.featureGates,
-		hsr.eventRecorder,
-	))
+	if selinuxmountreadiness.FeatureGateEnabled(hsr.featureGates) {
+		ctrl, configMapInformer := selinuxmountreadiness.NewController(hsr.commonClients, hsr.eventRecorder)
+		hsr.controllers = append(hsr.controllers, ctrl)
+		selinuxmountreadiness.RunConfigMapInformer(configMapInformer, ctx.Done())
+	}
 
 	metrics.InitializeVACMismatchMetrics(hsr.commonClients)
 
