@@ -30,6 +30,9 @@ const (
 	selinuxReadinessConditionType = "SELinuxMountGAReadinessControllerUpgradeable"
 	selinuxConflictMetric         = "selinux_warning_controller_selinux_volume_conflict"
 	selinuxReadinessAlertName     = "SELinuxMountGAReadinessWorkloadsDetected"
+
+	selinuxTestLevelCompatible  = "s0:c0,c0"
+	selinuxTestLevelConflicting = "s0:c1,c1"
 )
 
 var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness] SELinux Mount Upgrade Readiness",
@@ -42,9 +45,14 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness] SELinu
 			opClient     opclient.Interface
 			dynClient    dynamic.Interface
 			kubeConfig   *rest.Config
+
+			testContext context.Context
+			cancel      context.CancelFunc
+			ns          *v1.Namespace
+			pvc         *v1.PersistentVolumeClaim
 		)
 
-		g.BeforeEach(func() {
+		g.BeforeEach(func(ctx context.Context) {
 			var err error
 			kubeConfig, err = newClientConfigForTest()
 			if err != nil {
@@ -55,64 +63,33 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness] SELinu
 			configClient = cfgclientset.NewForConfigOrDie(agentConfig)
 			opClient = opclient.NewForConfigOrDie(agentConfig)
 			dynClient = dynamic.NewForConfigOrDie(agentConfig)
+
+			testContext, cancel = context.WithTimeout(ctx, testTimeout)
+
+			skipUnlessCSIPlatform(testContext, configClient)
+
+			ns = createSelinuxReadinessNamespace(testContext, kubeClient)
+			pvc = createSelinuxReadinessPVC(testContext, kubeClient, ns.Name)
 		})
 
-		g.It("should block upgrades when pods with conflicting SELinux labels share a volume", func(ctx context.Context) {
-			testContext, cancel := context.WithTimeout(ctx, testTimeout)
-			defer cancel()
+		g.AfterEach(func() {
+			if ns != nil {
+				cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), testTimeout)
+				cleanupSelinuxReadinessNamespace(cleanupCtx, kubeClient, ns.Name)
+				cleanupCancel()
+				ns = nil
+				pvc = nil
+			}
+			if cancel != nil {
+				cancel()
+				cancel = nil
+			}
+		})
 
-			g.By("Checking platform type")
-			infra, err := configClient.ConfigV1().Infrastructures().Get(testContext, "cluster", metav1.GetOptions{})
-			if err != nil {
-				g.Fail(fmt.Sprintf("Failed to get infrastructure: %v", err))
-			}
-			switch infra.Status.PlatformStatus.Type {
-			case configv1.BareMetalPlatformType, configv1.NonePlatformType:
-				g.Skip(fmt.Sprintf("Test not applicable for platform %s (no default CSI storage)", infra.Status.PlatformStatus.Type))
-			}
-
-			g.By("Creating test namespace")
-			ns := &v1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "selinux-readiness-test-",
-				},
-			}
-			ns, err = kubeClient.CoreV1().Namespaces().Create(testContext, ns, metav1.CreateOptions{})
-			if err != nil {
-				g.Fail(fmt.Sprintf("Failed to create namespace: %v", err))
-			}
-			defer func() {
-				g.By(fmt.Sprintf("Cleaning up namespace %s", ns.Name))
-				if err := cleanupNamespace(testContext, kubeClient, ns.Name); err != nil {
-					g.GinkgoLogr.Error(err, "Failed to cleanup namespace")
-				}
-			}()
-			g.GinkgoLogr.Info("Created namespace", "namespace", ns.Name)
-
-			g.By("Creating RWO PVC with default StorageClass")
-			pvc := &v1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "selinux-readiness-test-",
-					Namespace:    ns.Name,
-				},
-				Spec: v1.PersistentVolumeClaimSpec{
-					AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-					Resources: v1.VolumeResourceRequirements{
-						Requests: v1.ResourceList{
-							v1.ResourceStorage: resource.MustParse("1Gi"),
-						},
-					},
-				},
-			}
-			pvc, err = kubeClient.CoreV1().PersistentVolumeClaims(ns.Name).Create(testContext, pvc, metav1.CreateOptions{})
-			if err != nil {
-				g.Fail(fmt.Sprintf("Failed to create PVC: %v", err))
-			}
-			g.GinkgoLogr.Info("Created PVC", "pvc", pvc.Name)
-
-			g.By("Creating pod with SELinux level s0:c0,c0")
-			pod1 := newSelinuxTestPod(ns.Name, "selinux-test-pod-1", pvc.Name, "s0:c0,c0")
-			pod1, err = kubeClient.CoreV1().Pods(ns.Name).Create(testContext, pod1, metav1.CreateOptions{})
+		g.It("should block upgrades when pods with conflicting SELinux labels share a volume", func() {
+			g.By(fmt.Sprintf("Creating pod with SELinux level %s", selinuxTestLevelCompatible))
+			pod1 := newSelinuxTestPod(ns.Name, "selinux-test-pod-1", pvc.Name, selinuxTestLevelCompatible)
+			pod1, err := kubeClient.CoreV1().Pods(ns.Name).Create(testContext, pod1, metav1.CreateOptions{})
 			if err != nil {
 				g.Fail(fmt.Sprintf("Failed to create pod1: %v", err))
 			}
@@ -123,8 +100,8 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness] SELinu
 			}()
 			g.GinkgoLogr.Info("Created pod", "pod", pod1.Name)
 
-			g.By("Creating pod with SELinux level s0:c1,c1")
-			pod2 := newSelinuxTestPod(ns.Name, "selinux-test-pod-2", pvc.Name, "s0:c1,c1")
+			g.By(fmt.Sprintf("Creating pod with SELinux level %s", selinuxTestLevelConflicting))
+			pod2 := newSelinuxTestPod(ns.Name, "selinux-test-pod-2", pvc.Name, selinuxTestLevelConflicting)
 			pod2, err = kubeClient.CoreV1().Pods(ns.Name).Create(testContext, pod2, metav1.CreateOptions{})
 			if err != nil {
 				g.Fail(fmt.Sprintf("Failed to create pod2: %v", err))
@@ -200,11 +177,191 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness] SELinu
 				g.Fail(fmt.Sprintf("Timed out waiting for Upgradeable=True: %v", err))
 			}
 		})
+
+		g.It("should remain upgradeable when pods with compatible SELinux labels share a volume", func() {
+			g.By(fmt.Sprintf("Creating first pod with SELinux level %s", selinuxTestLevelCompatible))
+			pod1 := newSelinuxTestPod(ns.Name, "selinux-test-pod-1", pvc.Name, selinuxTestLevelCompatible)
+			pod1, err := kubeClient.CoreV1().Pods(ns.Name).Create(testContext, pod1, metav1.CreateOptions{})
+			if err != nil {
+				g.Fail(fmt.Sprintf("Failed to create pod1: %v", err))
+			}
+			defer func() {
+				if err := deletePodWithWait(testContext, kubeClient, pod1.Name, ns.Name); err != nil {
+					g.GinkgoLogr.Error(err, "Failed to delete pod1")
+				}
+			}()
+
+			g.By("Waiting for first pod to reach Running")
+			if err := waitForPodRunning(testContext, kubeClient, ns.Name, pod1.Name); err != nil {
+				g.Fail(fmt.Sprintf("Timed out waiting for pod1 to run: %v", err))
+			}
+
+			g.By(fmt.Sprintf("Creating second pod with the same SELinux level %s", selinuxTestLevelCompatible))
+			pod2 := newSelinuxTestPod(ns.Name, "selinux-test-pod-2", pvc.Name, selinuxTestLevelCompatible)
+			pod2, err = kubeClient.CoreV1().Pods(ns.Name).Create(testContext, pod2, metav1.CreateOptions{})
+			if err != nil {
+				g.Fail(fmt.Sprintf("Failed to create pod2: %v", err))
+			}
+			defer func() {
+				if err := deletePodWithWait(testContext, kubeClient, pod2.Name, ns.Name); err != nil {
+					g.GinkgoLogr.Error(err, "Failed to delete pod2")
+				}
+			}()
+
+			g.By("Waiting for second pod to reach Running")
+			if err := waitForPodRunning(testContext, kubeClient, ns.Name, pod2.Name); err != nil {
+				g.Fail(fmt.Sprintf("Timed out waiting for pod2 to run: %v", err))
+			}
+
+			g.By("Verifying SELinuxMountGAReadinessControllerUpgradeable stays True")
+			err = waitForOperatorCondition(testContext, opClient, selinuxReadinessConditionType, operatorapi.ConditionTrue)
+			if err != nil {
+				g.Fail(fmt.Sprintf("Cluster became un-upgradeable with compatible SELinux labels: %v", err))
+			}
+		})
+
+		g.It("should become upgradeable again when a conflicting pod is recreated with a compatible SELinux label", func() {
+			g.By(fmt.Sprintf("Creating pod with SELinux level %s", selinuxTestLevelCompatible))
+			pod1 := newSelinuxTestPod(ns.Name, "selinux-test-pod-1", pvc.Name, selinuxTestLevelCompatible)
+			pod1, err := kubeClient.CoreV1().Pods(ns.Name).Create(testContext, pod1, metav1.CreateOptions{})
+			if err != nil {
+				g.Fail(fmt.Sprintf("Failed to create pod1: %v", err))
+			}
+			defer func() {
+				if err := deletePodWithWait(testContext, kubeClient, pod1.Name, ns.Name); err != nil {
+					g.GinkgoLogr.Error(err, "Failed to delete pod1")
+				}
+			}()
+
+			g.By("Waiting for first pod to reach Running")
+			if err := waitForPodRunning(testContext, kubeClient, ns.Name, pod1.Name); err != nil {
+				g.Fail(fmt.Sprintf("Timed out waiting for pod1 to run: %v", err))
+			}
+
+			g.By(fmt.Sprintf("Creating pod with conflicting SELinux level %s", selinuxTestLevelConflicting))
+			pod2 := newSelinuxTestPod(ns.Name, "selinux-test-pod-2", pvc.Name, selinuxTestLevelConflicting)
+			pod2, err = kubeClient.CoreV1().Pods(ns.Name).Create(testContext, pod2, metav1.CreateOptions{})
+			if err != nil {
+				g.Fail(fmt.Sprintf("Failed to create pod2: %v", err))
+			}
+
+			g.By("Waiting for SELinuxMountGAReadinessControllerUpgradeable=False")
+			err = waitForOperatorCondition(testContext, opClient, selinuxReadinessConditionType, operatorapi.ConditionFalse)
+			if err != nil {
+				g.Fail(fmt.Sprintf("Timed out waiting for Upgradeable=False: %v", err))
+			}
+
+			g.By("Deleting conflicting pod to allow recreation with a compatible SELinux label")
+			if err := deletePodWithWait(testContext, kubeClient, pod2.Name, ns.Name); err != nil {
+				g.Fail(fmt.Sprintf("Failed to delete pod2: %v", err))
+			}
+
+			g.By(fmt.Sprintf("Recreating pod with compatible SELinux level %s", selinuxTestLevelCompatible))
+			pod2 = newSelinuxTestPod(ns.Name, "selinux-test-pod-2", pvc.Name, selinuxTestLevelCompatible)
+			pod2, err = kubeClient.CoreV1().Pods(ns.Name).Create(testContext, pod2, metav1.CreateOptions{})
+			if err != nil {
+				g.Fail(fmt.Sprintf("Failed to recreate pod2: %v", err))
+			}
+			defer func() {
+				if err := deletePodWithWait(testContext, kubeClient, pod2.Name, ns.Name); err != nil {
+					g.GinkgoLogr.Error(err, "Failed to delete pod2")
+				}
+			}()
+
+			g.By("Waiting for recreated pod to reach Running")
+			if err := waitForPodRunning(testContext, kubeClient, ns.Name, pod2.Name); err != nil {
+				g.Fail(fmt.Sprintf("Timed out waiting for recreated pod2 to run: %v", err))
+			}
+
+			g.By("Waiting for SELinuxMountGAReadinessControllerUpgradeable=True")
+			err = waitForOperatorCondition(testContext, opClient, selinuxReadinessConditionType, operatorapi.ConditionTrue)
+			if err != nil {
+				g.Fail(fmt.Sprintf("Timed out waiting for Upgradeable=True after fixing SELinux label: %v", err))
+			}
+		})
 	})
+
+func skipUnlessCSIPlatform(ctx context.Context, configClient cfgclientset.Interface) {
+	g.By("Checking platform type")
+	infra, err := configClient.ConfigV1().Infrastructures().Get(ctx, "cluster", metav1.GetOptions{})
+	if err != nil {
+		g.Fail(fmt.Sprintf("Failed to get infrastructure: %v", err))
+	}
+	switch infra.Status.PlatformStatus.Type {
+	case configv1.BareMetalPlatformType, configv1.NonePlatformType:
+		g.Skip(fmt.Sprintf("Test not applicable for platform %s (no default CSI storage)", infra.Status.PlatformStatus.Type))
+	}
+}
+
+func createSelinuxReadinessNamespace(ctx context.Context, kubeClient kubernetes.Interface) *v1.Namespace {
+	g.By("Creating test namespace")
+	ns := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "selinux-readiness-test-",
+		},
+	}
+	ns, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	if err != nil {
+		g.Fail(fmt.Sprintf("Failed to create namespace: %v", err))
+	}
+	g.GinkgoLogr.Info("Created namespace", "namespace", ns.Name)
+	return ns
+}
+
+func cleanupSelinuxReadinessNamespace(ctx context.Context, kubeClient kubernetes.Interface, namespace string) {
+	g.By(fmt.Sprintf("Cleaning up namespace %s", namespace))
+	if err := cleanupNamespace(ctx, kubeClient, namespace); err != nil {
+		g.GinkgoLogr.Error(err, "Failed to cleanup namespace")
+	}
+}
+
+func createSelinuxReadinessPVC(ctx context.Context, kubeClient kubernetes.Interface, namespace string) *v1.PersistentVolumeClaim {
+	g.By("Creating RWO PVC with default StorageClass")
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "selinux-readiness-test-",
+			Namespace:    namespace,
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			Resources: v1.VolumeResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceStorage: resource.MustParse("1Gi"),
+				},
+			},
+		},
+	}
+	pvc, err := kubeClient.CoreV1().PersistentVolumeClaims(namespace).Create(ctx, pvc, metav1.CreateOptions{})
+	if err != nil {
+		g.Fail(fmt.Sprintf("Failed to create PVC: %v", err))
+	}
+	g.GinkgoLogr.Info("Created PVC", "pvc", pvc.Name)
+	return pvc
+}
+
+func waitForPodRunning(ctx context.Context, kubeClient kubernetes.Interface, namespace, name string) error {
+	return wait.PollUntilContextCancel(ctx, waitPollInterval, true, func(ctx context.Context) (bool, error) {
+		pod, err := kubeClient.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			g.GinkgoLogr.Info("Failed to get pod, retrying", "pod", name, "error", err)
+			return false, nil
+		}
+		switch pod.Status.Phase {
+		case v1.PodRunning:
+			return true, nil
+		case v1.PodFailed:
+			return false, fmt.Errorf("pod %s/%s failed", namespace, name)
+		default:
+			g.GinkgoLogr.Info("Waiting for pod to run", "pod", name, "phase", pod.Status.Phase)
+			return false, nil
+		}
+	})
+}
 
 func newSelinuxTestPod(ns, name, pvcName, selinuxLevel string) *v1.Pod {
 	falseValue := false
 	trueValue := true
+	var nonRootUser int64 = 1000
 
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -244,6 +401,7 @@ func newSelinuxTestPod(ns, name, pvcName, selinuxLevel string) *v1.Pod {
 			RestartPolicy: v1.RestartPolicyNever,
 			SecurityContext: &v1.PodSecurityContext{
 				RunAsNonRoot: &trueValue,
+				RunAsUser:    &nonRootUser,
 				SELinuxOptions: &v1.SELinuxOptions{
 					Level: selinuxLevel,
 				},
