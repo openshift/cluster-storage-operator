@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"strings"
 
 	g "github.com/onsi/ginkgo/v2"
 
@@ -17,6 +19,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 
 	v1 "k8s.io/api/core/v1"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -24,6 +27,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/transport"
 )
 
 const (
@@ -122,15 +126,10 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness] SELinu
 			}
 
 			g.By("Setting up Prometheus client")
-			thanosURL, err := getThanosQuerierURL(testContext, dynClient)
+			httpClient, thanosURL, err := newThanosQuerierHTTPClient(testContext, kubeConfig, kubeClient, dynClient)
 			if err != nil {
-				g.Fail(fmt.Sprintf("Failed to get Thanos Querier URL: %v", err))
+				g.Fail(fmt.Sprintf("Failed to set up Thanos Querier client: %v", err))
 			}
-			transport, err := rest.TransportFor(kubeConfig)
-			if err != nil {
-				g.Fail(fmt.Sprintf("Failed to create HTTP transport: %v", err))
-			}
-			httpClient := &http.Client{Transport: transport}
 
 			g.By("Verifying selinux_warning_controller_selinux_volume_conflict metric > 0")
 			err = wait.PollUntilContextCancel(testContext, waitPollInterval, true, func(ctx context.Context) (bool, error) {
@@ -426,6 +425,69 @@ func waitForOperatorCondition(ctx context.Context, opClient opclient.Interface, 
 	})
 }
 
+func newThanosQuerierHTTPClient(ctx context.Context, kubeConfig *rest.Config, kubeClient kubernetes.Interface, dynClient dynamic.Interface) (*http.Client, string, error) {
+	thanosURL, err := getThanosQuerierURL(ctx, dynClient)
+	if err != nil {
+		return nil, "", err
+	}
+
+	token, err := getMonitoringBearerToken(ctx, kubeConfig, kubeClient)
+	if err != nil {
+		return nil, "", err
+	}
+
+	baseTransport, err := rest.TransportFor(kubeConfig)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create HTTP transport: %w", err)
+	}
+
+	return &http.Client{
+		Transport: transport.NewBearerAuthRoundTripper(token, baseTransport),
+	}, thanosURL, nil
+}
+
+func getMonitoringBearerToken(ctx context.Context, kubeConfig *rest.Config, kubeClient kubernetes.Interface) (string, error) {
+	if kubeConfig.BearerToken != "" {
+		return kubeConfig.BearerToken, nil
+	}
+	if kubeConfig.BearerTokenFile != "" {
+		content, err := os.ReadFile(kubeConfig.BearerTokenFile)
+		if err != nil {
+			return "", fmt.Errorf("failed to read bearer token file: %w", err)
+		}
+		if token := strings.TrimSpace(string(content)); token != "" {
+			return token, nil
+		}
+	}
+
+	secrets, err := kubeClient.CoreV1().Secrets("openshift-monitoring").List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to list secrets in openshift-monitoring: %w", err)
+	}
+	for _, secret := range secrets.Items {
+		if secret.Type != v1.SecretTypeServiceAccountToken || !strings.HasPrefix(secret.Name, "prometheus-k8s") {
+			continue
+		}
+		if token := string(secret.Data[v1.ServiceAccountTokenKey]); token != "" {
+			return token, nil
+		}
+	}
+
+	tokenReq, err := kubeClient.CoreV1().ServiceAccounts("openshift-monitoring").CreateToken(
+		ctx,
+		"prometheus-k8s",
+		&authenticationv1.TokenRequest{},
+		metav1.CreateOptions{},
+	)
+	if err != nil {
+		return "", fmt.Errorf("no bearer token found in kubeconfig or prometheus-k8s service account: %w", err)
+	}
+	if tokenReq.Status.Token == "" {
+		return "", fmt.Errorf("prometheus-k8s service account token request returned an empty token")
+	}
+	return tokenReq.Status.Token, nil
+}
+
 func getThanosQuerierURL(ctx context.Context, dynClient dynamic.Interface) (string, error) {
 	routeGVR := schema.GroupVersionResource{
 		Group:    "route.openshift.io",
@@ -442,6 +504,15 @@ func getThanosQuerierURL(ctx context.Context, dynClient dynamic.Interface) (stri
 	}
 	host, ok := spec["host"].(string)
 	if !ok || host == "" {
+		if status, ok := route.Object["status"].(map[string]interface{}); ok {
+			if ingress, ok := status["ingress"].([]interface{}); ok && len(ingress) > 0 {
+				if entry, ok := ingress[0].(map[string]interface{}); ok {
+					host, _ = entry["host"].(string)
+				}
+			}
+		}
+	}
+	if host == "" {
 		return "", fmt.Errorf("thanos-querier route has no host")
 	}
 	return fmt.Sprintf("https://%s", host), nil
