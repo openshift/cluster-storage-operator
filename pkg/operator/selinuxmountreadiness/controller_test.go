@@ -7,12 +7,9 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	cfgv1 "github.com/openshift/api/config/v1"
-	// features "github.com/openshift/api/features" // TODO(openshift/api#2882): uncomment after openshift/api vendor bump.
 	opv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/library-go/pkg/controller/factory"
-	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/operator/events"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -85,45 +82,6 @@ func withUpgradeableCondition(status opv1.ConditionStatus, reason, message strin
 			Message: message,
 		})
 		return i
-	}
-}
-
-func TestFeatureGateEnabled(t *testing.T) {
-	tests := []struct {
-		name string
-		fg   featuregates.FeatureGate
-		want bool
-	}{
-		{
-			name: "nil feature gates",
-			fg:   nil,
-			want: false,
-		},
-		{
-			name: "unknown feature gate",
-			fg:   featuregates.NewFeatureGate(nil, nil),
-			want: false,
-		},
-		{
-			name: "disabled feature gate",
-			fg:   featuregates.NewFeatureGate(nil, []cfgv1.FeatureGateName{SELinuxMountGAReadinessFeatureGate}),
-			want: false,
-		},
-		{
-			name: "enabled feature gate",
-			// TODO(openshift/api#2882): use features.FeatureGateSELinuxMountGAReadiness after vendor bump.
-			fg: featuregates.NewFeatureGate([]cfgv1.FeatureGateName{SELinuxMountGAReadinessFeatureGate}, nil),
-			// fg: featuregates.NewFeatureGate([]cfgv1.FeatureGateName{features.FeatureGateSELinuxMountGAReadiness}, nil),
-			want: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := FeatureGateEnabled(tt.fg); got != tt.want {
-				t.Fatalf("FeatureGateEnabled() = %v, want %v", got, tt.want)
-			}
-		})
 	}
 }
 

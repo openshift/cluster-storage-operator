@@ -6,6 +6,7 @@ import (
 	"time"
 
 	configv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/api/features"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/configobservercontroller"
@@ -186,7 +187,7 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 		return err
 	}
 
-	if selinuxmountreadiness.FeatureGateEnabled(ssr.featureGates) {
+	if ssr.featureGates.Enabled(features.FeatureGateSELinuxMountGAReadiness) {
 		ctrl, configMapInformer := selinuxmountreadiness.NewController(ssr.commonClients, ssr.eventRecorder)
 		ssr.controllers = append(ssr.controllers, ctrl)
 		selinuxmountreadiness.RunConfigMapInformer(configMapInformer, ctx.Done())
@@ -296,7 +297,7 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 		return err
 	}
 
-	if selinuxmountreadiness.FeatureGateEnabled(hsr.featureGates) {
+	if hsr.featureGates.Enabled(features.FeatureGateSELinuxMountGAReadiness) {
 		ctrl, configMapInformer := selinuxmountreadiness.NewController(hsr.commonClients, hsr.eventRecorder)
 		hsr.controllers = append(hsr.controllers, ctrl)
 		selinuxmountreadiness.RunConfigMapInformer(configMapInformer, ctx.Done())

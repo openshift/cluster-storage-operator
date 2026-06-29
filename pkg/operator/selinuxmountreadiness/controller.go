@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	configv1 "github.com/openshift/api/config/v1"
-	// features "github.com/openshift/api/features" // TODO(openshift/api#2882): uncomment after openshift/api vendor bump.
 	operatorapi "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/library-go/pkg/controller/factory"
-	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	corev1 "k8s.io/api/core/v1"
@@ -32,26 +29,9 @@ const (
 
 	configMapInformerResync = 10 * time.Minute
 
-	// TODO(openshift/api#2882): delete this local constant and use features.FeatureGateSELinuxMountGAReadiness.
-	SELinuxMountGAReadinessFeatureGate = configv1.FeatureGateName("SELinuxMountGAReadiness")
-	// SELinuxMountGAReadinessFeatureGate = features.FeatureGateSELinuxMountGAReadiness
-
 	// KCSArticleURL is linked from Prometheus alerts. Update when the KCS article is published.
 	KCSArticleURL = "https://github.com/openshift/enhancements/blob/master/enhancements/storage/selinuxmount-ga-block-upgrade.md"
 )
-
-// FeatureGateEnabled reports whether SELinuxMountGAReadiness is a known and enabled feature gate.
-func FeatureGateEnabled(fg featuregates.FeatureGate) bool {
-	if fg == nil {
-		return false
-	}
-	for _, known := range fg.KnownFeatures() {
-		if known == SELinuxMountGAReadinessFeatureGate {
-			return fg.Enabled(SELinuxMountGAReadinessFeatureGate)
-		}
-	}
-	return false
-}
 
 // Controller watches openshift-config/selinux-conflicts written by the
 // SELinuxWarningController in kube-controller-manager and sets the storage
