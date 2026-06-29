@@ -9,21 +9,18 @@ import (
 	"time"
 
 	configv1 "github.com/openshift/api/config/v1"
-	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/util"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	csoutils "github.com/openshift/cluster-storage-operator/pkg/utils"
 	"github.com/openshift/library-go/pkg/controller/factory"
-	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/status"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -229,27 +226,14 @@ func (c *HyperShiftDeploymentController) reconcileOperatorConfigMap(ctx context.
 		return err
 	}
 
-	cfg := &operatorv1alpha1.GenericOperatorConfig{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "operator.openshift.io/v1alpha1",
-			Kind:       "GenericOperatorConfig",
-		},
-		ServingInfo: configv1.HTTPServingInfo{
-			ServingInfo: configv1.ServingInfo{
-				MinTLSVersion: minTLSVersion,
-				CipherSuites:  cipherSuites,
-			},
-		},
-	}
-
-	configYAML, err := sigsyaml.Marshal(cfg)
+	yaml, err := operatorConfigYAML(minTLSVersion, cipherSuites)
 	if err != nil {
-		return fmt.Errorf("failed to serialize GenericOperatorConfig: %w", err)
+		return err
 	}
 	if cm.Data == nil {
 		cm.Data = make(map[string]string)
 	}
-	cm.Data["config.yaml"] = string(configYAML)
+	cm.Data["config.yaml"] = yaml
 
 	_, _, err = resourceapply.ApplyConfigMap(ctx, c.mgmtClient.KubeClient.CoreV1(), c.eventRecorder, cm)
 	return err
@@ -258,32 +242,41 @@ func (c *HyperShiftDeploymentController) reconcileOperatorConfigMap(ctx context.
 func (c *HyperShiftDeploymentController) getHostedControlPlaneTLSSettings() (string, []string, error) {
 	hcp, err := c.getHostedControlPlane()
 	if err != nil {
-		klog.Warningf("Failed to get HostedControlPlane, falling back to Intermediate TLS profile: %v", err)
-		hcp = &unstructured.Unstructured{}
+		return "", nil, fmt.Errorf("failed to get HostedControlPlane: %w", err)
 	}
 	return tlsSettingsFromHCP(hcp)
 }
 
-// tlsSettingsFromHCP reads the TLS security profile from an HCP unstructured object
+// tlsSettingsFromHCP extracts the TLS security profile from an HCP unstructured object
 // and returns the minTLSVersion and IANA cipher suite names.
 func tlsSettingsFromHCP(hcp *unstructured.Unstructured) (string, []string, error) {
-	profileType, _, _ := unstructured.NestedString(hcp.UnstructuredContent(), "spec", "configuration", "apiServer", "tlsSecurityProfile", "type")
-
-	if configv1.TLSProfileType(profileType) == configv1.TLSProfileCustomType {
-		ciphers, _, _ := unstructured.NestedStringSlice(hcp.UnstructuredContent(), "spec", "configuration", "apiServer", "tlsSecurityProfile", "custom", "ciphers")
-		minVersion, _, _ := unstructured.NestedString(hcp.UnstructuredContent(), "spec", "configuration", "apiServer", "tlsSecurityProfile", "custom", "minTLSVersion")
-		return minVersion, crypto.OpenSSLToIANACipherSuites(ciphers), nil
+	profileType, _, err := unstructured.NestedString(hcp.UnstructuredContent(), "spec", "configuration", "apiServer", "tlsSecurityProfile", "type")
+	if err != nil {
+		klog.Warningf("Failed to get HCP TLS profile type: %v", err)
 	}
 
-	pt := configv1.TLSProfileType(profileType)
-	if pt == "" {
-		pt = configv1.TLSProfileIntermediateType
+	profile := &configv1.TLSSecurityProfile{
+		Type: configv1.TLSProfileType(profileType),
 	}
-	profileSpec, ok := configv1.TLSProfiles[pt]
-	if !ok || profileSpec == nil {
-		profileSpec = configv1.TLSProfiles[configv1.TLSProfileIntermediateType]
+	if profile.Type == configv1.TLSProfileCustomType {
+		ciphers, _, err := unstructured.NestedStringSlice(hcp.UnstructuredContent(), "spec", "configuration", "apiServer", "tlsSecurityProfile", "custom", "ciphers")
+		if err != nil {
+			klog.Warningf("Failed to get HCP custom TLS ciphers: %v", err)
+		}
+		minVersion, _, err := unstructured.NestedString(hcp.UnstructuredContent(), "spec", "configuration", "apiServer", "tlsSecurityProfile", "custom", "minTLSVersion")
+		if err != nil {
+			klog.Warningf("Failed to get HCP custom TLS minVersion: %v", err)
+		}
+		profile.Custom = &configv1.CustomTLSProfile{
+			TLSProfileSpec: configv1.TLSProfileSpec{
+				MinTLSVersion: configv1.TLSProtocolVersion(minVersion),
+				Ciphers:       ciphers,
+			},
+		}
 	}
-	return string(profileSpec.MinTLSVersion), crypto.OpenSSLToIANACipherSuites(profileSpec.Ciphers), nil
+
+	minTLSVersion, cipherSuites := tlsSettingsFromProfile(profile)
+	return minTLSVersion, cipherSuites, nil
 }
 
 func (c *HyperShiftDeploymentController) Run(ctx context.Context, workers int) {

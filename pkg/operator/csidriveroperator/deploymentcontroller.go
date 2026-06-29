@@ -8,17 +8,14 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	sigsyaml "sigs.k8s.io/yaml"
 
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
-	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 	configv1listers "github.com/openshift/client-go/config/listers/config/v1"
 	"github.com/openshift/library-go/pkg/controller/factory"
-	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
@@ -285,55 +282,19 @@ func (c *CSIDriverOperatorDeploymentController) reconcileOperatorConfigMap(ctx c
 
 	apiServer, err := c.apiServerLister.Get("cluster")
 	if err != nil {
-		klog.Warningf("Failed to get APIServer cluster, using Intermediate TLS profile: %v", err)
-		apiServer = &configv1.APIServer{}
+		return fmt.Errorf("failed to get APIServer cluster: %w", err)
 	}
-	minTLSVersion, cipherSuites := tlsSettingsFromAPIServer(apiServer)
+	minTLSVersion, cipherSuites := tlsSettingsFromProfile(apiServer.Spec.TLSSecurityProfile)
 
-	cfg := &operatorv1alpha1.GenericOperatorConfig{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "operator.openshift.io/v1alpha1",
-			Kind:       "GenericOperatorConfig",
-		},
-		ServingInfo: configv1.HTTPServingInfo{
-			ServingInfo: configv1.ServingInfo{
-				MinTLSVersion: minTLSVersion,
-				CipherSuites:  cipherSuites,
-			},
-		},
-	}
-
-	configYAML, err := sigsyaml.Marshal(cfg)
+	yaml, err := operatorConfigYAML(minTLSVersion, cipherSuites)
 	if err != nil {
-		return fmt.Errorf("failed to serialize GenericOperatorConfig: %w", err)
+		return err
 	}
 	if cm.Data == nil {
 		cm.Data = make(map[string]string)
 	}
-	cm.Data["config.yaml"] = string(configYAML)
+	cm.Data["config.yaml"] = yaml
 
 	_, _, err = resourceapply.ApplyConfigMap(ctx, c.commonClients.KubeClient.CoreV1(), c.eventRecorder, cm)
 	return err
-}
-
-// tlsSettingsFromAPIServer returns the minTLSVersion and IANA cipher suite names
-// from the cluster APIServer TLS security profile, defaulting to Intermediate.
-func tlsSettingsFromAPIServer(apiServer *configv1.APIServer) (string, []string) {
-	profile := apiServer.Spec.TLSSecurityProfile
-	if profile == nil || profile.Type == "" {
-		spec := configv1.TLSProfiles[configv1.TLSProfileIntermediateType]
-		return string(spec.MinTLSVersion), crypto.OpenSSLToIANACipherSuites(spec.Ciphers)
-	}
-	if profile.Type == configv1.TLSProfileCustomType {
-		if profile.Custom == nil {
-			spec := configv1.TLSProfiles[configv1.TLSProfileIntermediateType]
-			return string(spec.MinTLSVersion), crypto.OpenSSLToIANACipherSuites(spec.Ciphers)
-		}
-		return string(profile.Custom.MinTLSVersion), crypto.OpenSSLToIANACipherSuites(profile.Custom.Ciphers)
-	}
-	spec, ok := configv1.TLSProfiles[profile.Type]
-	if !ok || spec == nil {
-		spec = configv1.TLSProfiles[configv1.TLSProfileIntermediateType]
-	}
-	return string(spec.MinTLSVersion), crypto.OpenSSLToIANACipherSuites(spec.Ciphers)
 }
