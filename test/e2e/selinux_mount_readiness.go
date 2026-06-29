@@ -52,7 +52,7 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness] SELinu
 			pvc         *v1.PersistentVolumeClaim
 		)
 
-		g.BeforeEach(func(ctx context.Context) {
+		g.BeforeEach(func() {
 			var err error
 			kubeConfig, err = newClientConfigForTest()
 			if err != nil {
@@ -64,7 +64,9 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness] SELinu
 			opClient = opclient.NewForConfigOrDie(agentConfig)
 			dynClient = dynamic.NewForConfigOrDie(agentConfig)
 
-			testContext, cancel = context.WithTimeout(ctx, testTimeout)
+			// Use a standalone context: Ginkgo cancels the context passed to
+			// BeforeEach when the hook returns, before the It block runs.
+			testContext, cancel = context.WithTimeout(context.Background(), testTimeout)
 
 			skipUnlessCSIPlatform(testContext, configClient)
 
