@@ -20,9 +20,8 @@ import (
 )
 
 type testContext struct {
-	controller        factory.Controller
-	clients           *csoclients.Clients
-	configMapInformer cache.SharedIndexInformer
+	controller factory.Controller
+	clients    *csoclients.Clients
 }
 
 type operatorTest struct {
@@ -49,12 +48,9 @@ func newController(test operatorTest) *testContext {
 	clients := csoclients.NewFakeClients(initialObjects)
 	recorder := events.NewInMemoryRecorder("operator", clocktesting.NewFakePassiveClock(time.Now()))
 
-	ctrl, configMapInformer := NewController(clients, recorder)
-
 	return &testContext{
-		controller:        ctrl,
-		clients:           clients,
-		configMapInformer: configMapInformer,
+		controller: NewController(clients, recorder),
+		clients:    clients,
 	}
 }
 
@@ -159,11 +155,10 @@ func TestSync(t *testing.T) {
 			ctx := newController(test)
 			stopCh := make(chan struct{})
 			defer close(stopCh)
-			RunConfigMapInformer(ctx.configMapInformer, stopCh)
 			csoclients.StartInformers(ctx.clients, stopCh)
-			csoclients.WaitForSync(ctx.clients, stopCh)
-			if !cache.WaitForCacheSync(stopCh, ctx.configMapInformer.HasSynced) {
-				t.Fatal("timed out waiting for selinux-conflicts informer cache sync")
+			configMapInformer := ctx.clients.KubeInformers.InformersFor(csoclients.CloudConfigNamespace).Core().V1().ConfigMaps().Informer()
+			if !cache.WaitForCacheSync(stopCh, configMapInformer.HasSynced) {
+				t.Fatal("timed out waiting for openshift-config ConfigMap informer cache sync")
 			}
 
 			err := ctx.controller.Sync(context.TODO(), nil)

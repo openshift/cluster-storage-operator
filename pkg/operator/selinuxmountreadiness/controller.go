@@ -3,7 +3,6 @@ package selinuxmountreadiness
 import (
 	"context"
 	"fmt"
-	"time"
 
 	operatorapi "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
@@ -13,11 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	coreinformers "k8s.io/client-go/informers/core/v1"
-	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 )
 
@@ -26,8 +21,6 @@ const (
 
 	selinuxConflictsConfigMapName = "selinux-conflicts"
 	selinuxConflictsDataKey       = "conflictsPresent"
-
-	configMapInformerResync = 10 * time.Minute
 
 	// KCSArticleURL is linked from Prometheus alerts. Update when the KCS article is published.
 	KCSArticleURL = "https://github.com/openshift/enhancements/blob/master/enhancements/storage/selinuxmount-ga-block-upgrade.md"
@@ -45,37 +38,18 @@ type Controller struct {
 func NewController(
 	clients *csoclients.Clients,
 	eventRecorder events.Recorder,
-) (factory.Controller, cache.SharedIndexInformer) {
-	configMapInformer := newSELinuxConflictsConfigMapInformer(clients.KubeClient)
+) factory.Controller {
+	configMapInformer := clients.KubeInformers.InformersFor(csoclients.CloudConfigNamespace).Core().V1().ConfigMaps()
 
 	c := &Controller{
-		operatorClient: clients.OperatorClient,
-		configMapLister: corelisters.NewConfigMapLister(configMapInformer.GetIndexer()).
-			ConfigMaps(csoclients.CloudConfigNamespace),
-		eventRecorder: eventRecorder,
+		operatorClient:  clients.OperatorClient,
+		configMapLister: configMapInformer.Lister().ConfigMaps(csoclients.CloudConfigNamespace),
+		eventRecorder:   eventRecorder,
 	}
 	return factory.New().WithSync(c.sync).WithSyncDegradedOnError(clients.OperatorClient).WithInformers(
 		clients.OperatorClient.Informer(),
-		configMapInformer,
-	).ToController("SELinuxMountGAReadinessController", eventRecorder), configMapInformer
-}
-
-// RunConfigMapInformer starts the dedicated ConfigMap informer returned by NewController.
-// Call it before the controller Run loop, alongside csoclients.StartInformers.
-func RunConfigMapInformer(informer cache.SharedIndexInformer, stopCh <-chan struct{}) {
-	go informer.Run(stopCh)
-}
-
-func newSELinuxConflictsConfigMapInformer(kubeClient kubernetes.Interface) cache.SharedIndexInformer {
-	return coreinformers.NewFilteredConfigMapInformer(
-		kubeClient,
-		csoclients.CloudConfigNamespace,
-		configMapInformerResync,
-		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-		func(listOptions *metav1.ListOptions) {
-			listOptions.FieldSelector = fields.OneTermEqualSelector("metadata.name", selinuxConflictsConfigMapName).String()
-		},
-	)
+		configMapInformer.Informer(),
+	).ToController("SELinuxMountGAReadinessController", eventRecorder)
 }
 
 func (c *Controller) sync(ctx context.Context, _ factory.SyncContext) error {
