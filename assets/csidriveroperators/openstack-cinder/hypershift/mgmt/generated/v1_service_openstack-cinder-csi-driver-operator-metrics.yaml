@@ -3,7 +3,6 @@ kind: Service
 metadata:
   annotations:
     service.beta.openshift.io/serving-cert-secret-name: openstack-cinder-csi-driver-operator-serving-cert
-    storage.openshift.io/remove-from: guest
   labels:
     app: openstack-cinder-csi-driver-operator
   name: openstack-cinder-csi-driver-operator-metrics

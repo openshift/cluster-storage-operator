@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	configv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/util"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
@@ -24,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
+	sigsyaml "sigs.k8s.io/yaml"
 )
 
 var _ factory.Controller = &HyperShiftDeploymentController{}
@@ -183,6 +186,12 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 		return err
 	}
 
+	if c.csiOperatorConfig.MgmtOperatorConfigAsset != "" {
+		if err := c.reconcileOperatorConfigMap(ctx); err != nil {
+			return err
+		}
+	}
+
 	lastGeneration := resourcemerge.ExpectedDeploymentGeneration(requiredCopy, opStatus.Generations)
 	deployment, _, err := resourceapply.ApplyDeployment(ctx, c.mgmtClient.KubeClient.AppsV1(), c.eventRecorder, requiredCopy, lastGeneration)
 	if err != nil {
@@ -194,6 +203,80 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 	}
 
 	return checkDeploymentHealth(ctx, c.mgmtClient.KubeClient.AppsV1(), deployment)
+}
+
+// reconcileOperatorConfigMap reads the mgmt ConfigMap asset for name/namespace, builds a
+// typed GenericOperatorConfig with TLS settings from the HostedControlPlane, and applies it.
+func (c *HyperShiftDeploymentController) reconcileOperatorConfigMap(ctx context.Context) error {
+	assetBytes, err := assets.ReadFile(c.csiOperatorConfig.MgmtOperatorConfigAsset)
+	if err != nil {
+		return fmt.Errorf("failed to read operator config asset: %w", err)
+	}
+
+	nsReplacer := strings.NewReplacer("${CONTROLPLANE_NAMESPACE}", c.controlNamespace)
+	assetContent := nsReplacer.Replace(string(assetBytes))
+
+	cm := &corev1.ConfigMap{}
+	if err := sigsyaml.Unmarshal([]byte(assetContent), cm); err != nil {
+		return fmt.Errorf("failed to decode operator config ConfigMap: %w", err)
+	}
+
+	minTLSVersion, cipherSuites, err := c.getHostedControlPlaneTLSSettings()
+	if err != nil {
+		return err
+	}
+
+	yaml, err := operatorConfigYAML(minTLSVersion, cipherSuites)
+	if err != nil {
+		return err
+	}
+	if cm.Data == nil {
+		cm.Data = make(map[string]string)
+	}
+	cm.Data["config.yaml"] = yaml
+
+	_, _, err = resourceapply.ApplyConfigMap(ctx, c.mgmtClient.KubeClient.CoreV1(), c.eventRecorder, cm)
+	return err
+}
+
+func (c *HyperShiftDeploymentController) getHostedControlPlaneTLSSettings() (string, []string, error) {
+	hcp, err := c.getHostedControlPlane()
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to get HostedControlPlane: %w", err)
+	}
+	return tlsSettingsFromHCP(hcp)
+}
+
+// tlsSettingsFromHCP extracts the TLS security profile from an HCP unstructured object
+// and returns the minTLSVersion and IANA cipher suite names.
+func tlsSettingsFromHCP(hcp *unstructured.Unstructured) (string, []string, error) {
+	profileType, _, err := unstructured.NestedString(hcp.UnstructuredContent(), "spec", "configuration", "apiServer", "tlsSecurityProfile", "type")
+	if err != nil {
+		klog.Warningf("Failed to get HCP TLS profile type: %v", err)
+	}
+
+	profile := &configv1.TLSSecurityProfile{
+		Type: configv1.TLSProfileType(profileType),
+	}
+	if profile.Type == configv1.TLSProfileCustomType {
+		ciphers, _, err := unstructured.NestedStringSlice(hcp.UnstructuredContent(), "spec", "configuration", "apiServer", "tlsSecurityProfile", "custom", "ciphers")
+		if err != nil {
+			klog.Warningf("Failed to get HCP custom TLS ciphers: %v", err)
+		}
+		minVersion, _, err := unstructured.NestedString(hcp.UnstructuredContent(), "spec", "configuration", "apiServer", "tlsSecurityProfile", "custom", "minTLSVersion")
+		if err != nil {
+			klog.Warningf("Failed to get HCP custom TLS minVersion: %v", err)
+		}
+		profile.Custom = &configv1.CustomTLSProfile{
+			TLSProfileSpec: configv1.TLSProfileSpec{
+				MinTLSVersion: configv1.TLSProtocolVersion(minVersion),
+				Ciphers:       ciphers,
+			},
+		}
+	}
+
+	minTLSVersion, cipherSuites := tlsSettingsFromProfile(profile)
+	return minTLSVersion, cipherSuites, nil
 }
 
 func (c *HyperShiftDeploymentController) Run(ctx context.Context, workers int) {

@@ -21,9 +21,10 @@ func GetGCPPDCSIOperatorConfig() CSIOperatorConfig {
 	}
 
 	return CSIOperatorConfig{
-		CSIDriverName:   GCPPDCSIDriverName,
-		ConditionPrefix: "GCPPD",
-		Platform:        configv1.GCPPlatformType,
+		CSIDriverName:                 GCPPDCSIDriverName,
+		ConditionPrefix:               "GCPPD",
+		Platform:                      configv1.GCPPlatformType,
+		StandaloneOperatorConfigAsset: "csidriveroperators/gcp-pd/03_configmap.yaml",
 		StaticAssets: []string{
 			"csidriveroperators/gcp-pd/01_service.yaml",
 			"csidriveroperators/gcp-pd/02_sa.yaml",

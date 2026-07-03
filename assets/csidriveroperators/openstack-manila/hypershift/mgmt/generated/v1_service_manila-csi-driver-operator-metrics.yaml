@@ -3,7 +3,6 @@ kind: Service
 metadata:
   annotations:
     service.beta.openshift.io/serving-cert-secret-name: manila-csi-driver-operator-serving-cert
-    storage.openshift.io/remove-from: guest
   labels:
     app: manila-csi-driver-operator
   name: manila-csi-driver-operator-metrics

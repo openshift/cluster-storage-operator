@@ -1,0 +1,9 @@
+apiVersion: v1
+data:
+  config.yaml: |
+    apiVersion: operator.openshift.io/v1alpha1
+    kind: GenericOperatorConfig
+kind: ConfigMap
+metadata:
+  name: powervs-block-csi-driver-operator-config
+  namespace: ${CONTROLPLANE_NAMESPACE}

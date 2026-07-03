@@ -32,6 +32,7 @@ func GetAWSEBSCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 	}
 
 	if !isHypershift {
+		csiDriverConfig.StandaloneOperatorConfigAsset = "csidriveroperators/aws-ebs/standalone/generated/v1_configmap_aws-ebs-csi-driver-operator-config.yaml"
 		csiDriverConfig.StaticAssets = []string{
 			"csidriveroperators/aws-ebs/standalone/generated/v1_serviceaccount_aws-ebs-csi-driver-operator.yaml",
 			"csidriveroperators/aws-ebs/standalone/generated/rbac.authorization.k8s.io_v1_role_aws-ebs-csi-driver-operator-role.yaml",
@@ -52,6 +53,7 @@ func GetAWSEBSCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/aws-ebs/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrole_aws-ebs-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/aws-ebs/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_aws-ebs-csi-driver-operator-clusterrolebinding.yaml",
 		}
+		csiDriverConfig.MgmtOperatorConfigAsset = "csidriveroperators/aws-ebs/hypershift/mgmt/generated/v1_configmap_aws-ebs-csi-driver-operator-config.yaml"
 		csiDriverConfig.MgmtStaticAssets = []string{
 			"csidriveroperators/aws-ebs/hypershift/mgmt/generated/rbac.authorization.k8s.io_v1_role_aws-ebs-csi-driver-operator-role.yaml",
 			"csidriveroperators/aws-ebs/hypershift/mgmt/generated/v1_serviceaccount_aws-ebs-csi-driver-operator.yaml",

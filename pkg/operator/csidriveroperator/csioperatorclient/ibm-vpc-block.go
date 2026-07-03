@@ -35,10 +35,11 @@ func GetIBMVPCBlockCSIOperatorConfig() CSIOperatorConfig {
 	}
 
 	return CSIOperatorConfig{
-		CSIDriverName:   IBMVPCBlockCSIDriverName,
-		ConditionPrefix: "IBMVPCBlock",
-		Platform:        configv1.IBMCloudPlatformType,
-		StatusFilter:    isNotExternalTopologyMode,
+		CSIDriverName:                 IBMVPCBlockCSIDriverName,
+		ConditionPrefix:               "IBMVPCBlock",
+		Platform:                      configv1.IBMCloudPlatformType,
+		StatusFilter:                  isNotExternalTopologyMode,
+		StandaloneOperatorConfigAsset: "csidriveroperators/ibm-vpc-block/03_configmap.yaml",
 		StaticAssets: []string{
 			"csidriveroperators/ibm-vpc-block/01_service.yaml",
 			"csidriveroperators/ibm-vpc-block/03_sa.yaml",
