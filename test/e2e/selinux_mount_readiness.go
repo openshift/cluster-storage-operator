@@ -367,6 +367,7 @@ func (env *selinuxReadinessEnv) createSharedPVCPods(ctx context.Context, pod1Opt
 	}
 	pod2, err := createSELinuxTestPod(ctx, env.kubeClient, env.namespace, pod2Opts.name, env.pvcName, pod2Opts, pod1.Spec.NodeName, waitForSecondRunning)
 	if err != nil {
+		deleteSELinuxTestPod(env.kubeClient, pod1.Name, env.namespace)
 		return nil, nil, fmt.Errorf("failed to create pod2: %w", err)
 	}
 	return pod1, pod2, nil
@@ -442,6 +443,7 @@ func createSELinuxTestPod(ctx context.Context, kubeClient kubernetes.Interface, 
 
 	if err := waitForPodRunning(ctx, kubeClient, namespace, created.Name); err != nil {
 		logPodStatus(ctx, kubeClient, namespace, created.Name)
+		deleteSELinuxTestPod(kubeClient, created.Name, namespace)
 		return nil, err
 	}
 
