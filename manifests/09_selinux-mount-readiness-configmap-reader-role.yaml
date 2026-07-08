@@ -1,0 +1,56 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cluster-storage-operator-selinux-conflicts-reader
+  namespace: openshift-config
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Storage
+  labels:
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+rules:
+  # get is scoped to the single ConfigMap the controller reads.
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    resourceNames:
+      - selinux-conflicts
+    verbs:
+      - get
+  # list/watch cannot be restricted by resourceNames; the controller uses a
+  # fieldSelector (metadata.name=selinux-conflicts) on its dedicated informer.
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cluster-storage-operator-selinux-conflicts-reader
+  namespace: openshift-config
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Storage
+  labels:
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cluster-storage-operator-selinux-conflicts-reader
+subjects:
+  - kind: ServiceAccount
+    name: cluster-storage-operator
+    namespace: openshift-cluster-storage-operator

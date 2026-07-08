@@ -6,6 +6,7 @@ import (
 	"time"
 
 	configv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/api/features"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/configobservercontroller"
@@ -13,6 +14,7 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
 	metrics "github.com/openshift/cluster-storage-operator/pkg/operator/metrics"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/selinuxmountreadiness"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/volumedatasourcevalidator"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/vsphereproblemdetector"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
@@ -185,6 +187,10 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 		return err
 	}
 
+	if ssr.featureGates.Enabled(features.FeatureGateSELinuxMountGAReadiness) {
+		ssr.controllers = append(ssr.controllers, selinuxmountreadiness.NewController(ssr.commonClients, ssr.eventRecorder))
+	}
+
 	metrics.CountStorageClasses(ssr.commonClients)
 	metrics.InitializeVACMismatchMetrics(ssr.commonClients)
 
@@ -287,6 +293,10 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	err = hsr.commonStarter.getFeatureGate(ctx)
 	if err != nil {
 		return err
+	}
+
+	if hsr.featureGates.Enabled(features.FeatureGateSELinuxMountGAReadiness) {
+		hsr.controllers = append(hsr.controllers, selinuxmountreadiness.NewController(hsr.commonClients, hsr.eventRecorder))
 	}
 
 	metrics.InitializeVACMismatchMetrics(hsr.commonClients)
