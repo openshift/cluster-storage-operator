@@ -82,8 +82,10 @@ const (
 // Each spec creates an isolated namespace with an RWO PVC (default StorageClass).
 // Two pause pods share the PVC on the same node (required for RWO multi-pod scenarios).
 // Custom MCS levels (s0:c0,c0 vs s0:c1,c1) exercise label conflicts under MountOption.
-// A conflicting second pod is not expected to reach Running — it cannot mount the volume
-// with a different SELinux label while the first pod holds the RWO attachment.
+// Whether a conflicting second pod reaches Running depends on the release: with SELinuxMount
+// still disabled by default (e.g. 5.0 GA readiness gate only), both pods may run; once
+// SELinuxMount is GA (e.g. 5.1), pod2 may stay Pending or ContainerCreating. Conflict
+// detection is spec-based and does not depend on pod2 phase.
 //
 // # Execution
 //
@@ -176,8 +178,9 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness][Skippe
 		// Scenario 1 — detect conflict, observe monitoring signals, recover by removing the offender.
 		//
 		// Setup: pod1 mounts the PVC with s0:c0,c0 and reaches Running; pod2 is scheduled on
-		// the same node with s0:c1,c1 (conflicting MCS level). pod2 stays Pending because
-		// MountOption cannot share the RWO volume across distinct SELinux labels.
+		// the same node with s0:c1,c1 (conflicting MCS level). Whether pod2 reaches Running
+		// depends on the release (SELinuxMount disabled vs GA); the test does not assert pod2
+		// phase — only that the cluster becomes not upgradeable while the conflict exists.
 		// Expected: Upgradeable=False on ClusterOperator/storage and Storage CR; conflict
 		// metric > 0; alert in pending state (not yet Firing — rule has for: 10m).
 		// Recovery: delete pod2 → Upgradeable=True.
@@ -350,7 +353,8 @@ func selinuxReadinessSetupContext() (context.Context, context.CancelFunc) {
 
 func (env *selinuxReadinessEnv) createSharedPVCPods(ctx context.Context, pod1Opts, pod2Opts selinuxWorkloadOpts, waitForSecondRunning bool) (*v1.Pod, *v1.Pod, error) {
 	// pod1 must be Running so we know which node to pin pod2 on for the shared RWO PVC.
-	// waitForSecondRunning=false for conflict cases: pod2 is expected to stay Pending.
+	// waitForSecondRunning=false for conflict cases: do not wait on pod2 phase; upgrade
+	// blocking is driven by the conflicting workload spec, not whether pod2 mounts.
 	g.By(fmt.Sprintf("Creating pod with SELinux level %s", pod1Opts.selinuxLevel))
 	pod1, err := createSELinuxTestPod(ctx, env.kubeClient, env.namespace, pod1Opts.name, env.pvcName, pod1Opts, "", true)
 	if err != nil {
@@ -359,7 +363,7 @@ func (env *selinuxReadinessEnv) createSharedPVCPods(ctx context.Context, pod1Opt
 
 	g.By(fmt.Sprintf("Creating pod with SELinux level %s on the same node as pod1", pod2Opts.selinuxLevel))
 	if !waitForSecondRunning {
-		g.By("Not waiting for the second pod to reach Running; a conflicting SELinux label cannot mount the shared RWO volume")
+		g.By("Not waiting for the second pod to reach Running; conflict detection does not depend on pod2 phase")
 	}
 	pod2, err := createSELinuxTestPod(ctx, env.kubeClient, env.namespace, pod2Opts.name, env.pvcName, pod2Opts, pod1.Spec.NodeName, waitForSecondRunning)
 	if err != nil {
