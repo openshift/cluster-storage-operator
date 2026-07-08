@@ -203,7 +203,8 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness][Skippe
 				}
 			}()
 
-			if err := env.waitClusterNotUpgradeable(ctx); err != nil {
+			g.By("Waiting for cluster Upgradeable=False")
+			if err := waitForClusterNotUpgradeable(ctx, env.configClient, env.opClient, upgradeableConditionTimeout); err != nil {
 				g.Fail(err.Error())
 			}
 			if err := env.verifyConflictMonitoring(ctx); err != nil {
@@ -216,7 +217,8 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness][Skippe
 			}
 			pod2Deleted = true
 
-			if err := env.waitClusterUpgradeable(ctx); err != nil {
+			g.By("Waiting for cluster Upgradeable=True")
+			if err := waitForClusterUpgradeable(ctx, env.configClient, env.opClient, upgradeableConditionTimeout); err != nil {
 				g.Fail(err.Error())
 			}
 		})
@@ -240,7 +242,8 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness][Skippe
 			defer deleteSELinuxTestPod(env.kubeClient, pod1.Name, env.namespace)
 			defer deleteSELinuxTestPod(env.kubeClient, pod2.Name, env.namespace)
 
-			if err := env.waitClusterUpgradeable(ctx); err != nil {
+			g.By("Waiting for cluster Upgradeable=True")
+			if err := waitForClusterUpgradeable(ctx, env.configClient, env.opClient, upgradeableConditionTimeout); err != nil {
 				g.Fail(fmt.Sprintf("Cluster became un-upgradeable with compatible SELinux labels: %v", err))
 			}
 		})
@@ -264,7 +267,8 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness][Skippe
 			}
 			defer deleteSELinuxTestPod(env.kubeClient, pod1.Name, env.namespace)
 
-			if err := env.waitClusterNotUpgradeable(ctx); err != nil {
+			g.By("Waiting for cluster Upgradeable=False")
+			if err := waitForClusterNotUpgradeable(ctx, env.configClient, env.opClient, upgradeableConditionTimeout); err != nil {
 				g.Fail(err.Error())
 			}
 
@@ -283,7 +287,8 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness][Skippe
 			}
 			defer deleteSELinuxTestPod(env.kubeClient, pod2.Name, env.namespace)
 
-			if err := env.waitClusterUpgradeable(ctx); err != nil {
+			g.By("Waiting for cluster Upgradeable=True")
+			if err := waitForClusterUpgradeable(ctx, env.configClient, env.opClient, upgradeableConditionTimeout); err != nil {
 				g.Fail(fmt.Sprintf("Timed out waiting for Upgradeable=True after fixing SELinux label: %v", err))
 			}
 		})
@@ -308,7 +313,8 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness][Skippe
 			}
 			nodeName := pod1.Spec.NodeName
 
-			if err := env.waitClusterNotUpgradeable(ctx); err != nil {
+			g.By("Waiting for cluster Upgradeable=False")
+			if err := waitForClusterNotUpgradeable(ctx, env.configClient, env.opClient, upgradeableConditionTimeout); err != nil {
 				g.Fail(err.Error())
 			}
 
@@ -341,7 +347,8 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness][Skippe
 			}
 			defer deleteSELinuxTestPod(env.kubeClient, pod2.Name, env.namespace)
 
-			if err := env.waitClusterUpgradeable(ctx); err != nil {
+			g.By("Waiting for cluster Upgradeable=True")
+			if err := waitForClusterUpgradeable(ctx, env.configClient, env.opClient, upgradeableConditionTimeout); err != nil {
 				g.Fail(fmt.Sprintf("Timed out waiting for Upgradeable=True after setting Recursive SELinuxChangePolicy: %v", err))
 			}
 		})
@@ -371,16 +378,6 @@ func (env *selinuxReadinessEnv) createSharedPVCPods(ctx context.Context, pod1Opt
 		return nil, nil, fmt.Errorf("failed to create pod2: %w", err)
 	}
 	return pod1, pod2, nil
-}
-
-func (env *selinuxReadinessEnv) waitClusterNotUpgradeable(ctx context.Context) error {
-	g.By("Waiting for cluster Upgradeable=False")
-	return waitForClusterNotUpgradeable(ctx, env.configClient, env.opClient, upgradeableConditionTimeout)
-}
-
-func (env *selinuxReadinessEnv) waitClusterUpgradeable(ctx context.Context) error {
-	g.By("Waiting for cluster Upgradeable=True")
-	return waitForClusterUpgradeable(ctx, env.configClient, env.opClient, upgradeableConditionTimeout)
 }
 
 func (env *selinuxReadinessEnv) verifyConflictMonitoring(ctx context.Context) error {
