@@ -20,9 +20,9 @@ import (
 	opclient "github.com/openshift/client-go/operator/clientset/versioned"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 
+	authenticationv1 "k8s.io/api/authentication/v1"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
-	authenticationv1 "k8s.io/api/authentication/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,7 +53,7 @@ const (
 	alertPendingTimeout = 2 * time.Minute
 	podRunningTimeout   = 5 * time.Minute
 	setupTimeout        = 5 * time.Minute
-	podCleanupTimeout     = 2 * time.Minute
+	podCleanupTimeout   = 2 * time.Minute
 )
 
 // SELinux mount upgrade-readiness end-to-end tests.
