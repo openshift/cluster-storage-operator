@@ -266,6 +266,7 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness][Skippe
 				g.Fail(err.Error())
 			}
 			defer deleteSELinuxTestPod(env.kubeClient, pod1.Name, env.namespace)
+			defer deleteSELinuxTestPod(env.kubeClient, pod2.Name, env.namespace)
 
 			g.By("Waiting for cluster Upgradeable=False")
 			if err := waitForClusterNotUpgradeable(ctx, env.configClient, env.opClient, upgradeableConditionTimeout); err != nil {
@@ -311,6 +312,8 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:SELinuxMountGAReadiness][Skippe
 			if err != nil {
 				g.Fail(err.Error())
 			}
+			defer deleteSELinuxTestPod(env.kubeClient, pod1.Name, env.namespace)
+			defer deleteSELinuxTestPod(env.kubeClient, pod2.Name, env.namespace)
 			nodeName := pod1.Spec.NodeName
 
 			g.By("Waiting for cluster Upgradeable=False")
