@@ -27,6 +27,8 @@ spec:
       - args:
         - start
         - --listen=0.0.0.0:8444
+        - --config=/var/run/configmaps/config/config.yaml
+        - --terminate-on-files=/var/run/configmaps/config/config.yaml
         - --v=${LOG_LEVEL}
         env:
         - name: POD_NAME
@@ -49,6 +51,8 @@ spec:
         - name: trusted-ca-bundle
           mountPath: /etc/pki/ca-trust/extracted/pem
           readOnly: true
+        - mountPath: /var/run/configmaps/config
+          name: operator-config
         terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
           readOnlyRootFilesystem: true
@@ -77,6 +81,9 @@ spec:
           items:
             - key: ca-bundle.crt
               path: tls-ca-bundle.pem
+      - name: operator-config
+        configMap:
+          name: vsphere-problem-detector-operator-config
       securityContext:
         runAsNonRoot: true
         seccompProfile:
