@@ -15,9 +15,11 @@ import (
 	"github.com/openshift/cluster-storage-operator/assets"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/util"
+	csotls "github.com/openshift/cluster-storage-operator/pkg/operator/tls"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/controller/manager"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivercontrollerservicecontroller"
+
 	"github.com/openshift/library-go/pkg/operator/deploymentcontroller"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/loglevel"
@@ -27,9 +29,12 @@ import (
 	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	coreinformers "k8s.io/client-go/informers/core/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
+	sigsyaml "sigs.k8s.io/yaml"
 )
 
 const (
@@ -38,16 +43,19 @@ const (
 	cloudCredSecretName                 = "vsphere-cloud-credentials"
 	metricsCertSecretName               = "vsphere-problem-detector-serving-cert"
 	cloudConfigNamespace                = "openshift-config"
+	operatorConfigAsset                 = "vsphere_problem_detector/08_operator_config.yaml"
 )
 
 type VSphereProblemDetectorStarter struct {
-	controller     manager.ControllerManager
-	operatorClient v1helpers.OperatorClientWithFinalizers
-	infraLister    openshiftv1.InfrastructureLister
-	versionGetter  status.VersionGetter
-	targetVersion  string
-	eventRecorder  events.Recorder
-	running        bool
+	controller      manager.ControllerManager
+	operatorClient  v1helpers.OperatorClientWithFinalizers
+	infraLister     openshiftv1.InfrastructureLister
+	apiServerLister openshiftv1.APIServerLister
+	kubeClient      kubernetes.Interface
+	versionGetter   status.VersionGetter
+	targetVersion   string
+	eventRecorder   events.Recorder
+	running         bool
 }
 
 func NewVSphereProblemDetectorStarter(
@@ -57,16 +65,19 @@ func NewVSphereProblemDetectorStarter(
 	targetVersion string,
 	eventRecorder events.Recorder) factory.Controller {
 	c := &VSphereProblemDetectorStarter{
-		operatorClient: clients.OperatorClient,
-		infraLister:    clients.ConfigInformers.Config().V1().Infrastructures().Lister(),
-		versionGetter:  versionGetter,
-		targetVersion:  targetVersion,
-		eventRecorder:  eventRecorder.WithComponentSuffix("VSphereProblemDetectorStarter"),
+		operatorClient:  clients.OperatorClient,
+		infraLister:     clients.ConfigInformers.Config().V1().Infrastructures().Lister(),
+		apiServerLister: clients.ConfigInformers.Config().V1().APIServers().Lister(),
+		kubeClient:      clients.KubeClient,
+		versionGetter:   versionGetter,
+		targetVersion:   targetVersion,
+		eventRecorder:   eventRecorder.WithComponentSuffix("VSphereProblemDetectorStarter"),
 	}
 	c.controller = c.createVSphereProblemDetectorManager(clients, resyncInterval)
 	return factory.New().WithSync(c.sync).WithSyncDegradedOnError(clients.OperatorClient).WithInformers(
 		clients.OperatorClient.Informer(),
 		clients.ConfigInformers.Config().V1().Infrastructures().Informer(),
+		clients.ConfigInformers.Config().V1().APIServers().Informer(),
 	).ToController("VSphereProblemDetectorStarter", eventRecorder)
 }
 
@@ -99,6 +110,10 @@ func (c *VSphereProblemDetectorStarter) sync(ctx context.Context, syncCtx factor
 	// if not vsphere turn without any error
 	if platform != configv1.VSpherePlatformType {
 		return nil
+	}
+
+	if err := c.reconcileOperatorConfigMap(ctx); err != nil {
+		return err
 	}
 
 	if !c.running {
@@ -225,6 +240,36 @@ func (c *VSphereProblemDetectorStarter) WithConfigMapHashAnnotationHook(namespac
 		// Add the hash to Deployment annotations
 		return addObjectHash(deployment, inputHashes)
 	}
+}
+
+func (c *VSphereProblemDetectorStarter) reconcileOperatorConfigMap(ctx context.Context) error {
+	assetBytes, err := assets.ReadFile(operatorConfigAsset)
+	if err != nil {
+		return fmt.Errorf("failed to read operator config asset: %w", err)
+	}
+
+	cm := &corev1.ConfigMap{}
+	if err := sigsyaml.Unmarshal(assetBytes, cm); err != nil {
+		return fmt.Errorf("failed to decode operator config ConfigMap: %w", err)
+	}
+
+	apiServer, err := c.apiServerLister.Get("cluster")
+	if err != nil {
+		return fmt.Errorf("failed to get APIServer cluster: %w", err)
+	}
+	minTLSVersion, cipherSuites := csotls.TLSSettingsFromProfile(apiServer.Spec.TLSSecurityProfile)
+
+	yaml, err := csotls.OperatorConfigYAML(minTLSVersion, cipherSuites)
+	if err != nil {
+		return err
+	}
+	if cm.Data == nil {
+		cm.Data = make(map[string]string)
+	}
+	cm.Data["config.yaml"] = yaml
+
+	_, _, err = resourceapply.ApplyConfigMap(ctx, c.kubeClient.CoreV1(), c.eventRecorder, cm)
+	return err
 }
 
 func addObjectHash(deployment *appsv1.Deployment, inputHashes map[string]string) error {

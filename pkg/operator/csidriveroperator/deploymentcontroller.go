@@ -26,6 +26,7 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/util"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
+	csotls "github.com/openshift/cluster-storage-operator/pkg/operator/tls"
 	csoutils "github.com/openshift/cluster-storage-operator/pkg/utils"
 )
 
@@ -284,9 +285,9 @@ func (c *CSIDriverOperatorDeploymentController) reconcileOperatorConfigMap(ctx c
 	if err != nil {
 		return fmt.Errorf("failed to get APIServer cluster: %w", err)
 	}
-	minTLSVersion, cipherSuites := tlsSettingsFromProfile(apiServer.Spec.TLSSecurityProfile)
+	minTLSVersion, cipherSuites := csotls.TLSSettingsFromProfile(apiServer.Spec.TLSSecurityProfile)
 
-	yaml, err := operatorConfigYAML(minTLSVersion, cipherSuites)
+	yaml, err := csotls.OperatorConfigYAML(minTLSVersion, cipherSuites)
 	if err != nil {
 		return err
 	}
