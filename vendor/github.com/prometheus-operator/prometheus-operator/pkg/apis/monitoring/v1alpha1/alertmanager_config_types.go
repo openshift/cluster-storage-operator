@@ -1,4 +1,4 @@
-// Copyright 2020 The prometheus-operator Authors
+// Copyright The prometheus-operator Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"strings"
 
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-
 	v1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 )
 
 const (
@@ -480,6 +480,12 @@ type SlackConfig struct {
 	// It requires Alertmanager >= v0.30.0.
 	// +optional
 	Timeout *monitoringv1.Duration `json:"timeout,omitempty"`
+	// messageText defines text content of the Slack message.
+	// If set, this is sent as the top-level 'text' field in the Slack payload.
+	// It requires Alertmanager >= v0.31.0.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	MessageText *string `json:"messageText,omitempty"`
 }
 
 // SlackAction configures a single Slack action that is sent with each
@@ -601,6 +607,13 @@ type WebhookConfig struct {
 	// It requires Alertmanager >= v0.28.0.
 	// +optional
 	Timeout *monitoringv1.Duration `json:"timeout,omitempty"`
+	// payload define custom payload to be sent to the webhook endpoint.
+	// This is an advanced configuration option that allows you
+	// to define a custom payload using Go templates.
+	// It requires Alertmanager >= v0.32.0.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	Payload *string `json:"payload,omitempty"`
 }
 
 // OpsGenieConfig configures notifications via OpsGenie.
@@ -897,6 +910,32 @@ type EmailConfig struct {
 	// This includes settings for certificates, CA validation, and TLS protocol options.
 	// +optional
 	TLSConfig *monitoringv1.SafeTLSConfig `json:"tlsConfig,omitempty"`
+	// forceImplicitTLS defines whether to force use of implicit TLS (direct TLS connection) for better security.
+	// true: force use of implicit TLS (direct TLS connection on any port)
+	// false: force disable implicit TLS (use explicit TLS/STARTTLS if required)
+	// nil (default): auto-detect based on port (465=implicit, other=explicit) for backward compatibility
+	// It requires Alertmanager >= v0.31.0.
+	// +optional
+	ForceImplicitTLS *bool `json:"forceImplicitTLS,omitempty"` // nolint:kubeapilinter
+	// threading defines the threading configuration for email receiver.
+	// It requires Alertmanager >= v0.30.0.
+	// +optional
+	Threading *EmailThreadingConfig `json:"threading,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=Daily;None
+type ThreadByDateType string
+
+const (
+	ThreadByDateTypeDaily ThreadByDateType = "Daily"
+	ThreadByDateTypeNone  ThreadByDateType = "None"
+)
+
+type EmailThreadingConfig struct {
+	// threadByDate defines what granularity of current date to thread by. Accepted values: Daily, None.
+	// (None means group by alert group key, no date).
+	// +required
+	ThreadByDate ThreadByDateType `json:"threadByDate"`
 }
 
 // VictorOpsConfig configures notifications via VictorOps.
