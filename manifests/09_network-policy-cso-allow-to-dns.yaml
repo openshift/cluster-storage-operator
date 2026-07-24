@@ -23,8 +23,8 @@ spec:
           dns.operator.openshift.io/daemonset-dns: default
     ports:
     - protocol: TCP
-      port: dns-tcp
+      port: 53
     - protocol: UDP
-      port: dns
+      port: 53
   policyTypes:
   - Egress
