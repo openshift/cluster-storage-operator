@@ -28,6 +28,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1.AddPageApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("Authentication"):
 		return &operatorv1.AuthenticationApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("AuthenticationConfigMapReference"):
+		return &operatorv1.AuthenticationConfigMapReferenceApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("AuthenticationProxyConfig"):
+		return &operatorv1.AuthenticationProxyConfigApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("AuthenticationSpec"):
 		return &operatorv1.AuthenticationSpecApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("AuthenticationStatus"):
@@ -50,6 +54,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1.AzureCSIDriverConfigSpecApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("AzureDiskEncryptionSet"):
 		return &operatorv1.AzureDiskEncryptionSetApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("BGPManagedConfig"):
+		return &operatorv1.BGPManagedConfigApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("BootImageSkewEnforcementConfig"):
 		return &operatorv1.BootImageSkewEnforcementConfigApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("BootImageSkewEnforcementStatus"):
@@ -108,6 +114,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1.CSISnapshotControllerSpecApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("CSISnapshotControllerStatus"):
 		return &operatorv1.CSISnapshotControllerStatusApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("CustomSecretRotation"):
+		return &operatorv1.CustomSecretRotationApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("DefaultNetworkDefinition"):
 		return &operatorv1.DefaultNetworkDefinitionApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("DeveloperConsoleCatalogCategory"):
@@ -234,6 +242,14 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1.IPv6OVNKubernetesConfigApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("IrreconcilableValidationOverrides"):
 		return &operatorv1.IrreconcilableValidationOverridesApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("KMSEncryptionStatus"):
+		return &operatorv1.KMSEncryptionStatusApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("KMSPluginHealthReport"):
+		return &operatorv1.KMSPluginHealthReportApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("KMSPreflightCheck"):
+		return &operatorv1.KMSPreflightCheckApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("KMSPreflightResult"):
+		return &operatorv1.KMSPreflightResultApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("KubeAPIServer"):
 		return &operatorv1.KubeAPIServerApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("KubeAPIServerSpec"):
@@ -276,6 +292,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1.MachineManagerSelectorApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("ManagedBootImages"):
 		return &operatorv1.ManagedBootImagesApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("ManagedTokenRequests"):
+		return &operatorv1.ManagedTokenRequestsApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("MTUMigration"):
 		return &operatorv1.MTUMigrationApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("MTUMigrationValues"):
@@ -318,6 +336,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1.NodePortStrategyApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("NodeStatus"):
 		return &operatorv1.NodeStatusApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("NoOverlayConfig"):
+		return &operatorv1.NoOverlayConfigApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("OAuthAPIServerStatus"):
 		return &operatorv1.OAuthAPIServerStatusApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("OLM"):
@@ -378,6 +398,14 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1.RestartServiceApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("RouteAdmissionPolicy"):
 		return &operatorv1.RouteAdmissionPolicyApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("SecretsStoreCSIDriverConfigSpec"):
+		return &operatorv1.SecretsStoreCSIDriverConfigSpecApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("SecretsStoreSecretRotation"):
+		return &operatorv1.SecretsStoreSecretRotationApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("SecretsStoreTokenRequest"):
+		return &operatorv1.SecretsStoreTokenRequestApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("SecretsStoreTokenRequests"):
+		return &operatorv1.SecretsStoreTokenRequestsApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("Server"):
 		return &operatorv1.ServerApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("ServiceAccountIssuerStatus"):
@@ -444,8 +472,12 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.ClusterAPIInstallerComponentApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ClusterAPIInstallerComponentImage"):
 		return &operatorv1alpha1.ClusterAPIInstallerComponentImageApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ClusterAPIInstallerComponentSource"):
+		return &operatorv1alpha1.ClusterAPIInstallerComponentSourceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ClusterAPIInstallerRevision"):
 		return &operatorv1alpha1.ClusterAPIInstallerRevisionApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ClusterAPIInstallerRevisionManifestSubstitution"):
+		return &operatorv1alpha1.ClusterAPIInstallerRevisionManifestSubstitutionApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ClusterAPISpec"):
 		return &operatorv1alpha1.ClusterAPISpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ClusterAPIStatus"):
