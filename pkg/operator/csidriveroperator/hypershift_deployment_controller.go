@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/configobservation/util"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
+	csotls "github.com/openshift/cluster-storage-operator/pkg/operator/tls"
 	csoutils "github.com/openshift/cluster-storage-operator/pkg/utils"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -226,7 +227,7 @@ func (c *HyperShiftDeploymentController) reconcileOperatorConfigMap(ctx context.
 		return err
 	}
 
-	yaml, err := operatorConfigYAML(minTLSVersion, cipherSuites)
+	yaml, err := csotls.OperatorConfigYAML(minTLSVersion, cipherSuites)
 	if err != nil {
 		return err
 	}
@@ -275,7 +276,7 @@ func tlsSettingsFromHCP(hcp *unstructured.Unstructured) (string, []string, error
 		}
 	}
 
-	minTLSVersion, cipherSuites := tlsSettingsFromProfile(profile)
+	minTLSVersion, cipherSuites := csotls.TLSSettingsFromProfile(profile)
 	return minTLSVersion, cipherSuites, nil
 }
 

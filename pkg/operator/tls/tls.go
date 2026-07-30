@@ -1,4 +1,4 @@
-package csidriveroperator
+package tls
 
 import (
 	"fmt"
@@ -9,9 +9,9 @@ import (
 	sigsyaml "sigs.k8s.io/yaml"
 )
 
-// tlsSettingsFromProfile returns minTLSVersion and IANA cipher suite names from a TLS
+// TLSSettingsFromProfile returns minTLSVersion and IANA cipher suite names from a TLS
 // security profile, defaulting to Intermediate if nil, empty, or unknown.
-func tlsSettingsFromProfile(profile *configv1.TLSSecurityProfile) (string, []string) {
+func TLSSettingsFromProfile(profile *configv1.TLSSecurityProfile) (string, []string) {
 	if profile == nil || profile.Type == "" {
 		spec := configv1.TLSProfiles[configv1.TLSProfileIntermediateType]
 		return string(spec.MinTLSVersion), crypto.OpenSSLToIANACipherSuites(spec.Ciphers)
@@ -30,9 +30,9 @@ func tlsSettingsFromProfile(profile *configv1.TLSSecurityProfile) (string, []str
 	return string(spec.MinTLSVersion), crypto.OpenSSLToIANACipherSuites(spec.Ciphers)
 }
 
-// operatorConfigYAML produces a minimal GenericOperatorConfig YAML with only
+// OperatorConfigYAML produces a minimal GenericOperatorConfig YAML with only
 // the TLS fields set, omitting all zero-value fields that the typed struct would emit.
-func operatorConfigYAML(minTLSVersion string, cipherSuites []string) (string, error) {
+func OperatorConfigYAML(minTLSVersion string, cipherSuites []string) (string, error) {
 	cfg := map[string]interface{}{
 		"apiVersion": operatorv1alpha1.SchemeGroupVersion.String(),
 		"kind":       "GenericOperatorConfig",
