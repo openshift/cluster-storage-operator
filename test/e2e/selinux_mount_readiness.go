@@ -384,6 +384,15 @@ func (env *selinuxReadinessEnv) createSharedPVCPods(ctx context.Context, pod1Opt
 }
 
 func (env *selinuxReadinessEnv) verifyConflictMonitoring(ctx context.Context) error {
+	isHyperShift, err := env.onHyperShift(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to check if on HyperShift: %w", err)
+	}
+	if isHyperShift {
+		g.By("Skipping monitoring checks on HyperShift, they are reported in the management cluster and thus invisible to this test that runs with the guest cluster")
+		return nil
+	}
+
 	// Scenario 1 only: confirm observability beyond the ClusterOperator condition.
 	// Alert assertion is pending-only; the PrometheusRule uses for: 10m before Firing.
 	g.By("Setting up Prometheus client")
@@ -427,6 +436,15 @@ func (env *selinuxReadinessEnv) verifyConflictMonitoring(ctx context.Context) er
 		return fmt.Errorf("timed out waiting for alert %s to become pending: %w", selinuxReadinessAlertName, err)
 	}
 	return nil
+}
+
+func (env *selinuxReadinessEnv) onHyperShift(ctx context.Context) (bool, error) {
+	infra, err := env.configClient.ConfigV1().Infrastructures().Get(ctx, "cluster", metav1.GetOptions{})
+	if err != nil {
+		return false, fmt.Errorf("failed to get Infrastructure: %w", err)
+	}
+	isHyperShift := infra.Status.ControlPlaneTopology == configv1.ExternalTopologyMode
+	return isHyperShift, nil
 }
 
 func createSELinuxTestPod(ctx context.Context, kubeClient kubernetes.Interface, namespace, name, pvcName string, opts selinuxWorkloadOpts, nodeName string, waitRunning bool) (*v1.Pod, error) {
