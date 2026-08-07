@@ -183,6 +183,17 @@ func TestInjectMgmtProxyEnvVars(t *testing.T) {
 			},
 		},
 		{
+			name:    "only NO_PROXY is set",
+			noProxy: "localhost,127.0.0.1",
+			validate: func(t *testing.T, deployment *appsv1.Deployment) {
+				c := &deployment.Spec.Template.Spec.Containers[0]
+
+				assert.Nil(t, findEnvVar("HTTP_PROXY", c.Env))
+				assert.Nil(t, findEnvVar("HTTPS_PROXY", c.Env))
+				assert.NotNil(t, findEnvVar("NO_PROXY", c.Env))
+			},
+		},
+		{
 			name: "no proxy env vars are set",
 			validate: func(t *testing.T, deployment *appsv1.Deployment) {
 				c := &deployment.Spec.Template.Spec.Containers[0]
