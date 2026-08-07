@@ -143,6 +143,8 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 		return fmt.Errorf("failed to inject proxy data into deployment: %w", err)
 	}
 
+	injectMgmtProxyEnvVars(requiredCopy)
+
 	// The existence of the environment variable, ARO_HCP_SECRET_PROVIDER_CLASS_FOR_FILE, means this is an ARO HCP
 	// deployment. We need to pass along additional environment variables for ARO HCP in order to mount the backing
 	// certificates, related to the client IDs, in a volume on the azure-disk-csi-controller and
@@ -358,4 +360,16 @@ func (c *HyperShiftDeploymentController) applyRunAsUserIfSet(deployment *appsv1.
 	deployment.Spec.Template.Spec.SecurityContext.RunAsUser = &runAsUserValue
 
 	return nil
+}
+
+// injectMgmtProxyEnvVars injects management cluster proxy env vars into all containers of the deployment.
+func injectMgmtProxyEnvVars(deployment *appsv1.Deployment) {
+	for _, envName := range []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"} {
+		if val := os.Getenv(envName); val != "" {
+			for i := range deployment.Spec.Template.Spec.Containers {
+				c := &deployment.Spec.Template.Spec.Containers[i]
+				c.Env = append(c.Env, corev1.EnvVar{Name: envName, Value: val})
+			}
+		}
+	}
 }
