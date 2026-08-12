@@ -22,8 +22,7 @@ const (
 	selinuxConflictsConfigMapName = "selinux-conflicts"
 	selinuxConflictsDataKey       = "conflictsPresent"
 
-	// KCSArticleURL is linked from Prometheus alerts. Update when the KCS article is published.
-	KCSArticleURL = "https://github.com/openshift/enhancements/blob/master/enhancements/storage/selinuxmount-ga-block-upgrade.md"
+	RunbookURL = "https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/SELinuxMountGAReadinessWorkloadsDetected.md"
 )
 
 // Controller watches openshift-config/selinux-conflicts written by the
@@ -100,7 +99,7 @@ func upgradeBlockedMessage() string {
 		"Workloads incompatible with SELinuxMount GA were detected and could break after upgrade to the next release. "+
 			"See metric selinux_warning_controller_selinux_volume_conflict to list all affected pods. "+
 			"See %s for remediation.",
-		KCSArticleURL,
+		RunbookURL,
 	)
 }
 

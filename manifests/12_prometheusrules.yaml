@@ -103,7 +103,7 @@ spec:
           description: |
             {{ $value | humanize }} pods in the cluster have a SELinux conflict that must be resolved before upgrade to the next OpenShift version.
             Query metric selinux_warning_controller_selinux_volume_conflict to list affected pods.
-          runbook_url: https://github.com/openshift/enhancements/blob/master/enhancements/storage/selinuxmount-ga-block-upgrade.md
+          runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/SELinuxMountGAReadinessWorkloadsDetected.md
     - name: kubernetes-storage
     # These alerts originate from https://github.com/kubernetes-monitoring/kubernetes-mixin/blob/de834e9a291b49396125768f041e2078763f48b5/alerts/storage_alerts.libsonnet
       rules:
