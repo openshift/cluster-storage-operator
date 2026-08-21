@@ -17,3 +17,7 @@ spec:
       apiVersions: ["v1"]
       operations: ["CREATE", "UPDATE"]
       resources: ["namespaces"]
+      scope: "*"
+    matchPolicy: Equivalent
+    namespaceSelector: {}
+    objectSelector: {}
