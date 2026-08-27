@@ -1,7 +1,8 @@
 apiVersion: operator.openshift.io/v1
-kind: "ClusterCSIDriver"
+kind: ClusterCSIDriver
 metadata:
-  name: "pd.csi.storage.gke.io"
+  name: pd.csi.storage.gke.io
+  namespace: openshift-cluster-csi-drivers
 spec:
   logLevel: Normal
   managementState: Managed

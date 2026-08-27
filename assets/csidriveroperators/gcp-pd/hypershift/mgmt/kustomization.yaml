@@ -1,0 +1,37 @@
+resources:
+  - ../../base
+namespace: ${CONTROLPLANE_NAMESPACE}
+patches:
+  - path: sa.patch.yaml
+    target:
+      kind: ServiceAccount
+      version: v1
+  - path: hypershift_role.patch.yaml
+    target:
+      kind: Role
+      version: v1
+  - path: deployment.patch.yaml
+    target:
+      kind: Deployment
+      version: v1
+  - patch: |-
+      - op: "add"
+        path: "/spec/template/spec/containers/0/args/-"
+        value: --guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig
+    target:
+      kind: Deployment
+  - target:
+      annotationSelector: "storage.openshift.io/remove-from=mgmt"
+    patch: |
+      $patch: delete
+      kind: Kustomization
+      metadata:
+        name: PLACEHOLDER
+  # remove these annotations as they're just noise post-kustomization
+  # note that '~1' is the escaped form of '/'
+  # https://datatracker.ietf.org/doc/html/rfc6901
+  - target:
+      annotationSelector: "storage.openshift.io/remove-from=guest"
+    patch: |
+      - op: "remove"
+        path: "/metadata/annotations/storage.openshift.io~1remove-from"

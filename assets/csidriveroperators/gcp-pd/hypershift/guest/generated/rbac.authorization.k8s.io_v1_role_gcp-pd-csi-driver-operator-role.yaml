@@ -5,15 +5,15 @@ metadata:
   namespace: openshift-cluster-csi-drivers
 rules:
 - apiGroups:
-  - ''
+  - ""
   resources:
   - pods
   - services
   - endpoints
-  - persistentvolumeclaims
   - events
   - configmaps
   - secrets
+  - persistentvolumeclaims
   verbs:
   - get
   - list
@@ -23,18 +23,22 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - ''
+  - ""
   resources:
-  - namespaces
+  - serviceaccounts
   verbs:
   - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 - apiGroups:
   - apps
   resources:
   - deployments
-  - daemonsets
   - replicasets
-  - statefulsets
   verbs:
   - get
   - list
@@ -47,6 +51,31 @@ rules:
   - policy
   resources:
   - poddisruptionbudgets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  - rolebindings
+  verbs:
+  - watch
+  - list
+  - get
+  - create
+  - delete
+  - patch
+  - update
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
   verbs:
   - get
   - list
