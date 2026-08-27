@@ -1,10 +1,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gcp-pd-csi-driver-operator
-  namespace: openshift-cluster-csi-drivers
   annotations:
     config.openshift.io/inject-proxy: gcp-pd-csi-driver-operator
+    release.openshift.io/desired-version: ${RELEASE_VERSION}
+  labels:
+    hypershift.openshift.io/managed-by: cluster-storage-operator
+  name: gcp-pd-csi-driver-operator
+  namespace: ${CONTROLPLANE_NAMESPACE}
 spec:
   replicas: 1
   selector:
@@ -17,18 +20,51 @@ spec:
         openshift.io/required-scc: restricted-v2
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
+        app: gcp-pd-csi-driver-operator
+        hypershift.openshift.io/need-management-kas-access: "true"
         name: gcp-pd-csi-driver-operator
-        openshift.storage.network-policy.dns: allow
+        openshift.storage.network-policy.all-egress: allow
         openshift.storage.network-policy.api-server: allow
+        openshift.storage.network-policy.dns: allow
         openshift.storage.network-policy.operator-metrics-range: allow
     spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - preference:
+              matchExpressions:
+              - key: hypershift.openshift.io/control-plane
+                operator: In
+                values:
+                - "true"
+            weight: 50
+          - preference:
+              matchExpressions:
+              - key: hypershift.openshift.io/cluster
+                operator: In
+                values:
+                - ${CONTROLPLANE_NAMESPACE}
+            weight: 100
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  hypershift.openshift.io/hosted-control-plane: ${CONTROLPLANE_NAMESPACE}
+              topologyKey: kubernetes.io/hostname
+            weight: 100
       containers:
       - args:
         - start
         - -v=${LOG_LEVEL}
         - --config=/var/run/configmaps/config/config.yaml
         - --terminate-on-files=/var/run/configmaps/config/config.yaml
+        - --guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig
         env:
+        - name: DRIVER_CONTROL_PLANE_IMAGE
+          value: ${DRIVER_CONTROL_PLANE_IMAGE}
+        - name: LIVENESS_PROBE_CONTROL_PLANE_IMAGE
+          value: ${LIVENESS_PROBE_CONTROL_PLANE_IMAGE}
         - name: DRIVER_IMAGE
           value: ${DRIVER_IMAGE}
         - name: PROVISIONER_IMAGE
@@ -54,50 +90,58 @@ spec:
         image: ${OPERATOR_IMAGE}
         imagePullPolicy: IfNotPresent
         name: gcp-pd-csi-driver-operator
-        terminationMessagePolicy: FallbackToLogsOnError
-        resources:
-          requests:
-            memory: 50Mi
-            cpu: 10m
-        securityContext:
-          readOnlyRootFilesystem: true
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
         ports:
         - containerPort: 8443
           name: metrics
           protocol: TCP
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+        terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
+        - mountPath: /etc/guest-kubeconfig
+          name: guest-kubeconfig
         - mountPath: /tmp
           name: tmp
         - mountPath: /var/run/secrets/serving-cert
           name: serving-cert
         - mountPath: /var/run/configmaps/config
           name: operator-config
-      priorityClassName: system-cluster-critical
-      serviceAccountName: gcp-pd-csi-driver-operator
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: "NoSchedule"
+      priorityClassName: hypershift-control-plane
       securityContext:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
+      serviceAccountName: gcp-pd-csi-driver-operator
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - key: hypershift.openshift.io/control-plane
+        operator: Exists
+      - key: hypershift.openshift.io/cluster
+        operator: Equal
+        value: ${CONTROLPLANE_NAMESPACE}
       volumes:
-      - name: tmp
-        emptyDir:
+      - name: guest-kubeconfig
+        secret:
+          secretName: service-network-admin-kubeconfig
+      - emptyDir:
           medium: Memory
+        name: tmp
       - name: serving-cert
         secret:
           defaultMode: 420
           secretName: gcp-pd-csi-driver-operator-serving-cert
-      - name: operator-config
-        configMap:
+      - configMap:
           name: gcp-pd-csi-driver-operator-config
+        name: operator-config

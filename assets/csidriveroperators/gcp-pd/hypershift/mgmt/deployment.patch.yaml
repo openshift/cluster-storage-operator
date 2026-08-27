@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gcp-pd-csi-driver-operator
+  labels:
+    hypershift.openshift.io/managed-by: cluster-storage-operator
+  annotations:
+    release.openshift.io/desired-version: ${RELEASE_VERSION}
+spec:
+  template:
+    metadata:
+      labels:
+        app: gcp-pd-csi-driver-operator
+        hypershift.openshift.io/need-management-kas-access: "true"
+        openshift.storage.network-policy.all-egress: allow
+        openshift.storage.network-policy.api-server: allow
+        openshift.storage.network-policy.dns: allow
+        openshift.storage.network-policy.operator-metrics-range: allow
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - preference:
+                matchExpressions:
+                  - key: hypershift.openshift.io/control-plane
+                    operator: In
+                    values:
+                      - "true"
+              weight: 50
+            - preference:
+                matchExpressions:
+                  - key: hypershift.openshift.io/cluster
+                    operator: In
+                    values:
+                      - ${CONTROLPLANE_NAMESPACE}
+              weight: 100
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    hypershift.openshift.io/hosted-control-plane: ${CONTROLPLANE_NAMESPACE}
+                topologyKey: kubernetes.io/hostname
+              weight: 100
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: "NoSchedule"
+        - key: hypershift.openshift.io/control-plane
+          operator: Exists
+        - key: hypershift.openshift.io/cluster
+          operator: Equal
+          value: ${CONTROLPLANE_NAMESPACE}
+      containers:
+        - name: gcp-pd-csi-driver-operator
+          env:
+            - name: DRIVER_CONTROL_PLANE_IMAGE
+              value: ${DRIVER_CONTROL_PLANE_IMAGE}
+            - name: LIVENESS_PROBE_CONTROL_PLANE_IMAGE
+              value: ${LIVENESS_PROBE_CONTROL_PLANE_IMAGE}
+          volumeMounts:
+            - mountPath: /etc/guest-kubeconfig
+              name: guest-kubeconfig
+          terminationMessagePolicy: FallbackToLogsOnError
+          securityContext:
+            readOnlyRootFilesystem: false
+      priorityClassName: hypershift-control-plane
+      volumes:
+        - name: guest-kubeconfig
+          secret:
+            secretName: service-network-admin-kubeconfig
