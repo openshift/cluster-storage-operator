@@ -329,7 +329,9 @@ func (hsr *HyperShiftStarter) populateConfigs(clients *csoclients.Clients) []csi
 		csioperatorclient.GetAzureDiskCSIOperatorConfig(true),
 		csioperatorclient.GetAzureFileCSIOperatorConfig(true),
 		csioperatorclient.GetAWSEBSCSIOperatorConfig(true),
-		csioperatorclient.GetGCPPDCSIOperatorConfig(true),
+		// GCP PD HyperShift support is temporarily disabled: .
+		// Re-enable once openshift/hypershift#9450 (or its follow-ups) lands.
+		// csioperatorclient.GetGCPPDCSIOperatorConfig(true),
 		csioperatorclient.GetOpenStackManilaOperatorConfig(true, clients, hsr.eventRecorder),
 		csioperatorclient.GetOpenStackCinderCSIOperatorConfig(true),
 		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(true),
