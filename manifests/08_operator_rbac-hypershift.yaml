@@ -1,4 +1,12 @@
-# *** AUTOMATICALLY GENERATED FILE - DO NOT EDIT ***
+# Deletion manifest for old cluster-admin binding — marked for deletion to avoid immutable roleRef conflict
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cluster-storage-operator-role
+  annotations:
+    release.openshift.io/delete: "true"
+---
+# Replacement binding with fine-grained RBAC role
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
