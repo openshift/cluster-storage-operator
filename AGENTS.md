@@ -172,16 +172,20 @@ A PR review **must fail** if any of the following are true:
 ### RBAC Changes
 
 - RBAC files under `assets/csidriveroperators/<driver>/base/` govern the CSI driver *operator*, not the driver itself. Verify the subject, namespace, and rules match the minimum needed.
-- **CSO Operator RBAC** — CSO runs with fine-grained ClusterRoles instead of `cluster-admin`:
-  - `manifests/08_operator_rbac.yaml` — ClusterRoleBindings binding the `cluster-storage-operator` ServiceAccount to the following roles:
-    - `08_0001_cluster_storage_operator_storage_role.yaml` — storage resources (storageclasses, CSI drivers, snapshots, volumes)
-    - `08_0002_cluster_storage_operator_deployment_role.yaml` — workload management (Deployments, DaemonSets, StatefulSets, ServiceAccounts, Namespaces)
-    - `08_0003_cluster_storage_operator_rbac_role.yaml` — RBAC administration (ClusterRoles, Roles, Bindings, SecurityContextConstraints)
-    - `08_0004_cluster_storage_operator_config_role.yaml` — cluster configuration observation and monitoring setup (Infrastructure, Proxies, CRDs, ServiceMonitors)
-    - `08_0005_cluster_storage_operator_operator_role.yaml` — operator custom resources (Storage, ClusterCSIDriver CRs and status)
-    - `08_0006_cluster_storage_operator_observer_role.yaml` — read-only observation (PVs, PVCs, Pods, Secrets, Nodes)
-    - `08_0007_cluster_storage_operator_system_role.yaml` — system internals (leases, token/subject access reviews, event recording)
-  - Each role uses specific verbs (get, list, watch, create, update, patch, delete) appropriate to its function, following least-privilege principles.
+- **CSO Operator RBAC** — CSO runs with a fine-grained ClusterRole instead of `cluster-admin`:
+  - `manifests/08_0001_cluster_storage_operator_storage_role.yaml` — consolidated ClusterRole with 15 rules covering:
+    - Storage resources (storageclasses, CSI drivers, volume attributes classes, snapshots, volumes)
+    - Deployment lifecycle management (Deployments, DaemonSets, StatefulSets, ServiceAccounts, Services, ConfigMaps)
+    - RBAC administration (Roles, RoleBindings, ClusterRoleBindings)
+    - Cluster configuration observation (Infrastructure, Proxies, ClusterVersions, FeatureGates, ClusterOperators, APIServers)
+    - Operator custom resources (Storage, ClusterCSIDriver CRs and status subresources)
+    - System internals (Leases, Events)
+    - Monitoring integration (ServiceMonitors, PrometheusRules)
+    - CRD management (CustomResourceDefinitions)
+    - Secret observation (credentials and certificates)
+  - `manifests/08_operator_rbac.yaml` — ClusterRoleBinding binding the `cluster-storage-operator` ServiceAccount to the ClusterRole above.
+  - `manifests/08_operator_scc.yaml` — ClusterRoleBinding granting the `nonroot-v2` SecurityContextConstraint (required for pod scheduling).
+  - Permissions were discovered incrementally by deploying with empty RBAC and capturing "forbidden" errors from operator logs, ensuring only necessary permissions are granted.
   - When reviewing RBAC changes, verify verbs are minimal and necessary — do not use `["*"]` for new permissions.
 - Sidecar RBAC for provisioner / attacher / resizer / snapshotter lives in `manifests/09_sidecar-*.yaml` and is shared across all drivers. Changes there affect every driver simultaneously.
 
