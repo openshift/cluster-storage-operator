@@ -41,10 +41,11 @@ spec:
       serviceAccountName: cluster-storage-operator
       securityContext:
         runAsNonRoot: true
-        # The specific UID is required for correct SCC matching. Even with fine-grained RBAC,
-        # SCCs are matched against pod security contexts. The UID 11411 ensures the pod matches
-        # the correct SCC designed for this operator rather than a more permissive default.
-        # Removing this UID causes pod scheduling to fail due to SCC mismatch.
+        # The nonroot-v2 SCC accepts any non-zero UID or a non-root image USER.
+        # This manifest explicitly pins UID to 11411 for consistency and predictability.
+        # Omitting the UID may cause admission rejection if the container image does not
+        # declare a non-root USER, so specifying it here ensures reliable pod scheduling
+        # regardless of the image's user declaration.
         runAsUser: 11411
         seccompProfile:
           type: RuntimeDefault
