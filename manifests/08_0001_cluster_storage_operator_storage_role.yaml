@@ -33,3 +33,8 @@ rules:
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["create", "update", "patch"]
+
+  # StorageClass management (DefaultStorageClassController)
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
