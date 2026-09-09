@@ -1,0 +1,84 @@
+---
+# RoleBinding for openshift-cluster-storage-operator namespace
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cluster-storage-operator-role
+  namespace: openshift-cluster-storage-operator
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Storage
+subjects:
+  - kind: ServiceAccount
+    name: cluster-storage-operator
+    namespace: openshift-cluster-storage-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cluster-storage-operator-role
+---
+# RoleBinding for openshift-cluster-csi-drivers namespace
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cluster-storage-operator-csi-drivers-role
+  namespace: openshift-cluster-csi-drivers
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Storage
+subjects:
+  - kind: ServiceAccount
+    name: cluster-storage-operator
+    namespace: openshift-cluster-storage-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cluster-storage-operator-csi-drivers-role
+---
+# RoleBinding for openshift-config namespace
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cluster-storage-operator-config-role
+  namespace: openshift-config
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Storage
+subjects:
+  - kind: ServiceAccount
+    name: cluster-storage-operator
+    namespace: openshift-cluster-storage-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cluster-storage-operator-config-role
+---
+# RoleBinding for openshift-config-managed namespace
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cluster-storage-operator-config-managed-role
+  namespace: openshift-config-managed
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Storage
+subjects:
+  - kind: ServiceAccount
+    name: cluster-storage-operator
+    namespace: openshift-cluster-storage-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cluster-storage-operator-config-managed-role

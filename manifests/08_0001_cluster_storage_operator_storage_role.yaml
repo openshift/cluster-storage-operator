@@ -9,70 +9,27 @@ metadata:
     include.release.openshift.io/single-node-developer: "true"
     capability.openshift.io/name: Storage
 rules:
-  # Leader election via leases
-  - apiGroups: ["coordination.k8s.io"]
-    resources: ["leases"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-
-  # Pod observation for owner reference and topology detection
-  - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["get", "list", "watch"]
-
-  # ReplicaSet observation for owner reference
-  - apiGroups: ["apps"]
-    resources: ["replicasets"]
-    verbs: ["get", "list", "watch"]
-
-  # Cluster infrastructure and configuration observation
+  # Cluster infrastructure and configuration observation (cluster-scoped singletons)
+  # Required for determining platform capabilities, proxy settings, feature gates, and cluster health
   - apiGroups: ["config.openshift.io"]
     resources: ["infrastructures", "proxies", "clusterversions", "featuregates", "clusteroperators", "apiservers"]
     verbs: ["get", "list", "watch"]
 
-  # Event recording for operator status and warnings
-  - apiGroups: [""]
-    resources: ["events"]
-    verbs: ["create", "update", "patch"]
-
-  # StorageClass and CSI driver management
+  # StorageClass and CSI driver management (cluster-scoped resources)
+  # Required for managing default StorageClasses and platform-specific CSI driver visibility
   - apiGroups: ["storage.k8s.io"]
     resources: ["storageclasses", "csidrivers", "volumeattributesclasses"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
-  # Deployment management for CSI driver operators (DeploymentController)
-  - apiGroups: ["apps"]
-    resources: ["deployments", "deployments/scale"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups: ["apps"]
-    resources: ["deployments/status"]
-    verbs: ["get", "patch", "update"]
-
-  # ConfigMap management for driver operator configuration (DeploymentController)
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-
-  # RBAC management for CSI driver operators
+  # ClusterRoleBindings for CSI driver sidecar RBAC (cluster-scoped)
+  # Required to grant sidecar containers (provisioner, attacher, resizer, snapshotter) cluster-level permissions
+  # Note: Roles and RoleBindings in namespaces are handled by namespace-scoped Roles
   - apiGroups: ["rbac.authorization.k8s.io"]
-    resources: ["roles", "rolebindings", "clusterrolebindings"]
+    resources: ["clusterrolebindings"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
-  # ServiceAccount management for CSI driver operators
-  - apiGroups: [""]
-    resources: ["serviceaccounts"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-
-  # Service management for CSI driver operators
-  - apiGroups: [""]
-    resources: ["services"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-
-  # Secret observation for credentials and certificates
-  - apiGroups: [""]
-    resources: ["secrets"]
-    verbs: ["get", "list", "watch"]
-
-  # Storage operator custom resources
+  # Storage operator custom resources (cluster-scoped)
+  # Required for managing the Storage CR and ClusterCSIDriver CRs for each platform
   - apiGroups: ["operator.openshift.io"]
     resources: ["storages", "clustercsidrivers"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
@@ -80,12 +37,8 @@ rules:
     resources: ["storages/status", "clustercsidrivers/status"]
     verbs: ["get", "patch", "update"]
 
-  # Monitoring resources for Prometheus integration
-  - apiGroups: ["monitoring.coreos.com"]
-    resources: ["servicemonitors", "prometheusrules"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-
-  # Custom Resource Definitions management
+  # Custom Resource Definitions management (cluster-scoped)
+  # Required for VolumeDataSourceValidator to deploy the VolumePopulator CRD
   - apiGroups: ["apiextensions.k8s.io"]
     resources: ["customresourcedefinitions"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
