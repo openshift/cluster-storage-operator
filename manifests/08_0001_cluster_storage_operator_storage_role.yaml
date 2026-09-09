@@ -42,3 +42,9 @@ rules:
   - apiGroups: ["apiextensions.k8s.io"]
     resources: ["customresourcedefinitions"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # ClusterOperator status updates (cluster-scoped)
+  # Required by StatusSyncer controller to report operator health conditions
+  - apiGroups: ["config.openshift.io"]
+    resources: ["clusteroperators/status"]
+    verbs: ["patch", "update"]

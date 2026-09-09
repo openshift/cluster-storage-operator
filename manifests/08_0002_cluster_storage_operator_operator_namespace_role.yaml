@@ -30,16 +30,48 @@ rules:
     resources: ["services"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
-  # vSphere-specific secrets (restricted by resourceNames for least privilege)
+  # vSphere-specific secrets (split rules for resourceNames compatibility)
+  # Rule 1: List/watch all secrets in namespace (for informer setup)
+  # Informers require list/watch to discover available secrets
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["list", "watch"]
+
+  # Rule 2: Get specific vSphere secrets only (restricted by resourceNames for least privilege)
   # Only vsphere-cloud-credentials and vsphere-problem-detector-serving-cert are needed
   - apiGroups: [""]
     resources: ["secrets"]
     resourceNames:
       - "vsphere-cloud-credentials"
       - "vsphere-problem-detector-serving-cert"
-    verbs: ["get", "list", "watch"]
+    verbs: ["get"]
 
   # Monitoring resources for operator metrics
   - apiGroups: ["monitoring.coreos.com"]
     resources: ["servicemonitors", "prometheusrules"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Deployment management for VolumeDataSourceValidator
+  # The VolumeDataSourceValidator controller deploys and manages the volume-data-source-validator
+  # deployment in the operator's own namespace for CSI volume population support
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/scale", "deployments/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # ConfigMap management for operator configuration
+  # Required by ConfigObserver and other controllers that manage operator configuration data
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # RBAC management in operator namespace
+  # Required to create and manage Roles and RoleBindings for operator components and sidecars
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # ReplicaSet observation for deployment status tracking
+  # Required to watch ReplicaSets created by Deployments for accurate status reporting
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get", "list", "watch"]
