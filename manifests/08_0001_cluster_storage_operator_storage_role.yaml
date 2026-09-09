@@ -15,11 +15,16 @@ rules:
     resources: ["infrastructures", "proxies", "clusterversions", "featuregates", "clusteroperators", "apiservers"]
     verbs: ["get", "list", "watch"]
 
-  # StorageClass and CSI driver management (cluster-scoped resources)
-  # Required for managing default StorageClasses and platform-specific CSI driver visibility
+  # Default StorageClass management — CSO creates/reconciles the cluster default SC
   - apiGroups: ["storage.k8s.io"]
-    resources: ["storageclasses", "csidrivers", "volumeattributesclasses"]
+    resources: ["storageclasses"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # CSI driver / VAC observation only — CSO watches these to make decisions and
+  # emit metrics; the objects themselves are managed by the CSI driver operators.
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["csidrivers", "volumeattributesclasses"]
+    verbs: ["get", "list", "watch"]
 
   # ClusterRoleBindings for CSI driver sidecar RBAC (cluster-scoped)
   # Required to grant sidecar containers (provisioner, attacher, resizer, snapshotter) cluster-level permissions
