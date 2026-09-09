@@ -39,7 +39,7 @@ rules:
     resources: ["storages", "clustercsidrivers"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["operator.openshift.io"]
-    resources: ["storages/status", "clustercsidrivers/status"]
+    resources: ["storages/status"]
     verbs: ["get", "patch", "update"]
 
   # Custom Resource Definitions management (cluster-scoped)
