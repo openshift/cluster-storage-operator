@@ -180,7 +180,7 @@ A PR review **must fail** if any of the following are true:
     - Operator custom resources (Storage, ClusterCSIDriver CRs and status subresources)
     - CustomResourceDefinitions management (for VolumePopulator CRD)
   - **Namespace-scoped permissions** — 4 namespace-specific Roles for fine-grained isolation:
-    - `manifests/08_0002_cluster_storage_operator_operator_namespace_role.yaml` in `openshift-cluster-storage-operator`: leases (leader election), events, serviceaccounts, services, vSphere secrets (resourceNames-restricted), monitoring
+    - `manifests/08_0002_cluster_storage_operator_operator_namespace_role.yaml` in `openshift-cluster-storage-operator`: leases (leader election), events, serviceaccounts, services, configmaps, deployments, replicasets, roles/rolebindings, vSphere secrets (resourceNames-restricted), monitoring
     - `manifests/08_0003_cluster_storage_operator_csi_drivers_namespace_role.yaml` in `openshift-cluster-csi-drivers`: deployments, configmaps, RBAC (roles/rolebindings), serviceaccounts, services, replicasets, events, monitoring
     - `manifests/08_0004_cluster_storage_operator_config_namespace_role.yaml` in `openshift-config`: configmaps (read-only)
     - `manifests/08_0005_cluster_storage_operator_config_managed_namespace_role.yaml` in `openshift-config-managed`: configmaps, RBAC (read-only)
@@ -201,6 +201,14 @@ A PR review **must fail** if any of the following are true:
   - `manifests/08_operator_scc.yaml` — ClusterRoleBinding granting the `nonroot-v2` SecurityContextConstraint (required for pod scheduling).
   - Permissions were discovered incrementally by deploying with empty RBAC and capturing "forbidden" errors from operator logs, ensuring only necessary permissions are granted.
   - **Immutable field migration strategy:** ClusterRoleBinding `roleRef` is immutable after creation. Changing it requires deletion and replacement in the same CVO update cycle using `release.openshift.io/delete: "true"` annotation on the old binding.
+  - **Post-implementation corrections (STOR-1459):** After initial deployment and operational testing, 6 permission gaps were identified and corrected:
+    1. **ClusterOperator status updates** — Added `clusteroperators/status` with `["patch", "update"]` verbs to ClusterRole (fixes StatusSyncer unable to report operator health)
+    2. **Deployments in operator namespace** — Added deployments, deployments/scale, deployments/status to `08_0002` Role (fixes VolumeDataSourceValidator managing its deployment)
+    3. **ConfigMaps in operator namespace** — Added configmaps to `08_0002` Role (fixes ConfigObserver managing operator configuration)
+    4. **RBAC management in operator namespace** — Added roles, rolebindings to `08_0002` Role (fixes operator component RBAC management)
+    5. **ReplicaSet observation** — Added replicasets observation to `08_0002` Role (fixes deployment status tracking)
+    6. **Secrets list/watch** — Split secrets rule into two: one for list/watch (informer discovery) and one for get with resourceNames (specific vSphere secrets)
+    - **Final permission counts:** ClusterRole has 7 rules (was 6), operator namespace Role has 11 rules (was 6). All permissions properly scoped per least-privilege principles.
   - When reviewing RBAC changes, verify verbs are minimal and necessary — do not use `["*"]` for new permissions. Use resourceNames for secrets access when possible.
 - Sidecar RBAC for provisioner / attacher / resizer / snapshotter lives in `manifests/09_sidecar-*.yaml` and is shared across all drivers. Changes there affect every driver simultaneously.
 
