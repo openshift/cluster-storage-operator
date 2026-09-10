@@ -42,11 +42,10 @@ rules:
     resources: ["servicemonitors", "prometheusrules"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
-  # Deployment management for VolumeDataSourceValidator
-  # The VolumeDataSourceValidator controller deploys and manages the volume-data-source-validator
-  # deployment in the operator's own namespace for CSI volume population support
+  # Deployment management for VolumeDataSourceValidator (library-go DeploymentController:
+  # Get/Create/Update/Delete on the Deployment; status is read via this rule, scale is unused)
   - apiGroups: ["apps"]
-    resources: ["deployments", "deployments/scale", "deployments/status"]
+    resources: ["deployments"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
   # ConfigMap management for operator configuration
