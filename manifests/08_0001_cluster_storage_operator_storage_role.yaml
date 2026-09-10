@@ -53,9 +53,3 @@ rules:
   - apiGroups: ["config.openshift.io"]
     resources: ["clusteroperators/status"]
     verbs: ["patch", "update"]
-
-  # Monitoring resources for cluster-wide metrics (cluster-scoped)
-  # Required for operator to create and manage cluster-wide ServiceMonitors and PrometheusRules
-  - apiGroups: ["monitoring.coreos.com"]
-    resources: ["servicemonitors", "prometheusrules"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
