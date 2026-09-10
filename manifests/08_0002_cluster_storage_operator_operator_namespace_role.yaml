@@ -30,21 +30,12 @@ rules:
     resources: ["services"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
-  # vSphere-specific secrets (split rules for resourceNames compatibility)
-  # Rule 1: List/watch all secrets in namespace (for informer setup)
-  # Informers require list/watch to discover available secrets
+  # CSO informs on all Secrets in its own namespace (informer requires list/watch,
+  # which already exposes full secret contents); vsphere-problem-detector reads
+  # vsphere-cloud-credentials and vsphere-problem-detector-serving-cert by name.
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["list", "watch"]
-
-  # Rule 2: Get specific vSphere secrets only (restricted by resourceNames for least privilege)
-  # Only vsphere-cloud-credentials and vsphere-problem-detector-serving-cert are needed
-  - apiGroups: [""]
-    resources: ["secrets"]
-    resourceNames:
-      - "vsphere-cloud-credentials"
-      - "vsphere-problem-detector-serving-cert"
-    verbs: ["get"]
+    verbs: ["get", "list", "watch"]
 
   # Monitoring resources for operator metrics
   - apiGroups: ["monitoring.coreos.com"]
