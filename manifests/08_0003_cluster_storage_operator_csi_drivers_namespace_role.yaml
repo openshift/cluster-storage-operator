@@ -22,11 +22,8 @@ rules:
 
   # Deployment management for CSI driver operators (DeploymentController)
   - apiGroups: ["apps"]
-    resources: ["deployments", "deployments/scale"]
+    resources: ["deployments"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups: ["apps"]
-    resources: ["deployments/status"]
-    verbs: ["get", "patch", "update"]
 
   # ConfigMap management for driver operator configuration
   - apiGroups: [""]
