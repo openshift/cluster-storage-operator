@@ -10,19 +10,8 @@ metadata:
     include.release.openshift.io/single-node-developer: "true"
     capability.openshift.io/name: Storage
 rules:
-  # ConfigMap observation for managed cluster configuration
-  # Read-only access to managed configuration data
+  # ConfigMap observation for managed cluster configuration (CA bundle sync
+  # via resourcesynccontroller). Read-only.
   - apiGroups: [""]
     resources: ["configmaps"]
-    verbs: ["get", "list", "watch"]
-
-  # RBAC observation for managed cloud provider credentials roles
-  # Read-only access to observe platform-specific RBAC configurations
-  - apiGroups: ["rbac.authorization.k8s.io"]
-    resources: ["roles", "rolebindings"]
-    verbs: ["get", "list", "watch"]
-
-  # Secrets observation for managed cloud provider credentials
-  - apiGroups: [""]
-    resources: ["secrets"]
     verbs: ["get", "list", "watch"]
