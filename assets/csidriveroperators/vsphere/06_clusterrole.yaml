@@ -68,9 +68,40 @@ rules:
 - apiGroups:
   - storage.k8s.io
   resources:
+  - volumeattachments
+  verbs:
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - storage.k8s.io
+  resources:
   - volumeattachments/status
   verbs:
   - patch
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims/status
+  verbs:
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - ""
   resourceNames:
@@ -119,3 +150,16 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resourceNames:
+  - openshift-csi-main-attacher-role
+  - openshift-csi-main-provisioner-role
+  - openshift-csi-main-resizer-role
+  - openshift-csi-main-snapshotter-role
+  - openshift-csi-provisioner-volumesnapshot-reader-role
+  - openshift-csi-resizer-storageclass-reader-role
+  resources:
+  - clusterroles
+  verbs:
+  - bind

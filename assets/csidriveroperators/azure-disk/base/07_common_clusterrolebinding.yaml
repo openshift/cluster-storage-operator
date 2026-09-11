@@ -1,10 +1,12 @@
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: openstack-cinder-csi-driver-operator-common-clusterrolebinding
+  name: azure-disk-csi-driver-operator-common-clusterrolebinding
+  annotations:
+    storage.openshift.io/remove-from: mgmt
 subjects:
   - kind: ServiceAccount
-    name: openstack-cinder-csi-driver-operator
+    name: azure-disk-csi-driver-operator
     namespace: openshift-cluster-csi-drivers
 roleRef:
   apiGroup: rbac.authorization.k8s.io

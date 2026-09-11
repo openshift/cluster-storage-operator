@@ -41,7 +41,7 @@ func GetAzureDiskCSIOperatorConfig(isHyperShift bool) CSIOperatorConfig {
 			"csidriveroperators/azure-disk/standalone/generated/rbac.authorization.k8s.io_v1_clusterrole_azure-disk-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/azure-disk/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_azure-disk-csi-driver-operator-clusterrolebinding.yaml",
 			"csidriveroperators/common/clusterrole.yaml",
-			"csidriveroperators/common/azure-disk-csi-driver-operator-common-clusterrolebinding.yaml",
+			"csidriveroperators/azure-disk/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_azure-disk-csi-driver-operator-common-clusterrolebinding.yaml",
 			"csidriveroperators/azure-disk/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_azure-disk-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/azure-disk/standalone/generated/v1_service_azure-disk-csi-driver-operator-metrics.yaml",
 		}
@@ -52,7 +52,7 @@ func GetAzureDiskCSIOperatorConfig(isHyperShift bool) CSIOperatorConfig {
 			"csidriveroperators/azure-disk/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrole_azure-disk-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/azure-disk/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_azure-disk-csi-driver-operator-clusterrolebinding.yaml",
 			"csidriveroperators/common/clusterrole.yaml",
-			"csidriveroperators/common/azure-disk-csi-driver-operator-common-clusterrolebinding.yaml",
+			"csidriveroperators/azure-disk/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_azure-disk-csi-driver-operator-common-clusterrolebinding.yaml",
 			"csidriveroperators/azure-disk/hypershift/guest/generated/rbac.authorization.k8s.io_v1_role_azure-disk-csi-driver-operator-role.yaml",
 			"csidriveroperators/azure-disk/hypershift/guest/generated/rbac.authorization.k8s.io_v1_rolebinding_azure-disk-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/azure-disk/hypershift/guest/generated/v1_serviceaccount_azure-disk-csi-driver-operator.yaml",

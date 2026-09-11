@@ -47,3 +47,16 @@ rules:
   - create
   - patch
   - update
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resourceNames:
+  - openshift-csi-main-attacher-role
+  - openshift-csi-main-provisioner-role
+  - openshift-csi-main-resizer-role
+  - openshift-csi-main-snapshotter-role
+  - openshift-csi-provisioner-volumesnapshot-reader-role
+  - openshift-csi-resizer-storageclass-reader-role
+  resources:
+  - clusterroles
+  verbs:
+  - bind
