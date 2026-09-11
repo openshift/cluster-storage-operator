@@ -41,9 +41,11 @@ spec:
       serviceAccountName: cluster-storage-operator
       securityContext:
         runAsNonRoot: true
-        # Force a specific UID, just in case this Pod matches a custom SCC with "runAsUser: type: runAsNonRoot".
-        # The UID value was chosen by a fair `echo $RANDOM` call.
-        # TODO: remove cluster-admin from the operator, then a specific UID won't be needed.
+        # The nonroot-v2 SCC accepts any non-zero UID or a non-root image USER.
+        # This manifest explicitly pins UID to 11411 for consistency and predictability.
+        # Omitting the UID may cause admission rejection if the container image does not
+        # declare a non-root USER, so specifying it here ensures reliable pod scheduling
+        # regardless of the image's user declaration.
         runAsUser: 11411
         seccompProfile:
           type: RuntimeDefault
