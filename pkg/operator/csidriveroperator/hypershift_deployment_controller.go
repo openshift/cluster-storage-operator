@@ -179,6 +179,19 @@ func (c *HyperShiftDeploymentController) Sync(ctx context.Context, syncCtx facto
 		}
 	}
 
+	// gcp-pd's controller Deployment statically includes a token-minter sidecar
+	// (unlike azure-disk/azure-file, which add it conditionally via the
+	// WithTokenMinter DeploymentHook). Its image is a literal ${HYPERSHIFT_IMAGE}
+	// placeholder in the generated controller.yaml, resolved by the running
+	// gcp-pd-csi-driver-operator process itself from its own HYPERSHIFT_IMAGE env
+	// var (see csi-operator's pkg/driver/common/operator/replacer.go). Without
+	// this, the token-minter container ends up with an empty/invalid image.
+	if requiredCopy.Name == "gcp-pd-csi-driver-operator" {
+		if hyperShiftImage := os.Getenv("HYPERSHIFT_IMAGE"); hyperShiftImage != "" {
+			envVars = append(envVars, corev1.EnvVar{Name: "HYPERSHIFT_IMAGE", Value: hyperShiftImage})
+		}
+	}
+
 	if len(envVars) > 0 {
 		requiredCopy.Spec.Template.Spec.Containers[0].Env = append(requiredCopy.Spec.Template.Spec.Containers[0].Env, envVars...)
 	}
