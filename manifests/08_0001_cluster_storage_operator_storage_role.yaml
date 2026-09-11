@@ -9,47 +9,510 @@ metadata:
     include.release.openshift.io/single-node-developer: "true"
     capability.openshift.io/name: Storage
 rules:
-  # Cluster infrastructure and configuration observation (cluster-scoped singletons)
-  # Required for determining platform capabilities, proxy settings, feature gates, and cluster health
-  - apiGroups: ["config.openshift.io"]
-    resources: ["infrastructures", "proxies", "clusterversions", "featuregates", "clusteroperators", "apiservers"]
-    verbs: ["get", "list", "watch"]
-
-  # Default StorageClass management — CSO creates/reconciles the cluster default SC
-  - apiGroups: ["storage.k8s.io"]
-    resources: ["storageclasses"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-
-  # CSI driver / VAC observation only — CSO watches these to make decisions and
-  # emit metrics; the objects themselves are managed by the CSI driver operators.
-  - apiGroups: ["storage.k8s.io"]
-    resources: ["csidrivers", "volumeattributesclasses"]
-    verbs: ["get", "list", "watch"]
-
-  # ClusterRoleBindings for CSI driver sidecar RBAC (cluster-scoped)
-  # Required to grant sidecar containers (provisioner, attacher, resizer, snapshotter) cluster-level permissions
-  # Note: Roles and RoleBindings in namespaces are handled by namespace-scoped Roles
-  - apiGroups: ["rbac.authorization.k8s.io"]
-    resources: ["clusterrolebindings"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-
-  # Storage operator custom resources (cluster-scoped)
-  # Required for managing the Storage CR and ClusterCSIDriver CRs for each platform
-  - apiGroups: ["operator.openshift.io"]
-    resources: ["storages", "clustercsidrivers"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups: ["operator.openshift.io"]
-    resources: ["storages/status"]
-    verbs: ["get", "patch", "update"]
-
-  # Custom Resource Definitions management (cluster-scoped)
-  # Required for VolumeDataSourceValidator to deploy the VolumePopulator CRD
-  - apiGroups: ["apiextensions.k8s.io"]
-    resources: ["customresourcedefinitions"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-
-  # ClusterOperator status updates (cluster-scoped)
-  # Required by StatusSyncer controller to report operator health conditions
-  - apiGroups: ["config.openshift.io"]
-    resources: ["clusteroperators/status"]
-    verbs: ["patch", "update"]
+  - apiGroups:
+    - '*'
+    resources:
+    - events
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - admissionregistration.k8s.io
+    resources:
+    - validatingwebhookconfigurations
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - apiextensions.k8s.io
+    resources:
+    - customresourcedefinitions
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - apps
+    resources:
+    - daemonsets
+    - deployments
+    - replicasets
+    - statefulsets
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - authentication.k8s.io
+    resources:
+    - tokenreviews
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - authorization.k8s.io
+    resources:
+    - subjectaccessreviews
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - cloudcredential.openshift.io
+    resources:
+    - credentialsrequests
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - cns.vmware.com
+    resources:
+    - cnsvolumeinfoes
+    - cnsvolumeoperationrequests
+    - cnsvspherevolumemigrations
+    - csinodetopologies
+    - triggercsifullsyncs
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - config.openshift.io
+    resources:
+    - apiservers
+    - clusteroperators
+    - clusterversions
+    - featuregates
+    - infrastructures
+    - proxies
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - config.openshift.io
+    resources:
+    - clusteroperators/status
+    verbs:
+    - patch
+    - update
+  - apiGroups:
+    - coordination.k8s.io
+    resources:
+    - leases
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - csi.storage.k8s.io
+    resources:
+    - csinodeinfos
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - discovery.k8s.io
+    resources:
+    - endpointslices
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - groupsnapshot.storage.k8s.io
+    resources:
+    - volumegroupsnapshotclasses
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - groupsnapshot.storage.k8s.io
+    resources:
+    - volumegroupsnapshotcontents/status
+    verbs:
+    - patch
+    - update
+  - apiGroups:
+    - groupsnapshot.storage.k8s.io
+    resources:
+    - volumegroupsnapshotcontents
+    verbs:
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - monitoring.coreos.com
+    resources:
+    - prometheusrules
+    - servicemonitors
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - networking.k8s.io
+    resources:
+    - networkpolicies
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - operator.openshift.io
+    resources:
+    - clustercsidrivers
+    - clustercsidrivers/status
+    - storages
+    - storages/status
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - policy
+    resources:
+    - poddisruptionbudgets
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - populator.storage.k8s.io
+    resources:
+    - volumepopulators
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resources:
+    - clusterrolebindings
+    - clusterroles
+    - rolebindings
+    - roles
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - security.openshift.io
+    resourceNames:
+    - hostnetwork-v2
+    resources:
+    - securitycontextconstraints
+    verbs:
+    - use
+  - apiGroups:
+    - security.openshift.io
+    resourceNames:
+    - privileged
+    resources:
+    - securitycontextconstraints
+    verbs:
+    - use
+  - apiGroups:
+    - snapshot.storage.k8s.io
+    resources:
+    - volumesnapshotclasses
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - update
+    - watch
+  - apiGroups:
+    - snapshot.storage.k8s.io
+    resources:
+    - volumesnapshotcontents/status
+    verbs:
+    - patch
+    - update
+  - apiGroups:
+    - snapshot.storage.k8s.io
+    resources:
+    - volumesnapshotcontents
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - snapshot.storage.k8s.io
+    resources:
+    - volumesnapshots/status
+    verbs:
+    - patch
+  - apiGroups:
+    - snapshot.storage.k8s.io
+    resources:
+    - volumesnapshots
+    verbs:
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - storage.k8s.io
+    resources:
+    - csidrivers
+    - csinodes
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - update
+    - watch
+  - apiGroups:
+    - storage.k8s.io
+    resources:
+    - storageclasses
+    - volumeattachments
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - storage.k8s.io
+    resources:
+    - volumeattachments/status
+    verbs:
+    - patch
+  - apiGroups:
+    - storage.k8s.io
+    resources:
+    - volumeattributesclasses
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - ""
+    resources:
+    - configmaps
+    - endpoints
+    - events
+    - namespaces
+    - nodes
+    - persistentvolumeclaims
+    - persistentvolumes
+    - pods
+    - secrets
+    - serviceaccounts
+    - services
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - ""
+    resourceNames:
+    - aws-ebs-csi-driver-operator-lock
+    resources:
+    - configmaps
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - ""
+    resourceNames:
+    - azure-disk-csi-driver-operator-lock
+    resources:
+    - configmaps
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - ""
+    resourceNames:
+    - azure-file-csi-driver-operator-lock
+    resources:
+    - configmaps
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - ""
+    resourceNames:
+    - extension-apiserver-authentication
+    resources:
+    - configmaps
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - ""
+    resourceNames:
+    - gcp-pd-csi-driver-operator-lock
+    resources:
+    - configmaps
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - ""
+    resourceNames:
+    - ibm-vpc-block-csi-driver-operator-lock
+    resources:
+    - configmaps
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - ""
+    resourceNames:
+    - powervs-block-csi-driver-operator-lock
+    resources:
+    - configmaps
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - ""
+    resourceNames:
+    - vmware-vsphere-csi-driver-operator-lock
+    resources:
+    - configmaps
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - ""
+    resourceNames:
+    - vsphere-problem-detector-operator-lock
+    resources:
+    - configmaps
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - ""
+    resources:
+    - persistentvolumeclaims/status
+    verbs:
+    - patch
+    - update

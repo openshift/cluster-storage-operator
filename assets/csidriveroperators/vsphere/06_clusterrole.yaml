@@ -4,204 +4,67 @@ metadata:
   name: vmware-vsphere-csi-driver-operator-clusterrole
 rules:
 - apiGroups:
-  - security.openshift.io
-  resourceNames:
-  - privileged
-  resources:
-  - securitycontextconstraints
-  verbs:
-  - use
-- apiGroups:
-  - operator.openshift.io
-  resources:
-  - clustercsidrivers
-  verbs:
-  - get
-  - list
-  - watch
-  # The Config Observer controller updates the CR's spec
-  - update
-  - patch
-- apiGroups:
-  - operator.openshift.io
-  resources:
-  - clustercsidrivers/status
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-  - patch
-- apiGroups:
-  - ''
-  resourceNames:
-  - extension-apiserver-authentication
-  - vmware-vsphere-csi-driver-operator-lock
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - clusterroles
-  - clusterrolebindings
-  - roles
-  - rolebindings
-  verbs:
-  - watch
-  - list
-  - get
-  - create
-  - delete
-  - patch
-  - update
-- apiGroups:
   - admissionregistration.k8s.io
   resources:
   - validatingwebhookconfigurations
   verbs:
+  - create
+  - delete
   - get
   - list
-  - watch
-  - create
-  - update
   - patch
-  - delete
-- apiGroups:
-  - ''
-  resources:
-  - serviceaccounts
-  verbs:
-  - get
-  - list
-  - watch
-  - create
   - update
-  - patch
-  - delete
+  - watch
 - apiGroups:
   - apiextensions.k8s.io
   resources:
   - customresourcedefinitions
   verbs:
-  - list
+  - patch
+  - update
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
   - create
-  - watch
+- apiGroups:
+  - cns.vmware.com
+  resources:
+  - cnsvolumeinfoes
+  - cnsvolumeoperationrequests
+  - cnsvspherevolumemigrations
+  - csinodetopologies
+  - triggercsifullsyncs
+  verbs:
+  - create
   - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - config.openshift.io
+  resources:
+  - clusterversions
+  - featuregates
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - coordination.k8s.io
   resources:
   - leases
   verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ''
-  resources:
-  - nodes
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ''
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ''
-  resources:
-  - namespaces
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - patch
-  - delete
-  - update
-- apiGroups:
-  - ''
-  resources:
-  - persistentvolumes
-  verbs:
   - create
   - delete
-  - list
-  - get
-  - watch
-  - update
-  - patch
-- apiGroups:
-  - ''
-  resources:
-  - persistentvolumeclaims
-  verbs:
   - get
   - list
-  - watch
-  - update
-- apiGroups:
-  - ''
-  resources:
-  - pods
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ''
-  resources:
-  - persistentvolumeclaims/status
-  verbs:
   - patch
   - update
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
-  verbs:
-  - get
-  - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - volumeattachments
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-  - delete
-  - create
-  - patch
 - apiGroups:
   - storage.k8s.io
   resources:
@@ -209,176 +72,50 @@ rules:
   verbs:
   - patch
 - apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshotcontents/status
-  verbs:
-  - update
-  - patch
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - storageclasses
-  - csinodes
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - delete
-- apiGroups:
-  - '*'
-  resources:
-  - events
-  verbs:
-  - get
-  - patch
-  - create
-  - list
-  - watch
-  - update
-  - delete
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshotclasses
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - delete
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshotcontents
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - delete
-  - patch
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshots
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-  - patch
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshots/status
-  verbs:
-  - patch
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - csidrivers
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - delete
-- apiGroups:
-  - config.openshift.io
-  resources:
-  - infrastructures
-  - proxies
-  - apiservers
-  - featuregates
-  - clusterversions
-  verbs:
-  - get
-  - list
-  - watch
-# Needed by the CSI driver itself
-# - Syncer uses pod listener
-# - Feature states map uses configmap listener
-- apiGroups:
-  - ''
+  - ""
+  resourceNames:
+  - extension-apiserver-authentication
   resources:
   - configmaps
-  - pods
   verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - apiextensions.k8s.io
-  resources:
-  - customresourcedefinitions
-  verbs:
-  - get
-  - list
-  - watch
   - create
-  - update
-  - patch
   - delete
-# cns.vmware.com resource list comes from:
-# https://raw.githubusercontent.com/kubernetes-sigs/vsphere-csi-driver/v3.3.1/manifests/vanilla/vsphere-csi-driver.yaml
-- apiGroups:
-  - cns.vmware.com
-  resources:
-  - triggercsifullsyncs
-  - cnsvspherevolumemigrations
-  - cnsvolumeinfoes
-  - cnsvolumeoperationrequests
-  - csinodetopologies
-  verbs:
   - get
   - list
+  - patch
+  - update
   - watch
+- apiGroups:
+  - ""
+  resourceNames:
+  - vmware-vsphere-csi-driver-operator-lock
+  resources:
+  - configmaps
+  verbs:
   - create
-  - update
-  - patch
   - delete
-# Allow kube-rbac-proxy to create TokenReview and SubjectAccessReview to be able to authenticate Prometheus when collecting metrics
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
-  - "authentication.k8s.io"
+  - ""
   resources:
-  - "tokenreviews"
-  verbs:
-  - "create"
-- apiGroups:
-  - "authorization.k8s.io"
-  resources:
-  - "subjectaccessreviews"
-  verbs:
-  - "create"
-# Allow the operator to grant volume group snapshot permissions to the csi-snapshotter sidecar
-- apiGroups:
-  - groupsnapshot.storage.k8s.io
-  resources:
-  - volumegroupsnapshotclasses
+  - configmaps
   verbs:
   - get
   - list
   - watch
 - apiGroups:
-  - groupsnapshot.storage.k8s.io
+  - ""
   resources:
-  - volumegroupsnapshotcontents
+  - serviceaccounts
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
   - watch
-  - update
-  - patch
-- apiGroups:
-  - groupsnapshot.storage.k8s.io
-  resources:
-  - volumegroupsnapshotcontents/status
-  verbs:
-  - update
-  - patch

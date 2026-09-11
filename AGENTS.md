@@ -20,6 +20,7 @@ CSO does **not** implement CSI drivers directly. It installs and manages the ope
 cluster-storage-operator/
 ├── assets/                          # Embedded static manifests (YAML)
 │   ├── csidriveroperators/          # Per-driver kustomize bases + generated output
+│   │   ├── common/                  # Shared csi-driver-operator-common-role ClusterRole + per-operator common ClusterRoleBindings
 │   │   ├── aws-ebs/
 │   │   │   ├── base/                # Shared kustomize resources (SA, RBAC, CR, Deployment)
 │   │   │   ├── standalone/          # Standalone (non-HyperShift) overlay + patches
@@ -41,6 +42,7 @@ cluster-storage-operator/
 │   ├── image-references             # All container images managed by this operator
 │   ├── 03_credentials_request_*.yaml # Cloud IAM permissions per CSI driver (see CredentialsRequest Changes)
 │   ├── 06_operator_cr.yaml          # Storage CR — main CSO configuration (operator.openshift.io/v1 Storage)
+│   ├── 08_0001_..._storage_role.yaml # CSO's own consolidated ClusterRole (union of applied operand RBAC + self-needs)
 │   ├── 08_operator_rbac.yaml        # CSO's own ClusterRoleBinding
 │   ├── 09_sidecar-*.yaml            # Shared RBAC for CSI sidecars (provisioner, attacher, etc.)
 │   ├── 10_deployment.yaml           # CSO Deployment
@@ -172,26 +174,18 @@ A PR review **must fail** if any of the following are true:
 ### RBAC Changes
 
 - RBAC files under `assets/csidriveroperators/<driver>/base/` govern the CSI driver *operator*, not the driver itself. Verify the subject, namespace, and rules match the minimum needed.
-- **CSO Operator RBAC** — CSO runs with fine-grained Role-based RBAC instead of `cluster-admin`:
-  - **Cluster-scoped permissions** — `manifests/08_0001_cluster_storage_operator_storage_role.yaml` contains a ClusterRole with 7 rules for cluster-wide resources:
-    - Cluster configuration observation (Infrastructure, Proxies, ClusterVersions, FeatureGates, ClusterOperators, APIServers)
-    - StorageClass and CSI driver management (storageclasses, csidrivers, volumeattributesclasses)
-    - ClusterRoleBindings for CSI sidecar RBAC (provisioner, attacher, resizer, snapshotter)
-    - Operator custom resources (Storage, ClusterCSIDriver CRs and status subresources)
-    - CustomResourceDefinitions management (for VolumePopulator CRD)
-    - ClusterOperator status updates (for health condition reporting)
-    - Monitoring resources (cluster-scoped ServiceMonitors and PrometheusRules)
-  - **Namespace-scoped permissions** — 4 namespace-specific Roles for fine-grained isolation:
-    - `manifests/08_0002_cluster_storage_operator_operator_namespace_role.yaml` in `openshift-cluster-storage-operator`: leases (leader election), events, serviceaccounts, services, configmaps, deployments, replicasets, roles/rolebindings, vSphere secrets (resourceNames-restricted), monitoring
-    - `manifests/08_0003_cluster_storage_operator_csi_drivers_namespace_role.yaml` in `openshift-cluster-csi-drivers`: deployments, configmaps, RBAC (roles/rolebindings), serviceaccounts, services, replicasets, events, monitoring
-    - `manifests/08_0004_cluster_storage_operator_config_namespace_role.yaml` in `openshift-config`: configmaps (read-only)
-    - `manifests/08_0005_cluster_storage_operator_config_managed_namespace_role.yaml` in `openshift-config-managed`: configmaps, RBAC (read-only)
-  - **RoleBindings** — `manifests/08_0010_cluster_storage_operator_rolebindings.yaml` contains 4 RoleBindings binding the cluster-storage-operator ServiceAccount to the above Roles
-  - **Key improvements:**
-    - **Least privilege by scope:** Namespace operations use namespace-scoped Roles, not cluster-wide ClusterRole
-    - **Secrets restricted:** Only 2 specific vSphere secrets readable (vsphere-cloud-credentials, vsphere-problem-detector-serving-cert) via resourceNames restriction
-    - **Removed unnecessary permissions:** Pods removed (informers cache without RBAC), Events scoped to namespaces (not cluster-wide)
-    - **Clear justification:** Each permission rule includes a comment explaining why it's necessary
+- **Shared CSI driver-operator common role** — the nine driver-operator ClusterRoles share a large common subset. That subset is factored out into a single ClusterRole and each operator's own file keeps only its *delta* (the rules not in the common role):
+  - `assets/csidriveroperators/common/clusterrole.yaml` defines the shared `csi-driver-operator-common-role` ClusterRole (the intersection of every driver-operator ClusterRole across the standalone and hypershift-guest topologies).
+  - `assets/csidriveroperators/common/<sa>-common-clusterrolebinding.yaml` (one per operator) binds each operator's ServiceAccount to `csi-driver-operator-common-role`.
+  - Each operator's own ClusterRole source file (e.g. `aws-ebs/base/05_clusterrole.yaml`) now holds **only its delta** — the rules NOT in the common role — still bound by the operator's existing ClusterRoleBinding. `common ∪ delta` equals the operator's original effective grant, so effective permissions are unchanged.
+  - Both assets are wired per operator via `StaticAssets` in `pkg/operator/csidriveroperator/csioperatorclient/<driver>.go` (in both the standalone and hypershift-guest blocks, where present).
+  - When editing a driver-operator's permissions: a rule needed by **all** operators belongs in `common/clusterrole.yaml`; a rule specific to one operator belongs in that operator's delta file. Do not duplicate a common rule into a delta.
+  - The common/delta split was derived manually by intersecting the operator ClusterRoles and subtracting the common set from each. If the set of operators or their rules changes, recompute the split manually and re-run `make update` so `generated/` reflects the shrunk operator ClusterRoles.
+- **CSO Operator RBAC** — CSO runs with a single fine-grained ClusterRole instead of `cluster-admin`:
+  - `manifests/08_0001_cluster_storage_operator_storage_role.yaml` contains the ClusterRole `cluster-storage-operator-storage-role`. Because Kubernetes forbids privilege escalation (to apply a Role/ClusterRole you must already hold every permission it grants), this role is the **union of all operand RBAC CSO applies from `assets/`** (across standalone ∪ hypershift-guest) **merged with CSO's own runtime self-needs** — e.g. `clusteroperators/status`, `storages/status`, `storageclasses`, `clusterrolebindings`, `config.openshift.io` reads, and CRD management.
+  - The previous per-namespace Roles (`08_0002`..`08_0005`) and their RoleBindings (`08_0010`) have been **removed**: a single cluster-scoped ClusterRole covers the same operations cluster-wide. These files were never shipped in a release, so no deletion manifests are required.
+  - `manifests/08_0002_operator_rbac-delete.yaml` and `manifests/08_0002_operator_rbac-hypershift-delete.yaml` are retained — they delete the old `cluster-admin` binding during upgrade.
+  - When operand RBAC in `assets/` changes, the consolidated role must be updated by hand to preserve the invariant: everything CSO applies from `assets/` must be a subset of what this ClusterRole grants. Verify by cross-checking each applied Role/ClusterRole's rules against this role for both the standalone and hypershift-guest topologies.
   - **Standalone path** (`manifests/08_operator_rbac.yaml`):
     - Contains a deletion manifest (with `release.openshift.io/delete: "true"` annotation) pointing to the old `cluster-admin` binding
     - Followed by a replacement ClusterRoleBinding pointing to `cluster-storage-operator-storage-role`

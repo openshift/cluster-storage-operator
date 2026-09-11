@@ -6,265 +6,6 @@ metadata:
     storage.openshift.io/remove-from: mgmt
 rules:
 - apiGroups:
-  - security.openshift.io
-  resourceNames:
-  - privileged
-  resources:
-  - securitycontextconstraints
-  verbs:
-  - use
-# The operator needs these config maps:
-# - read/write openshift-cluster-csi-drivers/cloud-provider-config
-# - read-only kube-system/extension-apiserver-authentication
-# - read/write openstack-cinder-csi-driver-operator-lock
-- apiGroups:
-  - ''
-  resources:
-  - configmaps
-  verbs:
-  - watch
-  - list
-  - get
-  - create
-  - delete
-  - patch
-  - update
-- apiGroups:
-  - ''
-  resources:
-  - pods
-  verbs:
-  - watch
-  - list
-  - get
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - clusterroles
-  - clusterrolebindings
-  - roles
-  - rolebindings
-  verbs:
-  - watch
-  - list
-  - get
-  - create
-  - delete
-  - patch
-  - update
-- apiGroups:
-  - apiextensions.k8s.io
-  resources:
-  - customresourcedefinitions
-  verbs:
-  - get
-  - list
-  - create
-  - watch
-  - delete
-- apiGroups:
-  - ''
-  resources:
-  - nodes
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ''
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
-  # For CA certificate sync
-  - create
-  - patch
-  - update
-- apiGroups:
-  - ''
-  resources:
-  - namespaces
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - patch
-  - delete
-  - update
-- apiGroups:
-  - ''
-  resources:
-  - persistentvolumes
-  verbs:
-  - create
-  - delete
-  - list
-  - get
-  - watch
-  - update
-  - patch
-- apiGroups:
-  - ''
-  resources:
-  - persistentvolumeclaims
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-- apiGroups:
-  - ''
-  resources:
-  - persistentvolumeclaims/status
-  verbs:
-  - patch
-  - update
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - volumeattachments
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-  - delete
-  - create
-  - patch
-- apiGroups:
-  - "storage.k8s.io"
-  resources:
-  - "volumeattachments/status"
-  verbs:
-  - "patch"
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshotcontents/status
-  verbs:
-  - update
-  - patch
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - storageclasses
-  - csinodes
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - delete
-- apiGroups:
-  - '*'
-  resources:
-  - events
-  verbs:
-  - get
-  - patch
-  - create
-  - list
-  - watch
-  - update
-  - delete
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshotclasses
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - delete
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshotcontents
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - delete
-  - patch
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshots
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-  - patch
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshots/status
-  verbs:
-  - patch
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - csidrivers
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - delete
-- apiGroups:
-  - config.openshift.io
-  resources:
-  - infrastructures
-  - proxies
-  - apiservers
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - operator.openshift.io
-  resources:
-  - 'clustercsidrivers'
-  - 'clustercsidrivers/status'
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-# Allow Prometheus to discover endpoints via EndpointSlices
-- apiGroups:
   - discovery.k8s.io
   resources:
   - endpointslices
@@ -272,36 +13,37 @@ rules:
   - get
   - list
   - watch
-# Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
 - apiGroups:
-  - "authentication.k8s.io"
+  - operator.openshift.io
   resources:
-  - "tokenreviews"
+  - clustercsidrivers
+  - clustercsidrivers/status
   verbs:
-  - "create"
-# Allow the operator to grant volume group snapshot permissions to the csi-snapshotter sidecar
+  - create
+  - delete
 - apiGroups:
-  - groupsnapshot.storage.k8s.io
+  - storage.k8s.io
   resources:
-  - volumegroupsnapshotclasses
+  - volumeattachments/status
   verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - groupsnapshot.storage.k8s.io
-  resources:
-  - volumegroupsnapshotcontents
-  verbs:
-  - get
-  - list
-  - watch
-  - update
   - patch
 - apiGroups:
-  - groupsnapshot.storage.k8s.io
+  - ""
   resources:
-  - volumegroupsnapshotcontents/status
+  - configmaps
   verbs:
-  - update
+  - create
+  - delete
+  - get
+  - list
   - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - patch
+  - update
