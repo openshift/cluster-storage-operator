@@ -105,7 +105,6 @@ rules:
   - storage.k8s.io
   resources:
   - csidrivers
-  - csinodes
   - storageclasses
   verbs:
   - create
@@ -117,21 +116,7 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - namespaces
   - nodes
-  - persistentvolumes
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - secrets
   verbs:
   - get
   - list

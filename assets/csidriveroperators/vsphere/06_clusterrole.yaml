@@ -68,6 +68,14 @@ rules:
 - apiGroups:
   - storage.k8s.io
   resources:
+  - csinodes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - storage.k8s.io
+  resources:
   - volumeattachments
   verbs:
   - get
@@ -94,6 +102,18 @@ rules:
   - persistentvolumeclaims/status
   verbs:
   - patch
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - ""
   resources:
