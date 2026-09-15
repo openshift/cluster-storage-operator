@@ -24,12 +24,6 @@ rules:
   - list
   - watch
 - apiGroups:
-  - storage.k8s.io
-  resources:
-  - volumeattachments/status
-  verbs:
-  - patch
-- apiGroups:
   - ""
   resourceNames:
   - extension-apiserver-authentication

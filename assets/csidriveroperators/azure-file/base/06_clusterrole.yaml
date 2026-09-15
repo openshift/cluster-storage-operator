@@ -6,12 +6,6 @@ metadata:
     storage.openshift.io/remove-from: mgmt
 rules:
 - apiGroups:
-  - storage.k8s.io
-  resources:
-  - volumeattachments/status
-  verbs:
-  - patch
-- apiGroups:
   - ""
   resourceNames:
   - azure-file-csi-driver-operator-lock

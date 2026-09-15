@@ -14,12 +14,6 @@ rules:
   - create
   - delete
 - apiGroups:
-  - storage.k8s.io
-  resources:
-  - volumeattachments/status
-  verbs:
-  - patch
-- apiGroups:
   - ""
   resources:
   - configmaps
