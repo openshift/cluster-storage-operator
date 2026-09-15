@@ -52,18 +52,6 @@ rules:
   verbs:
   - update
 - apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
   - rbac.authorization.k8s.io
   resourceNames:
   - openshift-csi-main-attacher-role
