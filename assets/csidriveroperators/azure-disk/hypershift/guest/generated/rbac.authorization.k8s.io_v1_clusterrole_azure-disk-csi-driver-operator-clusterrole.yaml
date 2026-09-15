@@ -4,15 +4,6 @@ metadata:
   name: azure-disk-csi-driver-operator-clusterrole
 rules:
 - apiGroups:
-  - config.openshift.io
-  resources:
-  - clusterversions
-  - featuregates
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - discovery.k8s.io
   resources:
   - endpointslices

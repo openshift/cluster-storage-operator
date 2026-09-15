@@ -50,6 +50,8 @@ rules:
   - config.openshift.io
   resources:
   - apiservers
+  - clusterversions
+  - featuregates
   - infrastructures
   - proxies
   verbs:

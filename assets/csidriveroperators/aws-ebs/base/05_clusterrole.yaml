@@ -6,15 +6,6 @@ metadata:
     storage.openshift.io/remove-from: mgmt
 rules:
 - apiGroups:
-  - config.openshift.io
-  resources:
-  - clusterversions
-  - featuregates
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - discovery.k8s.io
   resources:
   - endpointslices
