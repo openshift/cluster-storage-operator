@@ -4,14 +4,6 @@ metadata:
   name: aws-ebs-csi-driver-operator-clusterrole
 rules:
 - apiGroups:
-  - discovery.k8s.io
-  resources:
-  - endpointslices
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - storage.k8s.io
   resources:
   - volumeattachments/status
