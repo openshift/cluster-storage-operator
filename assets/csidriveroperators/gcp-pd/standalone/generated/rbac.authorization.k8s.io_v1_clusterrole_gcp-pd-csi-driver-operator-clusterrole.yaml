@@ -49,20 +49,6 @@ rules:
   - watch
 - apiGroups:
   - ""
-  resourceNames:
-  - gcp-pd-csi-driver-operator-lock
-  resources:
-  - configmaps
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
   resources:
   - serviceaccounts
   verbs:

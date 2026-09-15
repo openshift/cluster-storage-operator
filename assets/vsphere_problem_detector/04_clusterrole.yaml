@@ -7,7 +7,6 @@ rules:
   - ''
   resourceNames:
   - extension-apiserver-authentication
-  - vsphere-problem-detector-operator-lock
   resources:
   - configmaps
   verbs:

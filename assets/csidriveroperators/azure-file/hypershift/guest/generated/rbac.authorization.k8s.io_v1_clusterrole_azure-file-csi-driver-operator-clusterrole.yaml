@@ -6,20 +6,6 @@ rules:
 - apiGroups:
   - ""
   resourceNames:
-  - azure-file-csi-driver-operator-lock
-  resources:
-  - configmaps
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resourceNames:
   - extension-apiserver-authentication
   resources:
   - configmaps

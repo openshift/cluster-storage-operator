@@ -129,20 +129,6 @@ rules:
   - watch
 - apiGroups:
   - ""
-  resourceNames:
-  - vmware-vsphere-csi-driver-operator-lock
-  resources:
-  - configmaps
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
   resources:
   - configmaps
   verbs:

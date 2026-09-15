@@ -39,20 +39,6 @@ rules:
   - watch
 - apiGroups:
   - ""
-  resourceNames:
-  - ibm-vpc-block-csi-driver-operator-lock
-  resources:
-  - configmaps
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
   resources:
   - configmaps
   verbs:
