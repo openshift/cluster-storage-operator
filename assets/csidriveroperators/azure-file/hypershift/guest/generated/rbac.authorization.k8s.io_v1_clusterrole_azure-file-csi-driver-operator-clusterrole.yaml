@@ -50,3 +50,10 @@ rules:
   - clusterroles
   verbs:
   - bind
+- apiGroups:
+  - storage.openshift.io
+  resources:
+  - azurefilecsidrivers/status
+  verbs:
+  - patch
+  - update

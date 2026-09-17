@@ -51,3 +51,10 @@ rules:
   - clusterroles
   verbs:
   - bind
+- apiGroups:
+  - storage.openshift.io
+  resources:
+  - awsebscsidrivers/status
+  verbs:
+  - patch
+  - update

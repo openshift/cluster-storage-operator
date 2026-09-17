@@ -46,3 +46,10 @@ rules:
   - clusterroles
   verbs:
   - bind
+- apiGroups:
+  - storage.openshift.io
+  resources:
+  - cindercsidrivers/status
+  verbs:
+  - patch
+  - update

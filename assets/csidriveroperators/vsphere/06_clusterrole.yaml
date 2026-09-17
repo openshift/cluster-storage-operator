@@ -148,3 +148,10 @@ rules:
   - clusterroles
   verbs:
   - bind
+- apiGroups:
+  - storage.openshift.io
+  resources:
+  - vmwarevsphericsidrivers/status
+  verbs:
+  - patch
+  - update
