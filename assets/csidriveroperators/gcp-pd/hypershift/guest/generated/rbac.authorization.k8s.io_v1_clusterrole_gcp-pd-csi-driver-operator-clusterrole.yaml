@@ -46,10 +46,3 @@ rules:
   - clusterroles
   verbs:
   - bind
-- apiGroups:
-  - storage.openshift.io
-  resources:
-  - gcpdcsidrivers/status
-  verbs:
-  - patch
-  - update

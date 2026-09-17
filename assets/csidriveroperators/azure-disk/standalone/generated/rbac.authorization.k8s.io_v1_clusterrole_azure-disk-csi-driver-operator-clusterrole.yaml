@@ -34,10 +34,3 @@ rules:
   - clusterroles
   verbs:
   - bind
-- apiGroups:
-  - storage.openshift.io
-  resources:
-  - azurediskcsidrivers/status
-  verbs:
-  - patch
-  - update

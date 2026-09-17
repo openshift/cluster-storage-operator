@@ -420,18 +420,3 @@ rules:
     verbs:
     - patch
     - update
-  - apiGroups:
-    - storage.openshift.io
-    resources:
-    - awsebscsidrivers/status
-    - azurediskcsidrivers/status
-    - azurefilecsidrivers/status
-    - cindercsidrivers/status
-    - gcpdcsidrivers/status
-    - ibmvpcblockcsidrivers/status
-    - manilacsidriver/status
-    - powervsblockcsidrivers/status
-    - vmwarevsphericsidrivers/status
-    verbs:
-    - patch
-    - update
