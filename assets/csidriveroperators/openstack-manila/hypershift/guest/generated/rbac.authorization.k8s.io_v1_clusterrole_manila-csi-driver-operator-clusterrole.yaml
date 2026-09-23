@@ -68,14 +68,6 @@ rules:
   - update
   - watch
 - apiGroups:
-  - operator.openshift.io
-  resources:
-  - clustercsidrivers
-  - clustercsidrivers/status
-  verbs:
-  - create
-  - delete
-- apiGroups:
   - policy
   resources:
   - poddisruptionbudgets
