@@ -4,14 +4,6 @@ metadata:
   name: azure-disk-csi-driver-operator-clusterrole
 rules:
 - apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - rbac.authorization.k8s.io
   resourceNames:
   - openshift-csi-main-attacher-role
