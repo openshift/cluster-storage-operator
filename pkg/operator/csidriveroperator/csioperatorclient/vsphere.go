@@ -34,7 +34,6 @@ func GetVMwareVSphereCSIOperatorConfig() CSIOperatorConfig {
 			"csidriveroperators/vsphere/06_clusterrole.yaml",
 			"csidriveroperators/vsphere/07_clusterrolebinding.yaml",
 			"csidriveroperators/common/role.yaml",
-			"csidriveroperators/vsphere/08_common_clusterrolebinding.yaml",
 			"csidriveroperators/vsphere/08_common_rolebinding.yaml",
 			"csidriveroperators/vsphere/extension_apiserver_authentication_rolebinding.yaml",
 			"csidriveroperators/vsphere/11_service.yaml",

@@ -37,7 +37,6 @@ func GetPowerVSBlockCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/powervs-block/standalone/04_clusterrole.yaml",
 			"csidriveroperators/powervs-block/standalone/05_clusterrolebinding.yaml",
 			"csidriveroperators/common/role.yaml",
-			"csidriveroperators/powervs-block/standalone/06_common_clusterrolebinding.yaml",
 			"csidriveroperators/powervs-block/standalone/06_common_rolebinding.yaml",
 			"csidriveroperators/powervs-block/base/extension_apiserver_authentication_rolebinding.yaml",
 			"csidriveroperators/powervs-block/standalone/08_service.yaml",
@@ -52,7 +51,6 @@ func GetPowerVSBlockCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/powervs-block/hypershift/guest/04_clusterrole.yaml",
 			"csidriveroperators/powervs-block/hypershift/guest/05_clusterrolebinding.yaml",
 			"csidriveroperators/common/role.yaml",
-			"csidriveroperators/powervs-block/hypershift/guest/06_common_clusterrolebinding.yaml",
 			"csidriveroperators/powervs-block/hypershift/guest/06_common_rolebinding.yaml",
 			"csidriveroperators/powervs-block/base/extension_apiserver_authentication_rolebinding.yaml",
 		}

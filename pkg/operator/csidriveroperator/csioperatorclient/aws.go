@@ -40,7 +40,6 @@ func GetAWSEBSCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/aws-ebs/standalone/generated/rbac.authorization.k8s.io_v1_clusterrole_aws-ebs-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/aws-ebs/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_aws-ebs-csi-driver-operator-clusterrolebinding.yaml",
 			"csidriveroperators/common/role.yaml",
-			"csidriveroperators/aws-ebs/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_aws-ebs-csi-driver-operator-common-clusterrolebinding.yaml",
 			"csidriveroperators/aws-ebs/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_aws-ebs-csi-driver-operator-common-rolebinding.yaml",
 			"csidriveroperators/aws-ebs/base/extension_apiserver_authentication_rolebinding.yaml",
 			"csidriveroperators/aws-ebs/standalone/generated/v1_service_aws-ebs-csi-driver-operator-metrics.yaml",
@@ -59,7 +58,6 @@ func GetAWSEBSCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/aws-ebs/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrole_aws-ebs-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/aws-ebs/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_aws-ebs-csi-driver-operator-clusterrolebinding.yaml",
 			"csidriveroperators/common/role.yaml",
-			"csidriveroperators/aws-ebs/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_aws-ebs-csi-driver-operator-common-clusterrolebinding.yaml",
 			"csidriveroperators/aws-ebs/hypershift/guest/generated/rbac.authorization.k8s.io_v1_rolebinding_aws-ebs-csi-driver-operator-common-rolebinding.yaml",
 			"csidriveroperators/aws-ebs/base/extension_apiserver_authentication_rolebinding.yaml",
 		}
