@@ -47,7 +47,6 @@ func GetIBMVPCBlockCSIOperatorConfig() CSIOperatorConfig {
 			"csidriveroperators/ibm-vpc-block/05_rolebinding.yaml",
 			"csidriveroperators/ibm-vpc-block/06_clusterrole.yaml",
 			"csidriveroperators/ibm-vpc-block/07_clusterrolebinding.yaml",
-			"csidriveroperators/common/clusterrole.yaml",
 			"csidriveroperators/common/role.yaml",
 			"csidriveroperators/ibm-vpc-block/08_common_clusterrolebinding.yaml",
 			"csidriveroperators/ibm-vpc-block/08_common_rolebinding.yaml",

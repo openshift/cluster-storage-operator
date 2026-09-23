@@ -39,7 +39,6 @@ func GetGCPPDCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/gcp-pd/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_gcp-pd-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/gcp-pd/standalone/generated/rbac.authorization.k8s.io_v1_clusterrole_gcp-pd-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/gcp-pd/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_gcp-pd-csi-driver-operator-clusterrolebinding.yaml",
-			"csidriveroperators/common/clusterrole.yaml",
 			"csidriveroperators/common/role.yaml",
 			"csidriveroperators/gcp-pd/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_gcp-pd-csi-driver-operator-common-clusterrolebinding.yaml",
 			"csidriveroperators/gcp-pd/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_gcp-pd-csi-driver-operator-common-rolebinding.yaml",
@@ -51,7 +50,6 @@ func GetGCPPDCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 		csiDriverConfig.StaticAssets = []string{
 			"csidriveroperators/gcp-pd/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrole_gcp-pd-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/gcp-pd/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_gcp-pd-csi-driver-operator-clusterrolebinding.yaml",
-			"csidriveroperators/common/clusterrole.yaml",
 			"csidriveroperators/common/role.yaml",
 			"csidriveroperators/gcp-pd/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_gcp-pd-csi-driver-operator-common-clusterrolebinding.yaml",
 			"csidriveroperators/gcp-pd/hypershift/guest/generated/rbac.authorization.k8s.io_v1_rolebinding_gcp-pd-csi-driver-operator-common-rolebinding.yaml",

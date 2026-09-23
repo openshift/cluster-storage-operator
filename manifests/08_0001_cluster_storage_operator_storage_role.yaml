@@ -9,18 +9,7 @@ metadata:
     include.release.openshift.io/single-node-developer: "true"
     capability.openshift.io/name: Storage
 rules:
-  - apiGroups:
-    - '*'
-    resources:
-    - events
-    verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  # CSO-specific: webhook management
   - apiGroups:
     - admissionregistration.k8s.io
     resources:
@@ -33,6 +22,7 @@ rules:
     - patch
     - update
     - watch
+  # CSO-specific: CRD management (create/delete/update CRDs)
   - apiGroups:
     - apiextensions.k8s.io
     resources:
@@ -45,21 +35,7 @@ rules:
     - patch
     - update
     - watch
-  - apiGroups:
-    - apps
-    resources:
-    - daemonsets
-    - deployments
-    - replicasets
-    - statefulsets
-    verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  # CSO-specific: auth checks
   - apiGroups:
     - authentication.k8s.io
     resources:
@@ -84,6 +60,7 @@ rules:
     - patch
     - update
     - watch
+  # CSO-specific: cloud credential management
   - apiGroups:
     - cloudcredential.openshift.io
     resources:
@@ -96,22 +73,7 @@ rules:
     - patch
     - update
     - watch
-  - apiGroups:
-    - cns.vmware.com
-    resources:
-    - cnsvolumeinfoes
-    - cnsvolumeoperationrequests
-    - cnsvspherevolumemigrations
-    - csinodetopologies
-    - triggercsifullsyncs
-    verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  # CSO-specific: infrastructure reads
   - apiGroups:
     - config.openshift.io
     resources:
@@ -125,6 +87,7 @@ rules:
     - get
     - list
     - watch
+  # CSO-specific: own status reporting
   - apiGroups:
     - config.openshift.io
     resources:
@@ -132,34 +95,7 @@ rules:
     verbs:
     - patch
     - update
-  - apiGroups:
-    - coordination.k8s.io
-    resources:
-    - leases
-    verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
-  - apiGroups:
-    - csi.storage.k8s.io
-    resources:
-    - csinodeinfos
-    verbs:
-    - get
-    - list
-    - watch
-  - apiGroups:
-    - discovery.k8s.io
-    resources:
-    - endpointslices
-    verbs:
-    - get
-    - list
-    - watch
+  # CSO-specific: volume group snapshots
   - apiGroups:
     - groupsnapshot.storage.k8s.io
     resources:
@@ -185,6 +121,7 @@ rules:
     - patch
     - update
     - watch
+  # CSO-specific: observability
   - apiGroups:
     - monitoring.coreos.com
     resources:
@@ -198,6 +135,7 @@ rules:
     - patch
     - update
     - watch
+  # CSO-specific: network policies
   - apiGroups:
     - networking.k8s.io
     resources:
@@ -210,11 +148,10 @@ rules:
     - patch
     - update
     - watch
+  # CSO-specific: storage resource management (CSO creates these)
   - apiGroups:
     - operator.openshift.io
     resources:
-    - clustercsidrivers
-    - clustercsidrivers/status
     - storages
     - storages/status
     verbs:
@@ -225,6 +162,7 @@ rules:
     - patch
     - update
     - watch
+  # CSO-specific: pod disruption budgets
   - apiGroups:
     - policy
     resources:
@@ -237,6 +175,7 @@ rules:
     - patch
     - update
     - watch
+  # CSO-specific: volume populators
   - apiGroups:
     - populator.storage.k8s.io
     resources:
@@ -245,6 +184,7 @@ rules:
     - get
     - list
     - watch
+  # CSO-specific: RBAC management (full control)
   - apiGroups:
     - rbac.authorization.k8s.io
     resources:
@@ -260,38 +200,17 @@ rules:
     - patch
     - update
     - watch
-  - apiGroups:
-    - rbac.authorization.k8s.io
-    resourceNames:
-    - openshift-csi-main-attacher-role
-    - openshift-csi-main-provisioner-role
-    - openshift-csi-main-resizer-role
-    - openshift-csi-main-snapshotter-role
-    - openshift-csi-provisioner-configmap-and-secret-reader-role
-    - openshift-csi-provisioner-volumeattributesclass-reader-role
-    - openshift-csi-provisioner-volumesnapshot-reader-role
-    - openshift-csi-resizer-storageclass-reader-role
-    - openshift-csi-resizer-volumeattributesclass-reader-role
-    resources:
-    - clusterroles
-    verbs:
-    - bind
+  # CSO-specific: security context constraints
   - apiGroups:
     - security.openshift.io
     resourceNames:
     - hostnetwork-v2
-    resources:
-    - securitycontextconstraints
-    verbs:
-    - use
-  - apiGroups:
-    - security.openshift.io
-    resourceNames:
     - privileged
     resources:
     - securitycontextconstraints
     verbs:
     - use
+  # CSO-specific: volume snapshots
   - apiGroups:
     - snapshot.storage.k8s.io
     resources:
@@ -338,37 +257,7 @@ rules:
     - patch
     - update
     - watch
-  - apiGroups:
-    - storage.k8s.io
-    resources:
-    - csidrivers
-    - csinodes
-    verbs:
-    - create
-    - delete
-    - get
-    - list
-    - update
-    - watch
-  - apiGroups:
-    - storage.k8s.io
-    resources:
-    - storageclasses
-    - volumeattachments
-    verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
-  - apiGroups:
-    - storage.k8s.io
-    resources:
-    - volumeattachments/status
-    verbs:
-    - patch
+  # CSO-specific: volume attributes classes
   - apiGroups:
     - storage.k8s.io
     resources:
@@ -377,28 +266,7 @@ rules:
     - get
     - list
     - watch
-  - apiGroups:
-    - ""
-    resources:
-    - configmaps
-    - endpoints
-    - events
-    - namespaces
-    - nodes
-    - persistentvolumeclaims
-    - persistentvolumes
-    - pods
-    - secrets
-    - serviceaccounts
-    - services
-    verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  # CSO-specific: extension-apiserver-authentication configmap
   - apiGroups:
     - ""
     resourceNames:
@@ -413,10 +281,16 @@ rules:
     - patch
     - update
     - watch
+  # CSO-specific: cluster-wide events logging
   - apiGroups:
-    - ""
+    - '*'
     resources:
-    - persistentvolumeclaims/status
+    - events
     verbs:
+    - create
+    - delete
+    - get
+    - list
     - patch
     - update
+    - watch
