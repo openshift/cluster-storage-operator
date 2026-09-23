@@ -40,7 +40,7 @@ func GetPowerVSBlockCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/common/role.yaml",
 			"csidriveroperators/powervs-block/standalone/06_common_clusterrolebinding.yaml",
 			"csidriveroperators/powervs-block/standalone/06_common_rolebinding.yaml",
-			"csidriveroperators/powervs-block/extension_apiserver_authentication_rolebinding.yaml",
+			"csidriveroperators/powervs-block/base/extension_apiserver_authentication_rolebinding.yaml",
 			"csidriveroperators/powervs-block/standalone/08_service.yaml",
 		}
 		csiDriverConfig.CRAsset = "csidriveroperators/powervs-block/standalone/07_cr.yaml"
@@ -56,7 +56,7 @@ func GetPowerVSBlockCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/common/role.yaml",
 			"csidriveroperators/powervs-block/hypershift/guest/06_common_clusterrolebinding.yaml",
 			"csidriveroperators/powervs-block/hypershift/guest/06_common_rolebinding.yaml",
-			"csidriveroperators/powervs-block/extension_apiserver_authentication_rolebinding.yaml",
+			"csidriveroperators/powervs-block/base/extension_apiserver_authentication_rolebinding.yaml",
 		}
 		csiDriverConfig.MgmtOperatorConfigAsset = "csidriveroperators/powervs-block/hypershift/mgmt/03_configmap.yaml"
 		csiDriverConfig.MgmtStaticAssets = []string{
