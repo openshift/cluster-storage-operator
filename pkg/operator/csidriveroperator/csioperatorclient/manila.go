@@ -55,7 +55,7 @@ func GetOpenStackManilaOperatorConfig(isHypershift bool, clients *csoclients.Cli
 			"csidriveroperators/common/clusterrole.yaml",
 			"csidriveroperators/openstack-manila/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_manila-csi-driver-operator-common-clusterrolebinding.yaml",
 			"csidriveroperators/openstack-manila/extension_apiserver_authentication_rolebinding.yaml",
-			"csidriveroperators/openshift-config/reader-role.yaml",
+			"csidriveroperators/common/openshift-config-reader-role.yaml",
 			"csidriveroperators/openstack-manila/standalone/09_rolebinding_config_secrets.yaml",
 		}
 		csiDriverConfig.CRAsset = "csidriveroperators/openstack-manila/standalone/generated/default_operator.openshift.io_v1_clustercsidriver_manila.csi.openstack.org.yaml"
@@ -68,7 +68,7 @@ func GetOpenStackManilaOperatorConfig(isHypershift bool, clients *csoclients.Cli
 			"csidriveroperators/common/clusterrole.yaml",
 			"csidriveroperators/openstack-manila/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_manila-csi-driver-operator-common-clusterrolebinding.yaml",
 			"csidriveroperators/openstack-manila/extension_apiserver_authentication_rolebinding.yaml",
-			"csidriveroperators/openshift-config/reader-role.yaml",
+			"csidriveroperators/common/openshift-config-reader-role.yaml",
 			"csidriveroperators/openstack-manila/hypershift/guest/10_rolebinding_config_secrets.yaml",
 		}
 		csiDriverConfig.MgmtOperatorConfigAsset = "csidriveroperators/openstack-manila/hypershift/mgmt/generated/v1_configmap_manila-csi-driver-operator-config.yaml"

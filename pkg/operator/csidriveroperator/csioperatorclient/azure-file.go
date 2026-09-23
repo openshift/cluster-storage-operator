@@ -59,7 +59,7 @@ func GetAzureFileCSIOperatorConfig(isHyperShift bool) CSIOperatorConfig {
 			"csidriveroperators/azure-file/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_azure-file-csi-driver-operator-common-rolebinding.yaml",
 			"csidriveroperators/azure-file/base/extension_apiserver_authentication_rolebinding.yaml",
 			"csidriveroperators/azure-file/standalone/generated/v1_service_azure-file-csi-driver-operator-metrics.yaml",
-			"csidriveroperators/openshift-config/reader-role.yaml",
+			"csidriveroperators/common/openshift-config-reader-role.yaml",
 			"csidriveroperators/azure-file/standalone/10_rolebinding_config_secrets.yaml",
 		}
 		csiDriverConfig.DeploymentAsset = "csidriveroperators/azure-file/standalone/generated/apps_v1_deployment_azure-file-csi-driver-operator.yaml"
@@ -76,7 +76,7 @@ func GetAzureFileCSIOperatorConfig(isHyperShift bool) CSIOperatorConfig {
 			"csidriveroperators/azure-file/hypershift/guest/generated/rbac.authorization.k8s.io_v1_role_azure-file-csi-driver-operator-role.yaml",
 			"csidriveroperators/azure-file/hypershift/guest/generated/rbac.authorization.k8s.io_v1_rolebinding_azure-file-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/azure-file/hypershift/guest/generated/v1_serviceaccount_azure-file-csi-driver-operator.yaml",
-			"csidriveroperators/openshift-config/reader-role.yaml",
+			"csidriveroperators/common/openshift-config-reader-role.yaml",
 			"csidriveroperators/azure-file/hypershift/guest/10_rolebinding_config_secrets.yaml",
 		}
 		csiDriverConfig.MgmtOperatorConfigAsset = "csidriveroperators/azure-file/hypershift/mgmt/generated/v1_configmap_azure-file-csi-driver-operator-config.yaml"
