@@ -4,14 +4,6 @@ metadata:
   name: azure-disk-csi-driver-operator-clusterrole
 rules:
 - apiGroups:
-  - storage.k8s.io
-  resources:
-  - volumeattributesclasses
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - ""
   resources:
   - configmaps

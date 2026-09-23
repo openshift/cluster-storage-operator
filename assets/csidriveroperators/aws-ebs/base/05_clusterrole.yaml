@@ -6,14 +6,6 @@ metadata:
     storage.openshift.io/remove-from: mgmt
 rules:
 - apiGroups:
-  - storage.k8s.io
-  resources:
-  - volumeattributesclasses
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - ""
   resources:
   - persistentvolumes
