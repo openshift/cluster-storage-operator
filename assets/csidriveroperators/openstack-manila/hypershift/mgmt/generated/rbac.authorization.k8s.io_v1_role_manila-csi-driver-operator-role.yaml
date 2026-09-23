@@ -5,6 +5,18 @@ metadata:
   namespace: ${CONTROLPLANE_NAMESPACE}
 rules:
 - apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - hypershift.openshift.io
   resources:
   - hostedcontrolplanes

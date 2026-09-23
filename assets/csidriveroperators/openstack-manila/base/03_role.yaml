@@ -5,4 +5,16 @@ metadata:
   namespace: openshift-cluster-csi-drivers
   annotations:
     storage.openshift.io/remove-from: guest
-rules: []
+rules:
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch

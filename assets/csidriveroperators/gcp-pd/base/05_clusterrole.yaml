@@ -6,18 +6,6 @@ metadata:
     storage.openshift.io/remove-from: mgmt
 rules:
 - apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
   - security.openshift.io
   resourceNames:
   - hostnetwork-v2
