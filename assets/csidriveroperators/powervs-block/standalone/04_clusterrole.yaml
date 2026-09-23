@@ -28,14 +28,6 @@ rules:
   - update
   - watch
 - apiGroups:
-  - csi.storage.k8s.io
-  resources:
-  - csinodeinfos
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - rbac.authorization.k8s.io
   resourceNames:
   - openshift-csi-main-attacher-role
