@@ -5,28 +5,10 @@ metadata:
   namespace: openshift-cluster-csi-drivers
 rules:
 - apiGroups:
-  - ""
-  resources:
-  - pods
-  - services
-  - endpoints
-  - events
-  - configmaps
-  - secrets
-  - persistentvolumeclaims
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
   - apps
   resources:
-  - deployments
   - replicasets
+  - persistentvolumeclaims
   verbs:
   - get
   - list

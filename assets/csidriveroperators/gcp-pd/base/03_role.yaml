@@ -7,23 +7,6 @@ rules:
 - apiGroups:
   - ''
   resources:
-  - pods
-  - services
-  - endpoints
-  - events
-  - configmaps
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ''
-  resources:
   - serviceaccounts
   verbs:
   - get
@@ -36,7 +19,6 @@ rules:
 - apiGroups:
   - apps
   resources:
-  - deployments
   - replicasets
   verbs:
   - get
