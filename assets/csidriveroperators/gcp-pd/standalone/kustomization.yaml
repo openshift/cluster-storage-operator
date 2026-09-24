@@ -1,0 +1,12 @@
+resources:
+  - ../base
+namespace: openshift-cluster-csi-drivers
+patches:
+  - path: monitoring_role.patch.yaml
+    target:
+      kind: Role
+      version: v1
+  - path: deployment.patch.yaml
+    target:
+      kind: Deployment
+      version: v1

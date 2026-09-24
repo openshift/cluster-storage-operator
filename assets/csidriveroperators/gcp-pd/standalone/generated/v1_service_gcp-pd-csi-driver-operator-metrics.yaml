@@ -3,6 +3,7 @@ kind: Service
 metadata:
   annotations:
     service.beta.openshift.io/serving-cert-secret-name: gcp-pd-csi-driver-operator-serving-cert
+    storage.openshift.io/remove-from: guest
   labels:
     app: gcp-pd-csi-driver-operator
   name: gcp-pd-csi-driver-operator-metrics
