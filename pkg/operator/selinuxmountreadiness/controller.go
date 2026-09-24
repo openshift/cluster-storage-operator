@@ -22,7 +22,7 @@ const (
 	selinuxConflictsConfigMapName = "selinux-conflicts"
 	selinuxConflictsDataKey       = "conflictsPresent"
 
-	RunbookURL = "https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/SELinuxMountGAReadinessWorkloadsDetected.md"
+	RunbookURL = "https://access.redhat.com/solutions/7146569"
 )
 
 // Controller watches openshift-config/selinux-conflicts written by the
