@@ -53,6 +53,7 @@ func GetAzureFileCSIOperatorConfig(isHyperShift bool) CSIOperatorConfig {
 			"csidriveroperators/azure-file/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_azure-file-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/azure-file/standalone/generated/rbac.authorization.k8s.io_v1_clusterrole_azure-file-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/azure-file/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_azure-file-csi-driver-operator-clusterrolebinding.yaml",
+			"csidriveroperators/azure-file/base/07_union_clusterrolebinding.yaml",
 			"csidriveroperators/common/role.yaml",
 			"csidriveroperators/azure-file/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_azure-file-csi-driver-operator-common-rolebinding.yaml",
 			"csidriveroperators/azure-file/base/extension_apiserver_authentication_rolebinding.yaml",
@@ -66,6 +67,7 @@ func GetAzureFileCSIOperatorConfig(isHyperShift bool) CSIOperatorConfig {
 		csiDriverConfig.StaticAssets = []string{
 			"csidriveroperators/azure-file/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrole_azure-file-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/azure-file/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_azure-file-csi-driver-operator-clusterrolebinding.yaml",
+			"csidriveroperators/azure-file/base/07_union_clusterrolebinding.yaml",
 			"csidriveroperators/common/role.yaml",
 			"csidriveroperators/azure-file/hypershift/guest/generated/rbac.authorization.k8s.io_v1_rolebinding_azure-file-csi-driver-operator-common-rolebinding.yaml",
 			"csidriveroperators/azure-file/base/extension_apiserver_authentication_rolebinding.yaml",

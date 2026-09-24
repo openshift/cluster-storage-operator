@@ -6,6 +6,7 @@ resources:
   - 04_rolebinding.yaml
   - 05_clusterrole.yaml
   - 06_clusterrolebinding.yaml
+  - 06_union_clusterrolebinding.yaml
   - 06_common_rolebinding.yaml
   - 09_deployment.yaml
   - 10_cr.yaml
