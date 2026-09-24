@@ -82,6 +82,8 @@ func GetAzureFileCSIOperatorConfig(isHyperShift bool) CSIOperatorConfig {
 			"csidriveroperators/azure-file/hypershift/mgmt/generated/rbac.authorization.k8s.io_v1_role_azure-file-csi-driver-operator-role.yaml",
 			"csidriveroperators/azure-file/hypershift/mgmt/generated/rbac.authorization.k8s.io_v1_rolebinding_azure-file-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/azure-file/hypershift/mgmt/generated/v1_serviceaccount_azure-file-csi-driver-operator.yaml",
+			"csidriveroperators/common/mgmt-role.yaml",
+			"csidriveroperators/common/azure-file-mgmt-common-rolebinding.yaml",
 			"csidriveroperators/azure-file/hypershift/mgmt/generated/v1_service_azure-file-csi-driver-operator-metrics.yaml",
 		}
 		csiDriverConfig.DeploymentAsset = "csidriveroperators/azure-file/hypershift/mgmt/generated/apps_v1_deployment_azure-file-csi-driver-operator.yaml"
