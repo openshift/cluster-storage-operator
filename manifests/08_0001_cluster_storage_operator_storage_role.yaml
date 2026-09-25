@@ -1,0 +1,296 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cluster-storage-operator-storage-role
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Storage
+rules:
+  # CSO-specific: webhook management
+  - apiGroups:
+    - admissionregistration.k8s.io
+    resources:
+    - validatingwebhookconfigurations
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: CRD management (create/delete/update CRDs)
+  - apiGroups:
+    - apiextensions.k8s.io
+    resources:
+    - customresourcedefinitions
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: auth checks
+  - apiGroups:
+    - authentication.k8s.io
+    resources:
+    - tokenreviews
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - authorization.k8s.io
+    resources:
+    - subjectaccessreviews
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: cloud credential management
+  - apiGroups:
+    - cloudcredential.openshift.io
+    resources:
+    - credentialsrequests
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: infrastructure reads
+  - apiGroups:
+    - config.openshift.io
+    resources:
+    - apiservers
+    - clusteroperators
+    - clusterversions
+    - featuregates
+    - infrastructures
+    - proxies
+    verbs:
+    - get
+    - list
+    - watch
+  # CSO-specific: own status reporting
+  - apiGroups:
+    - config.openshift.io
+    resources:
+    - clusteroperators/status
+    verbs:
+    - patch
+    - update
+  # CSO-specific: volume group snapshots
+  - apiGroups:
+    - groupsnapshot.storage.k8s.io
+    resources:
+    - volumegroupsnapshotclasses
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - groupsnapshot.storage.k8s.io
+    resources:
+    - volumegroupsnapshotcontents/status
+    verbs:
+    - patch
+    - update
+  - apiGroups:
+    - groupsnapshot.storage.k8s.io
+    resources:
+    - volumegroupsnapshotcontents
+    verbs:
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: observability
+  - apiGroups:
+    - monitoring.coreos.com
+    resources:
+    - prometheusrules
+    - servicemonitors
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: network policies
+  - apiGroups:
+    - networking.k8s.io
+    resources:
+    - networkpolicies
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: storage resource management (CSO creates these)
+  - apiGroups:
+    - operator.openshift.io
+    resources:
+    - storages
+    - storages/status
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: pod disruption budgets
+  - apiGroups:
+    - policy
+    resources:
+    - poddisruptionbudgets
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: volume populators
+  - apiGroups:
+    - populator.storage.k8s.io
+    resources:
+    - volumepopulators
+    verbs:
+    - get
+    - list
+    - watch
+  # CSO-specific: RBAC management (full control)
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resources:
+    - clusterrolebindings
+    - clusterroles
+    - rolebindings
+    - roles
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: security context constraints
+  - apiGroups:
+    - security.openshift.io
+    resourceNames:
+    - hostnetwork-v2
+    - privileged
+    resources:
+    - securitycontextconstraints
+    verbs:
+    - use
+  # CSO-specific: volume snapshots
+  - apiGroups:
+    - snapshot.storage.k8s.io
+    resources:
+    - volumesnapshotclasses
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - update
+    - watch
+  - apiGroups:
+    - snapshot.storage.k8s.io
+    resources:
+    - volumesnapshotcontents/status
+    verbs:
+    - patch
+    - update
+  - apiGroups:
+    - snapshot.storage.k8s.io
+    resources:
+    - volumesnapshotcontents
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - snapshot.storage.k8s.io
+    resources:
+    - volumesnapshots/status
+    verbs:
+    - patch
+  - apiGroups:
+    - snapshot.storage.k8s.io
+    resources:
+    - volumesnapshots
+    verbs:
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: volume attributes classes
+  - apiGroups:
+    - storage.k8s.io
+    resources:
+    - volumeattributesclasses
+    verbs:
+    - get
+    - list
+    - watch
+  # CSO-specific: extension-apiserver-authentication configmap
+  - apiGroups:
+    - ""
+    resourceNames:
+    - extension-apiserver-authentication
+    resources:
+    - configmaps
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: cluster-wide events logging
+  - apiGroups:
+    - '*'
+    resources:
+    - events
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch

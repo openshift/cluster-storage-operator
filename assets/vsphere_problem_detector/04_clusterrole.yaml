@@ -4,21 +4,6 @@ metadata:
   name: vsphere-problem-detector-operator-clusterrole
 rules:
 - apiGroups:
-  - ''
-  resourceNames:
-  - extension-apiserver-authentication
-  - vsphere-problem-detector-operator-lock
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
   - authentication.k8s.io
   resources:
   - tokenreviews

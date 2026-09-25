@@ -39,6 +39,12 @@ func GetOpenStackCinderCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/openstack-cinder/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_openstack-cinder-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/openstack-cinder/standalone/generated/rbac.authorization.k8s.io_v1_clusterrole_openstack-cinder-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/openstack-cinder/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_openstack-cinder-csi-driver-operator-clusterrolebinding.yaml",
+			"csidriveroperators/openstack-cinder/base/06_union_clusterrolebinding.yaml",
+			"csidriveroperators/common/role.yaml",
+			"csidriveroperators/openstack-cinder/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_openstack-cinder-csi-driver-operator-common-rolebinding.yaml",
+			"csidriveroperators/openstack-cinder/extension_apiserver_authentication_rolebinding.yaml",
+			"csidriveroperators/common/openshift-config-reader-role.yaml",
+			"csidriveroperators/openstack-cinder/standalone/10_rolebinding_config_secrets.yaml",
 		}
 		csiDriverConfig.CRAsset = "csidriveroperators/openstack-cinder/standalone/generated/operator.openshift.io_v1_clustercsidriver_cinder.csi.openstack.org.yaml"
 		csiDriverConfig.DeploymentAsset = "csidriveroperators/openstack-cinder/standalone/generated/apps_v1_deployment_openstack-cinder-csi-driver-operator.yaml"
@@ -46,9 +52,15 @@ func GetOpenStackCinderCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 		csiDriverConfig.StaticAssets = []string{
 			"csidriveroperators/openstack-cinder/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrole_openstack-cinder-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/openstack-cinder/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_openstack-cinder-csi-driver-operator-clusterrolebinding.yaml",
+			"csidriveroperators/openstack-cinder/base/06_union_clusterrolebinding.yaml",
+			"csidriveroperators/common/role.yaml",
+			"csidriveroperators/openstack-cinder/hypershift/guest/generated/rbac.authorization.k8s.io_v1_rolebinding_openstack-cinder-csi-driver-operator-common-rolebinding.yaml",
 			"csidriveroperators/openstack-cinder/hypershift/guest/generated/rbac.authorization.k8s.io_v1_role_openstack-cinder-csi-driver-operator-role.yaml",
 			"csidriveroperators/openstack-cinder/hypershift/guest/generated/rbac.authorization.k8s.io_v1_rolebinding_openstack-cinder-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/openstack-cinder/hypershift/guest/generated/v1_serviceaccount_openstack-cinder-csi-driver-operator.yaml",
+			"csidriveroperators/openstack-cinder/extension_apiserver_authentication_rolebinding.yaml",
+			"csidriveroperators/common/openshift-config-reader-role.yaml",
+			"csidriveroperators/openstack-cinder/hypershift/guest/10_rolebinding_config_secrets.yaml",
 		}
 		csiDriverConfig.MgmtOperatorConfigAsset = "csidriveroperators/openstack-cinder/hypershift/mgmt/generated/v1_configmap_openstack-cinder-csi-driver-operator-config.yaml"
 		csiDriverConfig.MgmtStaticAssets = []string{

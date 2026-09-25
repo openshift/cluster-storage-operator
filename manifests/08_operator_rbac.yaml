@@ -1,3 +1,9 @@
+# Replacement binding to the fine-grained cluster-storage-operator-storage-role.
+# The old cluster-admin binding is removed separately so this file stays a single
+# document and its HyperShift profile variant (08_operator_rbac-hypershift.yaml)
+# is generated correctly:
+#   - standalone / CVO-managed: 08_0002_operator_rbac-delete.yaml
+#   - HyperShift:               08_0002_operator_rbac-hypershift-delete.yaml
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -16,6 +22,6 @@ subjects:
     name: cluster-storage-operator
     namespace: openshift-cluster-storage-operator
 roleRef:
-  # TODO: rework to smaller roles
+  apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: cluster-admin
+  name: cluster-storage-operator-storage-role

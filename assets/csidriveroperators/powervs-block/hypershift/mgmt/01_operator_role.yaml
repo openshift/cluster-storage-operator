@@ -63,7 +63,6 @@ rules:
       - ''
     resourceNames:
       - extension-apiserver-authentication
-      - powervs-block-csi-driver-operator-lock
     resources:
       - configmaps
     verbs:

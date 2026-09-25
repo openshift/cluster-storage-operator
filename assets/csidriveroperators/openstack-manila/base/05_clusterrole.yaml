@@ -6,370 +6,118 @@ metadata:
     storage.openshift.io/remove-from: mgmt
 rules:
 - apiGroups:
-  - security.openshift.io
-  resourceNames:
-  - privileged
-  resources:
-  - securitycontextconstraints
-  verbs:
-  - use
-
-# The operator needs these config maps:
-# - read/write openshift-manila-csi-driver/cloud-provider-config
-# - read-only kube-system/extension-apiserver-authentication
-# - read/write manila-csi-driver-operator-lock
-- apiGroups:
-  - ''
-  resources:
-  - configmaps
-  verbs:
-  - watch
-  - list
-  - get
-  - create
-  - delete
-  - patch
-  - update
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - clusterroles
-  - clusterrolebindings
-  - roles
-  - rolebindings
-  verbs:
-  - watch
-  - list
-  - get
-  - create
-  - delete
-  - patch
-  - update
-- apiGroups:
-  - ''
-  resources:
-  - serviceaccounts
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - apiextensions.k8s.io
-  resources:
-  - customresourcedefinitions
-  verbs:
-  - get
-  - list
-  - create
-  - watch
-  - delete
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ''
-  resources:
-  - nodes
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ''
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
-  # For CA certificate sync
-  - create
-  - patch
-  - update
-- apiGroups:
-  - ''
-  resources:
-  - namespaces
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - patch
-  - delete
-  - update
-- apiGroups:
-  - ''
-  resources:
-  - persistentvolumes
-  verbs:
-  - create
-  - delete
-  - list
-  - get
-  - watch
-  - update
-  - patch
-- apiGroups:
-  - ''
-  resources:
-  - persistentvolumeclaims
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-- apiGroups:
-  - ''
-  resources:
-  - persistentvolumeclaims/status
-  verbs:
-  - patch
-  - update
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - volumeattachments
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-  - delete
-  - create
-  - patch
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshotcontents/status
-  verbs:
-  - update
-  - patch
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - storageclasses
-  - csinodes
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - delete
-- apiGroups:
   - '*'
   resources:
   - events
   verbs:
+  - create
+  - delete
   - get
+  - list
   - patch
-  - create
-  - list
-  - watch
   - update
-  - delete
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshotclasses
-  verbs:
-  - get
-  - list
   - watch
-  - create
-  - update
-  - delete
 - apiGroups:
-  - snapshot.storage.k8s.io
+  - apps
   resources:
-  - volumesnapshotcontents
+  - daemonsets
+  - deployments
+  - replicasets
+  - statefulsets
   verbs:
   - create
-  - get
-  - list
-  - watch
-  - update
   - delete
-  - patch
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshots
-  verbs:
   - get
   - list
-  - watch
+  - patch
   - update
-  - patch
+  - watch
 - apiGroups:
-  - snapshot.storage.k8s.io
+  - rbac.authorization.k8s.io
   resources:
-  - volumesnapshots/status
-  verbs:
-  - patch
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - csidrivers
+  - rolebindings
+  - roles
   verbs:
   - create
-  - get
-  - list
-  - watch
-  - update
   - delete
-- apiGroups:
-  - config.openshift.io
-  resources:
-  - infrastructures
-  - proxies
-  - apiservers
-  verbs:
   - get
   - list
-  - watch
-- apiGroups:
-  - operator.openshift.io
-  resources:
-  - 'clustercsidrivers'
-  - 'clustercsidrivers/status'
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
   - patch
-  - delete
-# Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
-- apiGroups:
-  - "authentication.k8s.io"
-  resources:
-  - "tokenreviews"
-  verbs:
-  - "create"
-# Allow the operator to create ServiceMonitor in the driver namespace
+  - update
+  - watch
 - apiGroups:
   - monitoring.coreos.com
   resources:
   - servicemonitors
   verbs:
-  - get
   - create
-  - update
-  - patch
   - delete
-# Allow the operator to create Service in the driver namespace
+  - get
+  - patch
+  - update
 - apiGroups:
-  - ''
+  - networking.k8s.io
   resources:
-  - services
+  - networkpolicies
   verbs:
+  - create
+  - delete
   - get
   - list
-  - watch
-  - create
-  - update
   - patch
-  - delete
-# Grant these permissions in the driver namespace to Prometheus
-- apiGroups:
-  - ''
-  resources:
-  - pods
-  - endpoints
-  verbs:
-  - 'get'
-  - 'list'
-  - 'watch'
-- apiGroups:
-  - discovery.k8s.io
-  resources:
-  - endpointslices
-  verbs:
-  - get
-  - list
+  - update
   - watch
 - apiGroups:
   - policy
   resources:
   - poddisruptionbudgets
   verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - networkpolicies
-  verbs:
-  - watch
-  - list
-  - get
   - create
   - delete
+  - get
+  - list
   - patch
   - update
-# Allow the operator to grant volume group snapshot permissions to the csi-snapshotter sidecar
+  - watch
 - apiGroups:
-  - groupsnapshot.storage.k8s.io
+  - ""
   resources:
-  - volumegroupsnapshotclasses
+  - configmaps
+  - serviceaccounts
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
   verbs:
   - get
   - list
   - watch
 - apiGroups:
-  - groupsnapshot.storage.k8s.io
+  - ""
   resources:
-  - volumegroupsnapshotcontents
+  - secrets
   verbs:
-  - get
-  - list
-  - watch
-  - update
+  - create
   - patch
+  - update
 - apiGroups:
-  - groupsnapshot.storage.k8s.io
+  - rbac.authorization.k8s.io
+  resourceNames:
+  - openshift-csi-main-provisioner-role
+  - openshift-csi-main-resizer-role
+  - openshift-csi-main-snapshotter-role
+  - openshift-csi-provisioner-volumesnapshot-reader-role
+  - openshift-csi-resizer-storageclass-reader-role
   resources:
-  - volumegroupsnapshotcontents/status
+  - clusterroles
   verbs:
-  - update
-  - patch
+  - bind

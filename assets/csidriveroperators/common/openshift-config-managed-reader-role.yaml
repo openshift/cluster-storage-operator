@@ -1,0 +1,16 @@
+# Shared Role for CSI driver operators to read Secrets and ConfigMaps from openshift-config-managed namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: csi-driver-operator-config-managed-reader
+  namespace: openshift-config-managed
+rules:
+  - apiGroups:
+    - ''
+    resources:
+    - secrets
+    - configmaps
+    verbs:
+    - get
+    - list
+    - watch

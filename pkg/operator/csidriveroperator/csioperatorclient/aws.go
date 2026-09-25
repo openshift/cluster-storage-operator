@@ -39,9 +39,15 @@ func GetAWSEBSCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/aws-ebs/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_aws-ebs-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/aws-ebs/standalone/generated/rbac.authorization.k8s.io_v1_clusterrole_aws-ebs-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/aws-ebs/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_aws-ebs-csi-driver-operator-clusterrolebinding.yaml",
+			"csidriveroperators/aws-ebs/base/06_union_clusterrolebinding.yaml",
+			"csidriveroperators/common/role.yaml",
+			"csidriveroperators/aws-ebs/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_aws-ebs-csi-driver-operator-common-rolebinding.yaml",
+			"csidriveroperators/aws-ebs/base/extension_apiserver_authentication_rolebinding.yaml",
 			"csidriveroperators/aws-ebs/standalone/generated/v1_service_aws-ebs-csi-driver-operator-metrics.yaml",
 			"csidriveroperators/aws-ebs/standalone/07_role_aws_config.yaml",
 			"csidriveroperators/aws-ebs/standalone/08_rolebinding_aws_config.yaml",
+			"csidriveroperators/common/openshift-config-managed-reader-role.yaml",
+			"csidriveroperators/aws-ebs/standalone/10_rolebinding_config_managed_secrets.yaml",
 		}
 		csiDriverConfig.CRAsset = "csidriveroperators/aws-ebs/standalone/generated/operator.openshift.io_v1_clustercsidriver_ebs.csi.aws.com.yaml"
 		csiDriverConfig.DeploymentAsset = "csidriveroperators/aws-ebs/standalone/generated/apps_v1_deployment_aws-ebs-csi-driver-operator.yaml"
@@ -52,6 +58,10 @@ func GetAWSEBSCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/aws-ebs/hypershift/guest/generated/rbac.authorization.k8s.io_v1_rolebinding_aws-ebs-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/aws-ebs/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrole_aws-ebs-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/aws-ebs/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_aws-ebs-csi-driver-operator-clusterrolebinding.yaml",
+			"csidriveroperators/aws-ebs/base/06_union_clusterrolebinding.yaml",
+			"csidriveroperators/common/role.yaml",
+			"csidriveroperators/aws-ebs/hypershift/guest/generated/rbac.authorization.k8s.io_v1_rolebinding_aws-ebs-csi-driver-operator-common-rolebinding.yaml",
+			"csidriveroperators/aws-ebs/base/extension_apiserver_authentication_rolebinding.yaml",
 		}
 		csiDriverConfig.MgmtOperatorConfigAsset = "csidriveroperators/aws-ebs/hypershift/mgmt/generated/v1_configmap_aws-ebs-csi-driver-operator-config.yaml"
 		csiDriverConfig.MgmtStaticAssets = []string{
