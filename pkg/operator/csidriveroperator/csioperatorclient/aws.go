@@ -67,6 +67,8 @@ func GetAWSEBSCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 		csiDriverConfig.MgmtStaticAssets = []string{
 			"csidriveroperators/aws-ebs/hypershift/mgmt/generated/rbac.authorization.k8s.io_v1_role_aws-ebs-csi-driver-operator-role.yaml",
 			"csidriveroperators/aws-ebs/hypershift/mgmt/generated/v1_serviceaccount_aws-ebs-csi-driver-operator.yaml",
+			"csidriveroperators/common/mgmt-role.yaml",
+			"csidriveroperators/common/aws-ebs-mgmt-common-rolebinding.yaml",
 			"csidriveroperators/aws-ebs/hypershift/mgmt/generated/v1_service_aws-ebs-csi-driver-operator-metrics.yaml",
 			"csidriveroperators/aws-ebs/hypershift/mgmt/generated/rbac.authorization.k8s.io_v1_rolebinding_aws-ebs-csi-driver-operator-rolebinding.yaml",
 		}
