@@ -9,6 +9,20 @@ metadata:
     include.release.openshift.io/single-node-developer: "true"
     capability.openshift.io/name: Storage
 rules:
+  # CSO-specific: apps resources (daemonsets and statefulsets) that CSO delegates to operands
+  - apiGroups:
+    - apps
+    resources:
+    - daemonsets
+    - statefulsets
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
   # CSO-specific: webhook management
   - apiGroups:
     - admissionregistration.k8s.io
