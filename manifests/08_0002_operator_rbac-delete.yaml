@@ -1,6 +1,6 @@
 # Deletion manifest for the old cluster-admin binding on standalone / CVO-managed
 # profiles — marked for deletion to avoid the immutable roleRef conflict when
-# migrating cluster-storage-operator-role to cluster-storage-operator-storage-role.
+# migrating cluster-storage-operator-role to cluster-storage-operator-main-role.
 # HyperShift's equivalent is 08_0002_operator_rbac-hypershift-delete.yaml.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

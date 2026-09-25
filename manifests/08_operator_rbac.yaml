@@ -1,4 +1,4 @@
-# Replacement binding to the fine-grained cluster-storage-operator-storage-role.
+# Replacement binding to the fine-grained cluster-storage-operator-main-role.
 # The old cluster-admin binding is removed separately so this file stays a single
 # document and its HyperShift profile variant (08_operator_rbac-hypershift.yaml)
 # is generated correctly:
@@ -24,4 +24,4 @@ subjects:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: cluster-storage-operator-storage-role
+  name: cluster-storage-operator-main-role
