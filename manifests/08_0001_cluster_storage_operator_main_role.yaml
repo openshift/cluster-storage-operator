@@ -9,13 +9,20 @@ metadata:
     include.release.openshift.io/single-node-developer: "true"
     capability.openshift.io/name: Storage
 rules:
-  # CSO-specific: apps resources (daemonsets and statefulsets) that CSO delegates to operands
+  # CSO-specific: apps resources (daemonsets, statefulsets, pods) that CSO delegates to operands
   # CSO only creates these; operands manage their own instances
+  # Operands' ClusterRoles grant pods/create, so CSO must hold this permission to apply them
   - apiGroups:
     - apps
     resources:
     - daemonsets
     - statefulsets
+    verbs:
+    - create
+  - apiGroups:
+    - ''
+    resources:
+    - pods
     verbs:
     - create
   # CSO-specific: webhook management
@@ -152,10 +159,23 @@ rules:
     - get
     - list
     - watch
-  # CSO-specific: node updates (IBM VPC Block requires this to create its operator ClusterRole)
+  # CSO-specific: node updates (IBM VPC Block and GCP require this to create their operator ClusterRoles)
   - apiGroups:
     - ''
     resources:
     - nodes
     verbs:
     - update
+  # CSO-specific: cluster-wide events (operands' ClusterRoles grant this, so CSO must hold it)
+  - apiGroups:
+    - ''
+    resources:
+    - events
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
