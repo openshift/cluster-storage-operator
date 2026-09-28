@@ -42,7 +42,6 @@ func GetOpenStackCinderCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/openstack-cinder/base/06_union_clusterrolebinding.yaml",
 			"csidriveroperators/common/role.yaml",
 			"csidriveroperators/openstack-cinder/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_openstack-cinder-csi-driver-operator-common-rolebinding.yaml",
-			"csidriveroperators/openstack-cinder/extension_apiserver_authentication_rolebinding.yaml",
 			"csidriveroperators/common/openshift-config-reader-role.yaml",
 			"csidriveroperators/openstack-cinder/standalone/10_rolebinding_config_secrets.yaml",
 		}
@@ -58,7 +57,6 @@ func GetOpenStackCinderCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/openstack-cinder/hypershift/guest/generated/rbac.authorization.k8s.io_v1_role_openstack-cinder-csi-driver-operator-role.yaml",
 			"csidriveroperators/openstack-cinder/hypershift/guest/generated/rbac.authorization.k8s.io_v1_rolebinding_openstack-cinder-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/openstack-cinder/hypershift/guest/generated/v1_serviceaccount_openstack-cinder-csi-driver-operator.yaml",
-			"csidriveroperators/openstack-cinder/extension_apiserver_authentication_rolebinding.yaml",
 			"csidriveroperators/common/openshift-config-reader-role.yaml",
 			"csidriveroperators/openstack-cinder/hypershift/guest/10_rolebinding_config_secrets.yaml",
 		}
