@@ -143,16 +143,6 @@ rules:
     - patch
     - update
     - watch
-  # CSO-specific: security context constraints
-  - apiGroups:
-    - security.openshift.io
-    resourceNames:
-    - hostnetwork-v2
-    - privileged
-    resources:
-    - securitycontextconstraints
-    verbs:
-    - use
   # CSO-specific: volume snapshots
   - apiGroups:
     - snapshot.storage.k8s.io
