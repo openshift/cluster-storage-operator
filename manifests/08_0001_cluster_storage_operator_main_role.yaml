@@ -152,3 +152,10 @@ rules:
     - get
     - list
     - watch
+  # CSO-specific: node updates (IBM VPC Block requires this to create its operator ClusterRole)
+  - apiGroups:
+    - ''
+    resources:
+    - nodes
+    verbs:
+    - update
