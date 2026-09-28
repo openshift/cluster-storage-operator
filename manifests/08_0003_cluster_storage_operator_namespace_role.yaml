@@ -37,3 +37,16 @@ rules:
     - patch
     - update
     - watch
+  # CSO-specific: events logging in this namespace
+  - apiGroups:
+    - ''
+    resources:
+    - events
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
