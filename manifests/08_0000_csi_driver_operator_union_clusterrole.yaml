@@ -35,17 +35,6 @@ rules:
     - list
     - watch
   - apiGroups:
-    - operator.openshift.io
-    resources:
-    - clustercsidrivers
-    - clustercsidrivers/status
-    verbs:
-    - get
-    - list
-    - patch
-    - update
-    - watch
-  - apiGroups:
     - rbac.authorization.k8s.io
     resources:
     - clusterrolebindings
