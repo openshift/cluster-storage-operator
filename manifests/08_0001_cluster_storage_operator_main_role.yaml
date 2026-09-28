@@ -57,19 +57,6 @@ rules:
     - subjectaccessreviews
     verbs:
     - create
-  # CSO-specific: cloud credential management
-  - apiGroups:
-    - cloudcredential.openshift.io
-    resources:
-    - credentialsrequests
-    verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
   # CSO-specific: infrastructure reads
   - apiGroups:
     - config.openshift.io
