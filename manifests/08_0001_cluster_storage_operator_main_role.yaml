@@ -10,6 +10,7 @@ metadata:
     capability.openshift.io/name: Storage
 rules:
   # CSO-specific: apps resources (daemonsets and statefulsets) that CSO delegates to operands
+  # CSO only creates these; operands manage their own instances
   - apiGroups:
     - apps
     resources:
@@ -17,12 +18,6 @@ rules:
     - statefulsets
     verbs:
     - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
   # CSO-specific: webhook management
   - apiGroups:
     - admissionregistration.k8s.io
@@ -49,31 +44,19 @@ rules:
     - patch
     - update
     - watch
-  # CSO-specific: auth checks
+  # CSO-specific: auth checks (ephemeral resources: only create is needed)
   - apiGroups:
     - authentication.k8s.io
     resources:
     - tokenreviews
     verbs:
     - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
   - apiGroups:
     - authorization.k8s.io
     resources:
     - subjectaccessreviews
     verbs:
     - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
   # CSO-specific: cloud credential management
   - apiGroups:
     - cloudcredential.openshift.io
