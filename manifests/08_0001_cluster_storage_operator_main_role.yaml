@@ -78,6 +78,15 @@ rules:
     - get
     - list
     - watch
+  # CSO-specific: security context constraint (GCP operator requires hostnetwork-v2)
+  - apiGroups:
+    - security.openshift.io
+    resourceNames:
+    - hostnetwork-v2
+    resources:
+    - securitycontextconstraints
+    verbs:
+    - use
   # CSO-specific: own status reporting
   - apiGroups:
     - config.openshift.io
