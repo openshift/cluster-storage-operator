@@ -10,6 +10,20 @@ metadata:
     include.release.openshift.io/single-node-developer: "true"
     capability.openshift.io/name: Storage
 rules:
+  # CSO-specific: namespace-scoped RBAC management (roles and rolebindings in this namespace)
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resources:
+    - rolebindings
+    - roles
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
   # CSO-specific: pod disruption budgets for CSI operators in this namespace
   - apiGroups:
     - policy

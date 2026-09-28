@@ -129,14 +129,12 @@ rules:
     - get
     - list
     - watch
-  # CSO-specific: RBAC management (full control)
+  # CSO-specific: cluster-scoped RBAC management (cluster-wide resources only)
   - apiGroups:
     - rbac.authorization.k8s.io
     resources:
     - clusterrolebindings
     - clusterroles
-    - rolebindings
-    - roles
     verbs:
     - create
     - delete
