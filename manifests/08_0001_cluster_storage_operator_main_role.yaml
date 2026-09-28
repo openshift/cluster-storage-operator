@@ -120,19 +120,6 @@ rules:
     - patch
     - update
     - watch
-  # CSO-specific: pod disruption budgets
-  - apiGroups:
-    - policy
-    resources:
-    - poddisruptionbudgets
-    verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
   # CSO-specific: volume populators
   - apiGroups:
     - populator.storage.k8s.io
