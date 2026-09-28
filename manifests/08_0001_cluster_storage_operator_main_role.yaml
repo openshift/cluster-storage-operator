@@ -10,7 +10,8 @@ metadata:
     capability.openshift.io/name: Storage
 rules:
   # CSO-specific: apps resources (daemonsets, statefulsets, pods) that CSO delegates to operands
-  # CSO only creates these; operands manage their own instances
+  # CSO creates daemonsets/statefulsets; HyperShift management topology needs full verbs to create
+  # the common management Role which grants full perms on these resources
   # Operands' ClusterRoles grant pods/create, so CSO must hold this permission to apply them
   - apiGroups:
     - apps
@@ -19,6 +20,12 @@ rules:
     - statefulsets
     verbs:
     - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
   - apiGroups:
     - ''
     resources:
@@ -51,19 +58,31 @@ rules:
     - patch
     - update
     - watch
-  # CSO-specific: auth checks (ephemeral resources: only create is needed)
+  # CSO-specific: auth checks (vSphere problem-detector requires full perms)
   - apiGroups:
     - authentication.k8s.io
     resources:
     - tokenreviews
     verbs:
     - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
   - apiGroups:
     - authorization.k8s.io
     resources:
     - subjectaccessreviews
     verbs:
     - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
   # CSO-specific: infrastructure reads
   - apiGroups:
     - config.openshift.io
@@ -197,6 +216,32 @@ rules:
     - ''
     resources:
     - events
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: wildcard events (Manila operator requires this with API group '*')
+  - apiGroups:
+    - '*'
+    resources:
+    - events
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: pod disruption budgets (Manila operator requires this)
+  - apiGroups:
+    - policy
+    resources:
+    - poddisruptionbudgets
     verbs:
     - create
     - delete
