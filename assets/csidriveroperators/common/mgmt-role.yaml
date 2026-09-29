@@ -26,10 +26,8 @@ rules:
 - apiGroups:
   - apps
   resources:
-  - daemonsets
   - deployments
   - replicasets
-  - statefulsets
   verbs:
   - create
   - delete
