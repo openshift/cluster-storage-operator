@@ -2,6 +2,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
+  annotations:
+    capability.openshift.io/name: Storage
+    include.release.openshift.io/hypershift: "true"
   labels:
     addonmanager.kubernetes.io/mode: Reconcile
     kubernetes.io/cluster-service: "true"

@@ -1,4 +1,11 @@
-# Remove any included.* annotation, we don't want the manifest instantiated by any CVO!
-# The manifest should be copied to HyperShift
+# Remove include.release.openshift.io/* annotations from standalone version
+# Add HyperShift-specific annotation so CVO includes this manifest in HyperShift deployments
 - op: remove
-  path: /metadata/annotations
+  path: /metadata/annotations/include.release.openshift.io~1self-managed-high-availability
+- op: remove
+  path: /metadata/annotations/include.release.openshift.io~1single-node-developer
+- op: remove
+  path: /metadata/annotations/include.release.openshift.io~1ibm-cloud-managed
+- op: add
+  path: /metadata/annotations/include.release.openshift.io~1hypershift
+  value: "true"
