@@ -40,8 +40,14 @@ func GetAzureDiskCSIOperatorConfig(isHyperShift bool) CSIOperatorConfig {
 			"csidriveroperators/azure-disk/standalone/generated/rbac.authorization.k8s.io_v1_role_azure-disk-csi-driver-operator-role.yaml",
 			"csidriveroperators/azure-disk/standalone/generated/rbac.authorization.k8s.io_v1_clusterrole_azure-disk-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/azure-disk/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_azure-disk-csi-driver-operator-clusterrolebinding.yaml",
+			"csidriveroperators/azure-disk/base/07_union_clusterrolebinding.yaml",
+			"csidriveroperators/common/role.yaml",
+			"csidriveroperators/azure-disk/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_azure-disk-csi-driver-operator-common-rolebinding.yaml",
+			"csidriveroperators/azure-disk/base/extension_apiserver_authentication_rolebinding.yaml",
 			"csidriveroperators/azure-disk/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_azure-disk-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/azure-disk/standalone/generated/v1_service_azure-disk-csi-driver-operator-metrics.yaml",
+			"csidriveroperators/common/openshift-config-reader-role.yaml",
+			"csidriveroperators/azure-disk/standalone/10_rolebinding_config_secrets.yaml",
 		}
 		csiDriverConfig.DeploymentAsset = "csidriveroperators/azure-disk/standalone/generated/apps_v1_deployment_azure-disk-csi-driver-operator.yaml"
 		csiDriverConfig.CRAsset = "csidriveroperators/azure-disk/standalone/generated/operator.openshift.io_v1_clustercsidriver_disk.csi.azure.com.yaml"
@@ -49,15 +55,23 @@ func GetAzureDiskCSIOperatorConfig(isHyperShift bool) CSIOperatorConfig {
 		csiDriverConfig.StaticAssets = []string{
 			"csidriveroperators/azure-disk/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrole_azure-disk-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/azure-disk/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_azure-disk-csi-driver-operator-clusterrolebinding.yaml",
+			"csidriveroperators/azure-disk/base/07_union_clusterrolebinding.yaml",
+			"csidriveroperators/common/role.yaml",
+			"csidriveroperators/azure-disk/hypershift/guest/generated/rbac.authorization.k8s.io_v1_rolebinding_azure-disk-csi-driver-operator-common-rolebinding.yaml",
+			"csidriveroperators/azure-disk/base/extension_apiserver_authentication_rolebinding.yaml",
 			"csidriveroperators/azure-disk/hypershift/guest/generated/rbac.authorization.k8s.io_v1_role_azure-disk-csi-driver-operator-role.yaml",
 			"csidriveroperators/azure-disk/hypershift/guest/generated/rbac.authorization.k8s.io_v1_rolebinding_azure-disk-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/azure-disk/hypershift/guest/generated/v1_serviceaccount_azure-disk-csi-driver-operator.yaml",
+			"csidriveroperators/common/openshift-config-reader-role.yaml",
+			"csidriveroperators/azure-disk/hypershift/guest/10_rolebinding_config_secrets.yaml",
 		}
 		csiDriverConfig.MgmtOperatorConfigAsset = "csidriveroperators/azure-disk/hypershift/mgmt/generated/v1_configmap_azure-disk-csi-driver-operator-config.yaml"
 		csiDriverConfig.MgmtStaticAssets = []string{
 			"csidriveroperators/azure-disk/hypershift/mgmt/generated/rbac.authorization.k8s.io_v1_role_azure-disk-csi-driver-operator-role.yaml",
 			"csidriveroperators/azure-disk/hypershift/mgmt/generated/rbac.authorization.k8s.io_v1_rolebinding_azure-disk-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/azure-disk/hypershift/mgmt/generated/v1_serviceaccount_azure-disk-csi-driver-operator.yaml",
+			"csidriveroperators/common/mgmt-role.yaml",
+			"csidriveroperators/common/azure-disk-mgmt-common-rolebinding.yaml",
 			"csidriveroperators/azure-disk/hypershift/mgmt/generated/v1_service_azure-disk-csi-driver-operator-metrics.yaml",
 		}
 		csiDriverConfig.DeploymentAsset = "csidriveroperators/azure-disk/hypershift/mgmt/generated/apps_v1_deployment_azure-disk-csi-driver-operator.yaml"

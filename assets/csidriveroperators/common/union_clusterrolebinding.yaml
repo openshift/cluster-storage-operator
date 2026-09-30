@@ -1,0 +1,29 @@
+---
+# This file is a template for per-driver union clusterrolebindings.
+# Each driver should define a clusterrolebinding that grants the driver's
+# service account access to the union ClusterRole containing all shared
+# CSI driver operator permissions.
+#
+# To use this file:
+# 1. Copy the content to assets/csidriveroperators/<driver>/<base or topology>/
+# 2. Update the metadata.name and subjects.name to match the driver
+# 3. Keep the roleRef pointing to csi-driver-operator-union-role
+#
+# Example for aws-ebs:
+# metadata:
+#   name: aws-ebs-csi-driver-operator-union-clusterrolebinding
+# subjects:
+#   - name: aws-ebs-csi-driver-operator
+#
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: PLACEHOLDER-union-clusterrolebinding
+subjects:
+  - kind: ServiceAccount
+    name: PLACEHOLDER
+    namespace: openshift-cluster-csi-drivers
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: csi-driver-operator-union-role

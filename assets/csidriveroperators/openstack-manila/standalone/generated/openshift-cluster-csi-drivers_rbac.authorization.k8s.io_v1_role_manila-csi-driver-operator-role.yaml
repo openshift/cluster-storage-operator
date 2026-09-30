@@ -7,34 +7,17 @@ metadata:
   namespace: openshift-cluster-csi-drivers
 rules:
 - apiGroups:
-  - ""
+  - coordination.k8s.io
   resources:
-  - pods
-  - services
-  - endpoints
-  - events
-  - configmaps
-  - secrets
+  - leases
   verbs:
+  - create
+  - delete
   - get
   - list
-  - watch
-  - create
-  - update
   - patch
-  - delete
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - get
-  - list
-  - watch
-  - create
   - update
-  - patch
-  - delete
+  - watch
 - apiGroups:
   - monitoring.coreos.com
   resources:

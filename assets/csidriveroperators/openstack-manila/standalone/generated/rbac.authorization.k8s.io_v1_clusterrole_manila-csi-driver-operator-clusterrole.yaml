@@ -6,359 +6,118 @@ metadata:
   name: manila-csi-driver-operator-clusterrole
 rules:
 - apiGroups:
-  - security.openshift.io
-  resourceNames:
-  - privileged
-  resources:
-  - securitycontextconstraints
-  verbs:
-  - use
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - watch
-  - list
-  - get
-  - create
-  - delete
-  - patch
-  - update
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - clusterroles
-  - clusterrolebindings
-  - roles
-  - rolebindings
-  verbs:
-  - watch
-  - list
-  - get
-  - create
-  - delete
-  - patch
-  - update
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - apiextensions.k8s.io
-  resources:
-  - customresourcedefinitions
-  verbs:
-  - get
-  - list
-  - create
-  - watch
-  - delete
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - nodes
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - patch
-  - update
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - patch
-  - delete
-  - update
-- apiGroups:
-  - ""
-  resources:
-  - persistentvolumes
-  verbs:
-  - create
-  - delete
-  - list
-  - get
-  - watch
-  - update
-  - patch
-- apiGroups:
-  - ""
-  resources:
-  - persistentvolumeclaims
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-- apiGroups:
-  - ""
-  resources:
-  - persistentvolumeclaims/status
-  verbs:
-  - patch
-  - update
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - volumeattachments
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-  - delete
-  - create
-  - patch
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshotcontents/status
-  verbs:
-  - update
-  - patch
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - storageclasses
-  - csinodes
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - delete
-- apiGroups:
   - '*'
   resources:
   - events
   verbs:
-  - get
-  - patch
   - create
-  - list
-  - watch
-  - update
   - delete
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshotclasses
-  verbs:
   - get
   - list
-  - watch
-  - create
-  - update
-  - delete
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshotcontents
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - delete
   - patch
-- apiGroups:
-  - snapshot.storage.k8s.io
-  resources:
-  - volumesnapshots
-  verbs:
-  - get
-  - list
-  - watch
   - update
-  - patch
+  - watch
 - apiGroups:
-  - snapshot.storage.k8s.io
+  - apps
   resources:
-  - volumesnapshots/status
-  verbs:
-  - patch
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - csidrivers
+  - daemonsets
+  - deployments
+  - replicasets
+  - statefulsets
   verbs:
   - create
-  - get
-  - list
-  - watch
-  - update
   - delete
-- apiGroups:
-  - config.openshift.io
-  resources:
-  - infrastructures
-  - proxies
-  - apiservers
-  verbs:
   - get
   - list
-  - watch
-- apiGroups:
-  - operator.openshift.io
-  resources:
-  - clustercsidrivers
-  - clustercsidrivers/status
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
   - patch
-  - delete
+  - update
+  - watch
 - apiGroups:
-  - authentication.k8s.io
+  - rbac.authorization.k8s.io
   resources:
-  - tokenreviews
+  - rolebindings
+  - roles
   verbs:
   - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - monitoring.coreos.com
   resources:
   - servicemonitors
   verbs:
-  - get
   - create
-  - update
-  - patch
   - delete
-- apiGroups:
-  - ""
-  resources:
-  - services
-  verbs:
   - get
-  - list
-  - watch
+  - patch
+  - update
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - networkpolicies
+  verbs:
   - create
-  - update
-  - patch
   - delete
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - endpoints
-  verbs:
   - get
   - list
-  - watch
-- apiGroups:
-  - discovery.k8s.io
-  resources:
-  - endpointslices
-  verbs:
-  - get
-  - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - policy
   resources:
   - poddisruptionbudgets
   verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - networkpolicies
-  verbs:
-  - watch
-  - list
-  - get
   - create
   - delete
+  - get
+  - list
   - patch
   - update
+  - watch
 - apiGroups:
-  - groupsnapshot.storage.k8s.io
+  - ""
   resources:
-  - volumegroupsnapshotclasses
+  - configmaps
+  - serviceaccounts
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
   verbs:
   - get
   - list
   - watch
 - apiGroups:
-  - groupsnapshot.storage.k8s.io
+  - ""
   resources:
-  - volumegroupsnapshotcontents
+  - secrets
   verbs:
-  - get
-  - list
-  - watch
-  - update
+  - create
   - patch
+  - update
 - apiGroups:
-  - groupsnapshot.storage.k8s.io
+  - rbac.authorization.k8s.io
+  resourceNames:
+  - openshift-csi-main-provisioner-role
+  - openshift-csi-main-resizer-role
+  - openshift-csi-main-snapshotter-role
+  - openshift-csi-provisioner-volumesnapshot-reader-role
+  - openshift-csi-resizer-storageclass-reader-role
   resources:
-  - volumegroupsnapshotcontents/status
+  - clusterroles
   verbs:
-  - update
-  - patch
+  - bind
