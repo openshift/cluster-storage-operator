@@ -6,10 +6,10 @@ require (
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift-eng/openshift-tests-extension v0.0.0-20260707142426-572a3e9deb7a
-	github.com/openshift/api v0.0.0-20260721120239-14262bf791c8
+	github.com/openshift/api v0.0.0-20260805215214-cfb63858e9d7
 	github.com/openshift/build-machinery-go v0.0.0-20250530140348-dc5b2804eeee
-	github.com/openshift/client-go v0.0.0-20260721124015-35d8f3c0e847
-	github.com/openshift/library-go v0.0.0-20260721103755-0c9fbc9f043a
+	github.com/openshift/client-go v0.0.0-20260806041845-b74fb348f1e7
+	github.com/openshift/library-go v0.0.0-20261001164550-3a828ca2a7e0
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.92.1
 	github.com/prometheus-operator/prometheus-operator/pkg/client v0.92.1
 	github.com/prometheus/client_golang v1.24.0
