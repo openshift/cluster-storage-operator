@@ -96,7 +96,7 @@ func (c *Controller) conflictsPresent() (present bool, found bool, err error) {
 
 func upgradeBlockedMessage() string {
 	return fmt.Sprintf(
-		"Workloads incompatible with SELinuxMount GA were detected and could break after upgrade to the next release. "+
+		"Workloads incompatible with SELinuxMount GA were detected and could break after upgrade to OpenShift 5.1. "+
 			"See metric selinux_warning_controller_selinux_volume_conflict to list all affected pods. "+
 			"See %s for remediation.",
 		RunbookURL,
