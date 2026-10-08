@@ -1,0 +1,144 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cluster-storage-operator-main-role
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Storage
+rules:
+  # CSO-specific: Leases
+  - apiGroups:
+    - coordination.k8s.io
+    resources:
+    - leases
+    verbs:
+    - get
+  # CSO-specific: CRD management (create/delete/update CRDs)
+  - apiGroups:
+    - apiextensions.k8s.io
+    resources:
+    - customresourcedefinitions
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: auth checks
+  - apiGroups:
+    - authentication.k8s.io
+    resources:
+    - tokenreviews
+    verbs:
+    - create
+  - apiGroups:
+    - authorization.k8s.io
+    resources:
+    - subjectaccessreviews
+    verbs:
+    - create
+  # CSO-specific: infrastructure reads
+  - apiGroups:
+    - config.openshift.io
+    resources:
+    - apiservers
+    - clusteroperators
+    - clusterversions
+    - featuregates
+    - infrastructures
+    - proxies
+    verbs:
+    - get
+    - list
+    - watch
+  # CSO-specific: own status reporting
+  - apiGroups:
+    - config.openshift.io
+    resources:
+    - clusteroperators/status
+    verbs:
+    - patch
+    - update
+  # CSO-specific: observability
+  - apiGroups:
+    - monitoring.coreos.com
+    resources:
+    - prometheusrules
+    - servicemonitors
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: storage resource management (CSO creates these)
+  - apiGroups:
+    - operator.openshift.io
+    resources:
+    - storages
+    - storages/status
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: volume populators
+  - apiGroups:
+    - populator.storage.k8s.io
+    resources:
+    - volumepopulators
+    verbs:
+    - get
+    - list
+    - watch
+  # CSO-specific: cluster-scoped RBAC management (cluster-wide resources only)
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resources:
+    - clusterrolebindings
+    - clusterroles
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  # CSO-specific: permissions required for AWS EBS operand clusterrole
+  - apiGroups:
+    - ""
+    resources:
+    - persistentvolumes
+    verbs:
+    - get
+    - list
+    - update
+    - watch
+  # CSO-specific: bind sidecar roles (operands bind these predefined roles to their ServiceAccounts)
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resourceNames:
+    - openshift-csi-main-attacher-role
+    - openshift-csi-main-provisioner-role
+    - openshift-csi-main-resizer-role
+    - openshift-csi-main-snapshotter-role
+    - openshift-csi-provisioner-configmap-and-secret-reader-role
+    - openshift-csi-provisioner-volumeattributesclass-reader-role
+    - openshift-csi-provisioner-volumesnapshot-reader-role
+    - openshift-csi-resizer-storageclass-reader-role
+    - openshift-csi-resizer-volumeattributesclass-reader-role
+    resources:
+    - clusterroles
+    verbs:
+    - bind
