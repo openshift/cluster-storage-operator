@@ -1,0 +1,135 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cluster-storage-operator-main-role
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Storage
+rules:
+  - apiGroups:
+    - ''
+    resources:
+    - events
+    verbs:
+    - create
+  - apiGroups:
+    - ''
+    resources:
+    - pods
+    - configmaps
+    - services
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - apps
+    resources:
+    - replicasets
+    - daemonsets
+    - deployments
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - coordination.k8s.io
+    resources:
+    - leases
+    verbs:
+    - get
+    - update
+  - apiGroups:
+    - ''
+    resources:
+    - serviceaccounts
+    - secrets
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resources:
+    - roles
+    - rolebindings
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - policy
+    resources:
+    - poddisruptionbudgets
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - monitoring.coreos.com
+    resources:
+    - servicemonitors
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - config.openshift.io
+    resources:
+    - proxies
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - operator.openshift.io
+    resources:
+    - clustercsidrivers
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - operator.openshift.io
+    resources:
+    - clustercsidrivers/status
+    verbs:
+    - patch
+  - apiGroups:
+    - storage.k8s.io
+    resources:
+    - csidrivers
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resources:
+    - clusterrolebindings
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - config.openshift.io
+    resources:
+    - infrastructures
+    - apiservers
+    - clusterversions
+    - featuregates
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - storage.k8s.io
+    resources:
+    - storageclasses
+    verbs:
+    - get
+    - list
+    - watch

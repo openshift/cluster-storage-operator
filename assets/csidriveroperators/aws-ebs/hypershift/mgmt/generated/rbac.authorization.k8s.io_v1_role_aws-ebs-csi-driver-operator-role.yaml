@@ -7,33 +7,54 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - pods
-  - services
-  - endpoints
   - events
+  verbs:
+  - create
+- apiGroups:
+  - ""
+  resources:
+  - pods
   - configmaps
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - replicasets
+  - daemonsets
+  - deployments
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
   - secrets
   verbs:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
 - apiGroups:
-  - apps
+  - rbac.authorization.k8s.io
   resources:
-  - deployments
-  - replicasets
+  - roles
+  - rolebindings
   verbs:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
 - apiGroups:
   - policy
   resources:
@@ -42,47 +63,14 @@ rules:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
 - apiGroups:
-  - ""
+  - monitoring.coreos.com
   resources:
-  - serviceaccounts
+  - servicemonitors
   verbs:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - roles
-  - rolebindings
-  verbs:
-  - watch
-  - list
-  - get
-  - create
-  - delete
-  - patch
-  - update
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
 - apiGroups:
   - hypershift.openshift.io
   resources:
