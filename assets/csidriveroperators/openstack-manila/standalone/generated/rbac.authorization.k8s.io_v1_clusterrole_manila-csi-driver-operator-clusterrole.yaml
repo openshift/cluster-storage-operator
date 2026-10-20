@@ -251,6 +251,8 @@ rules:
   - infrastructures
   - proxies
   - apiservers
+  - featuregates
+  - clusterversions
   verbs:
   - get
   - list
