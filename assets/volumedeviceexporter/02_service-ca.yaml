@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: volume-device-exporter-service-ca
+  namespace: openshift-cluster-storage-operator
+  annotations:
+    service.beta.openshift.io/inject-cabundle: "true"

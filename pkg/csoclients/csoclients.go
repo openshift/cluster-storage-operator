@@ -75,6 +75,7 @@ const (
 	CSIOperatorNamespace   = "openshift-cluster-csi-drivers"
 	CloudConfigNamespace   = "openshift-config"
 	ManagedConfigNamespace = "openshift-config-managed"
+	MonitoringNamespace    = "openshift-monitoring"
 )
 
 var (
@@ -84,6 +85,7 @@ var (
 		CSIOperatorNamespace,
 		CloudConfigNamespace,
 		ManagedConfigNamespace,
+		MonitoringNamespace,
 	}
 )
 
