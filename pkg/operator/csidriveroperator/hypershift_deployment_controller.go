@@ -237,12 +237,12 @@ func (c *HyperShiftDeploymentController) reconcileOperatorConfigMap(ctx context.
 		return fmt.Errorf("failed to decode operator config ConfigMap: %w", err)
 	}
 
-	minTLSVersion, cipherSuites, err := c.getHostedControlPlaneTLSSettings()
+	minTLSVersion, cipherSuites, tlsGroups, err := c.getHostedControlPlaneTLSSettings()
 	if err != nil {
 		return err
 	}
 
-	yaml, err := csotls.OperatorConfigYAML(minTLSVersion, cipherSuites)
+	yaml, err := csotls.OperatorConfigYAML(minTLSVersion, cipherSuites, tlsGroups)
 	if err != nil {
 		return err
 	}
@@ -255,17 +255,17 @@ func (c *HyperShiftDeploymentController) reconcileOperatorConfigMap(ctx context.
 	return err
 }
 
-func (c *HyperShiftDeploymentController) getHostedControlPlaneTLSSettings() (string, []string, error) {
+func (c *HyperShiftDeploymentController) getHostedControlPlaneTLSSettings() (string, []string, []string, error) {
 	hcp, err := c.getHostedControlPlane()
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to get HostedControlPlane: %w", err)
+		return "", nil, nil, fmt.Errorf("failed to get HostedControlPlane: %w", err)
 	}
 	return tlsSettingsFromHCP(hcp)
 }
 
 // tlsSettingsFromHCP extracts the TLS security profile from an HCP unstructured object
-// and returns the minTLSVersion and IANA cipher suite names.
-func tlsSettingsFromHCP(hcp *unstructured.Unstructured) (string, []string, error) {
+// and returns the minTLSVersion, IANA cipher suite names and TLS group names.
+func tlsSettingsFromHCP(hcp *unstructured.Unstructured) (string, []string, []string, error) {
 	profileType, _, err := unstructured.NestedString(hcp.UnstructuredContent(), "spec", "configuration", "apiServer", "tlsSecurityProfile", "type")
 	if err != nil {
 		klog.Warningf("Failed to get HCP TLS profile type: %v", err)
@@ -291,8 +291,8 @@ func tlsSettingsFromHCP(hcp *unstructured.Unstructured) (string, []string, error
 		}
 	}
 
-	minTLSVersion, cipherSuites := csotls.TLSSettingsFromProfile(profile)
-	return minTLSVersion, cipherSuites, nil
+	minTLSVersion, cipherSuites, tlsGroups := csotls.TLSSettingsFromProfile(profile, nil)
+	return minTLSVersion, cipherSuites, tlsGroups, nil
 }
 
 func (c *HyperShiftDeploymentController) Run(ctx context.Context, workers int) {

@@ -285,9 +285,9 @@ func (c *CSIDriverOperatorDeploymentController) reconcileOperatorConfigMap(ctx c
 	if err != nil {
 		return fmt.Errorf("failed to get APIServer cluster: %w", err)
 	}
-	minTLSVersion, cipherSuites := csotls.TLSSettingsFromProfile(apiServer.Spec.TLSSecurityProfile)
+	minTLSVersion, cipherSuites, tlsGroups := csotls.TLSSettingsFromProfile(apiServer.Spec.TLSSecurityProfile, nil)
 
-	yaml, err := csotls.OperatorConfigYAML(minTLSVersion, cipherSuites)
+	yaml, err := csotls.OperatorConfigYAML(minTLSVersion, cipherSuites, tlsGroups)
 	if err != nil {
 		return err
 	}

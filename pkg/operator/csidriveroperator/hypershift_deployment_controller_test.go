@@ -93,10 +93,11 @@ func TestTLSSettingsFromHCP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotVersion, gotCiphers, err := tlsSettingsFromHCP(tt.hcp)
+			gotVersion, gotCiphers, gotGroups, err := tlsSettingsFromHCP(tt.hcp)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantMinVersion, gotVersion)
 			assert.Equal(t, tt.wantCiphers, gotCiphers)
+			assert.Nil(t, gotGroups)
 		})
 	}
 }
