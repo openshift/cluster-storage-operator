@@ -210,7 +210,8 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 		resync,
 		ssr.versionGetter,
 		status.VersionForOperandFromEnv(),
-		ssr.eventRecorder)
+		ssr.eventRecorder,
+		ssr.featureGates)
 	ssr.controllers = append(ssr.controllers, vsphereProblemDetector)
 
 	klog.Info("Starting the Informers.")

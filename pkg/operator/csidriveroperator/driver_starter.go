@@ -293,6 +293,7 @@ func (s *standAloneDriverStarter) addExtraControllersToManager(manager manager.C
 		s.targetVersion,
 		s.eventRecorder,
 		s.resyncInterval,
+		s.featureGates,
 	), 1)
 
 	if cfg.ServiceMonitorAsset != "" {

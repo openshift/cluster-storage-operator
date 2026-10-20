@@ -78,6 +78,7 @@ func NewHyperShiftControllerDeployment(
 			versionGetter,
 			targetVersion,
 			eventRecorder,
+			nil, // hosted-cluster feature gates come from HCP, not management cluster
 		),
 		mgmtClient:               mgtClient,
 		controlNamespace:         controlNamespace,

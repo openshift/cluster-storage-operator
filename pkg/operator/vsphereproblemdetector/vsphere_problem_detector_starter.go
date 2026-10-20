@@ -20,6 +20,7 @@ import (
 	"github.com/openshift/library-go/pkg/controller/manager"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivercontrollerservicecontroller"
 
+	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/operator/deploymentcontroller"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/loglevel"
@@ -55,6 +56,7 @@ type VSphereProblemDetectorStarter struct {
 	versionGetter   status.VersionGetter
 	targetVersion   string
 	eventRecorder   events.Recorder
+	featureGates    featuregates.FeatureGate
 	running         bool
 }
 
@@ -63,7 +65,8 @@ func NewVSphereProblemDetectorStarter(
 	resyncInterval time.Duration,
 	versionGetter status.VersionGetter,
 	targetVersion string,
-	eventRecorder events.Recorder) factory.Controller {
+	eventRecorder events.Recorder,
+	featureGates featuregates.FeatureGate) factory.Controller {
 	c := &VSphereProblemDetectorStarter{
 		operatorClient:  clients.OperatorClient,
 		infraLister:     clients.ConfigInformers.Config().V1().Infrastructures().Lister(),
@@ -72,6 +75,7 @@ func NewVSphereProblemDetectorStarter(
 		versionGetter:   versionGetter,
 		targetVersion:   targetVersion,
 		eventRecorder:   eventRecorder.WithComponentSuffix("VSphereProblemDetectorStarter"),
+		featureGates:    featureGates,
 	}
 	c.controller = c.createVSphereProblemDetectorManager(clients, resyncInterval)
 	return factory.New().WithSync(c.sync).WithSyncDegradedOnError(clients.OperatorClient).WithInformers(
@@ -257,7 +261,7 @@ func (c *VSphereProblemDetectorStarter) reconcileOperatorConfigMap(ctx context.C
 	if err != nil {
 		return fmt.Errorf("failed to get APIServer cluster: %w", err)
 	}
-	minTLSVersion, cipherSuites, tlsGroups := csotls.TLSSettingsFromProfile(apiServer.Spec.TLSSecurityProfile, nil)
+	minTLSVersion, cipherSuites, tlsGroups := csotls.TLSSettingsFromProfile(apiServer.Spec.TLSSecurityProfile, c.featureGates)
 
 	yaml, err := csotls.OperatorConfigYAML(minTLSVersion, cipherSuites, tlsGroups)
 	if err != nil {
