@@ -1,10 +1,12 @@
 package csidriveroperator
 
 import (
-	"maps"
 	"testing"
 
 	configv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/api/features"
+	"github.com/openshift/library-go/pkg/crypto"
+	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -15,7 +17,9 @@ func tlsProfileHCP(profileType string, extras map[string]any) *unstructured.Unst
 	spec := map[string]any{}
 	if profileType != "" {
 		tlsProfile := map[string]any{"type": profileType}
-		maps.Copy(tlsProfile, extras)
+		for k, v := range extras {
+			tlsProfile[k] = v
+		}
 		spec = map[string]any{
 			"configuration": map[string]any{
 				"apiServer": map[string]any{
@@ -27,77 +31,158 @@ func tlsProfileHCP(profileType string, extras map[string]any) *unstructured.Unst
 	return &unstructured.Unstructured{Object: map[string]any{"spec": spec}}
 }
 
+func ianaCiphers(profileType configv1.TLSProfileType) []string {
+	return crypto.OpenSSLToIANACipherSuites(configv1.TLSProfiles[profileType].Ciphers)
+}
+
+func profileGroups(profileType configv1.TLSProfileType) []string {
+	src := configv1.TLSProfiles[profileType].Groups
+	out := make([]string, 0, len(src))
+	for _, g := range src {
+		out = append(out, string(g))
+	}
+	return out
+}
+
 func TestTLSSettingsFromHCP(t *testing.T) {
-	modernIANA := []string{
-		"TLS_AES_128_GCM_SHA256",
-		"TLS_AES_256_GCM_SHA384",
-		"TLS_CHACHA20_POLY1305_SHA256",
-	}
-	intermediateIANA := []string{
-		"TLS_AES_128_GCM_SHA256",
-		"TLS_AES_256_GCM_SHA384",
-		"TLS_CHACHA20_POLY1305_SHA256",
-		"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-		"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-		"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-		"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-		"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-		"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
-	}
+	fgEnabled := featuregates.NewFeatureGate(
+		[]configv1.FeatureGateName{features.FeatureGateTLSGroupPreferences},
+		nil,
+	)
+	fgDisabled := featuregates.NewFeatureGate(
+		nil,
+		[]configv1.FeatureGateName{features.FeatureGateTLSGroupPreferences},
+	)
 
 	tests := []struct {
 		name           string
 		hcp            *unstructured.Unstructured
+		featureGates   featuregates.FeatureGate
 		wantMinVersion string
 		wantCiphers    []string
+		wantGroups     []string
 	}{
 		{
-			name:           "empty profile defaults to Intermediate",
+			name:           "empty profile defaults to Intermediate, nil featureGates",
 			hcp:            tlsProfileHCP("", nil),
+			featureGates:   nil,
 			wantMinVersion: string(configv1.VersionTLS12),
-			wantCiphers:    intermediateIANA,
+			wantCiphers:    ianaCiphers(configv1.TLSProfileIntermediateType),
+			wantGroups:     nil,
 		},
 		{
-			name:           "Intermediate profile",
+			name:           "empty profile defaults to Intermediate, gate enabled",
+			hcp:            tlsProfileHCP("", nil),
+			featureGates:   fgEnabled,
+			wantMinVersion: string(configv1.VersionTLS12),
+			wantCiphers:    ianaCiphers(configv1.TLSProfileIntermediateType),
+			wantGroups:     profileGroups(configv1.TLSProfileIntermediateType),
+		},
+		{
+			name:           "Intermediate profile, gate disabled omits groups",
 			hcp:            tlsProfileHCP(string(configv1.TLSProfileIntermediateType), nil),
+			featureGates:   fgDisabled,
 			wantMinVersion: string(configv1.VersionTLS12),
-			wantCiphers:    intermediateIANA,
+			wantCiphers:    ianaCiphers(configv1.TLSProfileIntermediateType),
+			wantGroups:     nil,
 		},
 		{
-			name:           "Modern profile",
+			name:           "Intermediate profile, gate enabled",
+			hcp:            tlsProfileHCP(string(configv1.TLSProfileIntermediateType), nil),
+			featureGates:   fgEnabled,
+			wantMinVersion: string(configv1.VersionTLS12),
+			wantCiphers:    ianaCiphers(configv1.TLSProfileIntermediateType),
+			wantGroups:     profileGroups(configv1.TLSProfileIntermediateType),
+		},
+		{
+			name:           "Modern profile, gate disabled omits groups",
 			hcp:            tlsProfileHCP(string(configv1.TLSProfileModernType), nil),
+			featureGates:   fgDisabled,
 			wantMinVersion: string(configv1.VersionTLS13),
-			wantCiphers:    modernIANA,
+			wantCiphers:    ianaCiphers(configv1.TLSProfileModernType),
+			wantGroups:     nil,
 		},
 		{
-			name: "Custom profile",
+			name:           "Modern profile, gate enabled",
+			hcp:            tlsProfileHCP(string(configv1.TLSProfileModernType), nil),
+			featureGates:   fgEnabled,
+			wantMinVersion: string(configv1.VersionTLS13),
+			wantCiphers:    ianaCiphers(configv1.TLSProfileModernType),
+			wantGroups:     profileGroups(configv1.TLSProfileModernType),
+		},
+		{
+			name:           "Old profile, gate enabled",
+			hcp:            tlsProfileHCP(string(configv1.TLSProfileOldType), nil),
+			featureGates:   fgEnabled,
+			wantMinVersion: string(configv1.VersionTLS10),
+			wantCiphers:    ianaCiphers(configv1.TLSProfileOldType),
+			wantGroups:     profileGroups(configv1.TLSProfileOldType),
+		},
+		{
+			name: "Custom profile without groups, gate enabled",
 			hcp: tlsProfileHCP(string(configv1.TLSProfileCustomType), map[string]any{
 				"custom": map[string]any{
 					"minTLSVersion": "VersionTLS13",
 					"ciphers":       []any{"ECDHE-RSA-AES128-GCM-SHA256", "ECDHE-ECDSA-AES256-GCM-SHA384"},
 				},
 			}),
+			featureGates:   fgEnabled,
 			wantMinVersion: "VersionTLS13",
 			wantCiphers: []string{
 				"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
 				"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
 			},
+			wantGroups: []string{},
 		},
 		{
-			name:           "unknown profile type falls back to Intermediate",
+			name: "Custom profile with groups, gate disabled omits groups",
+			hcp: tlsProfileHCP(string(configv1.TLSProfileCustomType), map[string]any{
+				"custom": map[string]any{
+					"minTLSVersion": "VersionTLS12",
+					"ciphers":       []any{"ECDHE-RSA-AES128-GCM-SHA256"},
+					"groups":        []any{"X25519", "secp256r1"},
+				},
+			}),
+			featureGates:   fgDisabled,
+			wantMinVersion: "VersionTLS12",
+			wantCiphers:    []string{"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"},
+			wantGroups:     nil,
+		},
+		{
+			name: "Custom profile with groups, gate enabled",
+			hcp: tlsProfileHCP(string(configv1.TLSProfileCustomType), map[string]any{
+				"custom": map[string]any{
+					"minTLSVersion": "VersionTLS12",
+					"ciphers":       []any{"ECDHE-RSA-AES128-GCM-SHA256"},
+					"groups":        []any{"X25519", "secp256r1"},
+				},
+			}),
+			featureGates:   fgEnabled,
+			wantMinVersion: "VersionTLS12",
+			wantCiphers:    []string{"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"},
+			wantGroups:     []string{"X25519", "secp256r1"},
+		},
+		{
+			name:           "unknown profile type falls back to Intermediate, gate enabled",
 			hcp:            tlsProfileHCP("SomeUnknownProfile", nil),
+			featureGates:   fgEnabled,
 			wantMinVersion: string(configv1.VersionTLS12),
-			wantCiphers:    intermediateIANA,
+			wantCiphers:    ianaCiphers(configv1.TLSProfileIntermediateType),
+			wantGroups:     profileGroups(configv1.TLSProfileIntermediateType),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotVersion, gotCiphers, gotGroups, err := tlsSettingsFromHCP(tt.hcp)
+			gotVersion, gotCiphers, gotGroups, err := tlsSettingsFromHCP(tt.hcp, tt.featureGates)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantMinVersion, gotVersion)
 			assert.Equal(t, tt.wantCiphers, gotCiphers)
-			assert.Nil(t, gotGroups)
+			if tt.wantGroups == nil {
+				assert.Nil(t, gotGroups)
+			} else {
+				assert.Equal(t, tt.wantGroups, gotGroups)
+			}
 		})
 	}
 }

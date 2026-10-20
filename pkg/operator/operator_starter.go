@@ -262,7 +262,8 @@ func (hsr *HyperShiftStarter) initClient(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// guestClient is where most resources get initialized in hypershift
+	// guestClient is where most resources get initialized in hypershift,
+	// including FeatureGate observation via commonStarter.getFeatureGate.
 	hsr.commonClients = guestClients
 
 	// Create all events in the guest cluster.

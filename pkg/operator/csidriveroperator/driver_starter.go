@@ -367,6 +367,7 @@ func (h *hypershiftDriverStarter) addExtraControllersToManager(manager manager.C
 		h.targetVersion,
 		h.eventRecorder,
 		h.resyncInterval,
+		h.featureGates,
 	), 1)
 }
 
