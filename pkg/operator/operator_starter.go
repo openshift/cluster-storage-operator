@@ -210,7 +210,8 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 		resync,
 		ssr.versionGetter,
 		status.VersionForOperandFromEnv(),
-		ssr.eventRecorder)
+		ssr.eventRecorder,
+		ssr.featureGates)
 	ssr.controllers = append(ssr.controllers, vsphereProblemDetector)
 
 	klog.Info("Starting the Informers.")
@@ -261,7 +262,8 @@ func (hsr *HyperShiftStarter) initClient(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// guestClient is where most resources get initialized in hypershift
+	// guestClient is where most resources get initialized in hypershift,
+	// including FeatureGate observation via commonStarter.getFeatureGate.
 	hsr.commonClients = guestClients
 
 	// Create all events in the guest cluster.

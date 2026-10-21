@@ -293,6 +293,7 @@ func (s *standAloneDriverStarter) addExtraControllersToManager(manager manager.C
 		s.targetVersion,
 		s.eventRecorder,
 		s.resyncInterval,
+		s.featureGates,
 	), 1)
 
 	if cfg.ServiceMonitorAsset != "" {
@@ -366,6 +367,7 @@ func (h *hypershiftDriverStarter) addExtraControllersToManager(manager manager.C
 		h.targetVersion,
 		h.eventRecorder,
 		h.resyncInterval,
+		h.featureGates,
 	), 1)
 }
 

@@ -16,6 +16,7 @@ import (
 	operatorv1 "github.com/openshift/api/operator/v1"
 	configv1listers "github.com/openshift/client-go/config/listers/config/v1"
 	"github.com/openshift/library-go/pkg/controller/factory"
+	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
@@ -45,6 +46,7 @@ type CommonCSIDeploymentController struct {
 	eventRecorder     events.Recorder
 	infraLister       configv1listers.InfrastructureLister
 	apiServerLister   configv1listers.APIServerLister
+	featureGates      featuregates.FeatureGate
 	resyncInterval    time.Duration
 	factory           *factory.Factory
 }
@@ -113,7 +115,8 @@ func initCommonDeploymentParams(
 	resyncInterval time.Duration,
 	versionGetter status.VersionGetter,
 	targetVersion string,
-	eventRecorder events.Recorder) CommonCSIDeploymentController {
+	eventRecorder events.Recorder,
+	featureGates featuregates.FeatureGate) CommonCSIDeploymentController {
 	c := CommonCSIDeploymentController{
 		name:              csiOperatorConfig.ConditionPrefix,
 		operatorClient:    client.OperatorClient,
@@ -126,6 +129,7 @@ func initCommonDeploymentParams(
 		eventRecorder:     eventRecorder.WithComponentSuffix(csiOperatorConfig.ConditionPrefix),
 		infraLister:       client.ConfigInformers.Config().V1().Infrastructures().Lister(),
 		apiServerLister:   client.ConfigInformers.Config().V1().APIServers().Lister(),
+		featureGates:      featureGates,
 	}
 	return c
 }
@@ -153,9 +157,10 @@ func NewCSIDriverOperatorDeploymentController(
 	targetVersion string,
 	eventRecorder events.Recorder,
 	resyncInterval time.Duration,
+	featureGates featuregates.FeatureGate,
 ) factory.Controller {
 	c := &CSIDriverOperatorDeploymentController{
-		CommonCSIDeploymentController: initCommonDeploymentParams(clients, csiOperatorConfig, resyncInterval, versionGetter, targetVersion, eventRecorder),
+		CommonCSIDeploymentController: initCommonDeploymentParams(clients, csiOperatorConfig, resyncInterval, versionGetter, targetVersion, eventRecorder, featureGates),
 	}
 	f := c.initController(func(f *factory.Factory) {
 		f.WithInformers(
@@ -285,9 +290,9 @@ func (c *CSIDriverOperatorDeploymentController) reconcileOperatorConfigMap(ctx c
 	if err != nil {
 		return fmt.Errorf("failed to get APIServer cluster: %w", err)
 	}
-	minTLSVersion, cipherSuites := csotls.TLSSettingsFromProfile(apiServer.Spec.TLSSecurityProfile)
+	minTLSVersion, cipherSuites, tlsGroups := csotls.TLSSettingsFromProfile(apiServer.Spec.TLSSecurityProfile, c.featureGates)
 
-	yaml, err := csotls.OperatorConfigYAML(minTLSVersion, cipherSuites)
+	yaml, err := csotls.OperatorConfigYAML(minTLSVersion, cipherSuites, tlsGroups)
 	if err != nil {
 		return err
 	}
