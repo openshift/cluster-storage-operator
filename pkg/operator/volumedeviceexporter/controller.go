@@ -100,7 +100,7 @@ func (c *controller) syncDaemonSet(ctx context.Context, syncCtx factory.SyncCont
 	if !c.shouldManage() {
 		return c.deleteDaemonSetAndSCC(ctx)
 	}
-	if err := c.applySCC(ctx); err != nil {
+	if err := c.deleteSCC(ctx); err != nil {
 		return err
 	}
 	if err := c.syncMetricsClientCA(ctx); err != nil {
@@ -126,15 +126,6 @@ func supportedHyperShiftPlatform(platform *configv1.PlatformStatus) bool {
 	return platform.Type == configv1.AWSPlatformType || platform.Type == configv1.AzurePlatformType || platform.Type == configv1.GCPPlatformType
 }
 
-func (c *controller) applySCC(ctx context.Context) error {
-	data, err := assets.ReadFile("volumedeviceexporter/00_scc.yaml")
-	if err != nil {
-		return err
-	}
-	_, _, err = resourceapply.ApplyUnstructuredResourceImproved(ctx, c.clients.DynamicClient, c.recorder, resourceread.ReadUnstructuredOrDie(data), nil, securityContextConstraintsGVR, nil, nil)
-	return err
-}
-
 func (c *controller) deleteDaemonSetAndSCC(ctx context.Context) error {
 	data, err := assets.ReadFile("volumedeviceexporter/05_daemonset.yaml")
 	if err != nil {
@@ -147,11 +138,14 @@ func (c *controller) deleteDaemonSetAndSCC(ctx context.Context) error {
 	if _, _, err := resourceapply.DeleteConfigMap(ctx, c.clients.KubeClient.CoreV1(), c.recorder, clientCA); err != nil {
 		return err
 	}
-	data, err = assets.ReadFile("volumedeviceexporter/00_scc.yaml")
-	if err != nil {
-		return err
+	return c.deleteSCC(ctx)
+}
+
+func (c *controller) deleteSCC(ctx context.Context) error {
+	err := c.clients.DynamicClient.Resource(securityContextConstraintsGVR).Delete(ctx, "volume-device-exporter", metav1.DeleteOptions{})
+	if apierrors.IsNotFound(err) {
+		return nil
 	}
-	_, _, err = resourceapply.DeleteUnstructuredResource(ctx, c.clients.DynamicClient, c.recorder, resourceread.ReadUnstructuredOrDie(data), securityContextConstraintsGVR)
 	return err
 }
 

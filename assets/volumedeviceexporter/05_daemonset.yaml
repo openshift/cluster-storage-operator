@@ -40,17 +40,12 @@ spec:
           containerPort: 9710
         securityContext:
           privileged: true
-          runAsUser: 0
-          runAsGroup: 0
           readOnlyRootFilesystem: true
-          allowPrivilegeEscalation: true
           capabilities:
             drop:
             - ALL
           seccompProfile:
             type: RuntimeDefault
-          seLinuxOptions:
-            level: "s0"
         resources:
           requests:
             cpu: 10m
