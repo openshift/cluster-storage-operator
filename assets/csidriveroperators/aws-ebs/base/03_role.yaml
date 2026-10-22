@@ -7,70 +7,45 @@ rules:
 - apiGroups:
   - ''
   resources:
-  - pods
-  - services
   - endpoints
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
   - events
+  verbs:
+  - create
+  - patch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - pods
   - configmaps
-  - secrets
+  - services
   verbs:
   - get
   - list
   - watch
   - create
-  - update
   - patch
-  - delete
+  - update
 - apiGroups:
   - apps
   resources:
-  - deployments
   - replicasets
+  - daemonsets
+  - deployments
   verbs:
   - get
   - list
   - watch
   - create
-  - update
   - patch
-  - delete
-- apiGroups:
-  - policy
-  resources:
-  - poddisruptionbudgets
-  verbs:
-  - get
-  - list
-  - watch
-  - create
   - update
-  - patch
-  - delete
-- apiGroups:
-    - ''
-  resources:
-    - serviceaccounts
-  verbs:
-    - get
-    - list
-    - watch
-    - create
-    - update
-    - patch
-    - delete
-- apiGroups:
-    - rbac.authorization.k8s.io
-  resources:
-    - roles
-    - rolebindings
-  verbs:
-    - watch
-    - list
-    - get
-    - create
-    - delete
-    - patch
-    - update
 - apiGroups:
   - coordination.k8s.io
   resources:
@@ -80,6 +55,48 @@ rules:
   - list
   - watch
   - create
-  - update
   - patch
-  - delete
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - serviceaccounts
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - update
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  - rolebindings
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - update
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - update
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
+  - list
+  - watch
