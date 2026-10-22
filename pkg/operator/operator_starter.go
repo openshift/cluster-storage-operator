@@ -25,6 +25,8 @@ import (
 	"github.com/openshift/library-go/pkg/operator/staleconditions"
 	"github.com/openshift/library-go/pkg/operator/status"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
@@ -132,10 +134,13 @@ func (csr *commonStarter) CreateCommonControllers() error {
 	logLevelController := loglevel.NewClusterOperatorLoggingController(csr.commonClients.OperatorClient, csr.eventRecorder)
 	csr.controllers = append(csr.controllers, logLevelController)
 
-	// This controller removes VSphereProblemDetectorDeploymentControllerAvailable condition in the storage status
+	// This controller removes stale conditions from the storage status
 	staleConditionsController := staleconditions.NewRemoveStaleConditionsController(
 		"RemoveStaleConditionsController",
-		[]string{"VSphereProblemDetectorDeploymentControllerAvailable"},
+		[]string{
+			"VSphereProblemDetectorDeploymentControllerAvailable",
+			"SELinuxMountGAReadinessControllerUpgradeable",
+		},
 		csr.commonClients.OperatorClient,
 		csr.eventRecorder,
 	)
@@ -184,6 +189,8 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	deleteSelinuxConflictsConfigMap(ctx, ssr.commonClients)
 
 	metrics.CountStorageClasses(ssr.commonClients)
 	metrics.InitializeVACMismatchMetrics(ssr.commonClients)
@@ -289,6 +296,8 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 		return err
 	}
 
+	deleteSelinuxConflictsConfigMap(ctx, hsr.commonClients)
+
 	metrics.InitializeVACMismatchMetrics(hsr.commonClients)
 
 	csiDriverController, _ := csidriveroperator.NewHypershiftDriverStarter(
@@ -323,5 +332,16 @@ func (hsr *HyperShiftStarter) populateConfigs(clients *csoclients.Clients) []csi
 		csioperatorclient.GetOpenStackManilaOperatorConfig(true, clients, hsr.eventRecorder),
 		csioperatorclient.GetOpenStackCinderCSIOperatorConfig(true),
 		csioperatorclient.GetPowerVSBlockCSIOperatorConfig(true),
+	}
+}
+
+// deleteSelinuxConflictsConfigMap deletes the openshift-config/selinux-conflicts ConfigMap
+// that was written by the kube-controller-manager SELinux warning controller in previous releases.
+// The ConfigMap is no longer read by anything now that SELinuxMount is GA.
+func deleteSelinuxConflictsConfigMap(ctx context.Context, clients *csoclients.Clients) {
+	err := clients.KubeClient.CoreV1().ConfigMaps(csoclients.CloudConfigNamespace).Delete(
+		ctx, "selinux-conflicts", metav1.DeleteOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
+		klog.Warningf("Failed to delete selinux-conflicts ConfigMap: %v", err)
 	}
 }
