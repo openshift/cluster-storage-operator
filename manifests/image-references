@@ -134,3 +134,7 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-volume-data-source-validator:latest
+  - name: csi-volume-device-exporter
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-csi-volume-device-exporter:latest

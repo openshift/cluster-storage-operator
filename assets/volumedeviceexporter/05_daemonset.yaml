@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: volume-device-exporter
+  namespace: openshift-cluster-storage-operator
+spec:
+  selector:
+    matchLabels:
+      app: volume-device-exporter
+  template:
+    metadata:
+      annotations:
+        openshift.io/required-scc: privileged
+      labels:
+        app: volume-device-exporter
+        openshift.storage.network-policy.dns: allow
+        openshift.storage.network-policy.api-server: allow
+        openshift.storage.network-policy.operator-metrics: allow
+    spec:
+      serviceAccountName: volume-device-exporter
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - operator: Exists
+      containers:
+      - name: exporter
+        image: ${VOLUME_DEVICE_EXPORTER_IMAGE}
+        args:
+        - --listen-address=127.0.0.1:9710
+        - --poll-interval=30s
+        - --log-level=info
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        ports:
+        - name: metrics
+          containerPort: 9710
+        securityContext:
+          privileged: true
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+        volumeMounts:
+        - name: kubelet-root
+          mountPath: /var/lib/kubelet
+          readOnly: true
+          mountPropagation: HostToContainer
+        - name: host-sys
+          mountPath: /host/sys
+          readOnly: true
+      - name: kube-rbac-proxy
+        image: ${KUBE_RBAC_PROXY_IMAGE}
+        args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:9710/
+        - --tls-cert-file=/etc/tls/private/tls.crt
+        - --tls-private-key-file=/etc/tls/private/tls.key
+        - --client-ca-file=/etc/tls/client/ca-bundle.crt
+        ports:
+        - name: https-metrics
+          containerPort: 8443
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        resources:
+          requests:
+            cpu: 10m
+            memory: 20Mi
+        volumeMounts:
+        - name: serving-cert
+          mountPath: /etc/tls/private
+          readOnly: true
+        - name: metrics-client-ca
+          mountPath: /etc/tls/client
+          readOnly: true
+        # Only kube-rbac-proxy needs an in-cluster client. Do not expose it to
+        # the host-reading exporter container.
+        - name: kube-rbac-proxy-token
+          mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          readOnly: true
+      volumes:
+      - name: kubelet-root
+        hostPath:
+          path: /var/lib/kubelet
+      - name: host-sys
+        hostPath:
+          path: /sys
+      - name: serving-cert
+        secret:
+          secretName: volume-device-exporter-serving-cert
+      - name: metrics-client-ca
+        configMap:
+          name: volume-device-exporter-client-ca
+          items:
+          - key: client-ca.crt
+            path: ca-bundle.crt
+      - name: kube-rbac-proxy-token
+        projected:
+          sources:
+          - serviceAccountToken:
+              path: token
+              expirationSeconds: 3600
+          - configMap:
+              name: kube-root-ca.crt
+              items:
+              - key: ca.crt
+                path: ca.crt
+          - downwardAPI:
+              items:
+              - path: namespace
+                fieldRef:
+                  fieldPath: metadata.namespace

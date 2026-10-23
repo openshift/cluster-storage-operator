@@ -16,6 +16,7 @@ import (
 	metrics "github.com/openshift/cluster-storage-operator/pkg/operator/metrics"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/selinuxmountreadiness"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/volumedatasourcevalidator"
+	"github.com/openshift/cluster-storage-operator/pkg/operator/volumedeviceexporter"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/vsphereproblemdetector"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/controller/factory"
@@ -204,6 +205,7 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 		ssr.eventRecorder,
 		csiDriverConfigs)
 	ssr.controllers = append(ssr.controllers, csiDriverController)
+	ssr.controllers = append(ssr.controllers, volumedeviceexporter.NewControllers(ssr.commonClients, ssr.featureGates, ssr.eventRecorder)...)
 
 	vsphereProblemDetector := vsphereproblemdetector.NewVSphereProblemDetectorStarter(
 		ssr.commonClients,
@@ -317,6 +319,7 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	)
 
 	hsr.controllers = append(hsr.controllers, csiDriverController)
+	hsr.controllers = append(hsr.controllers, volumedeviceexporter.NewControllers(hsr.commonClients, hsr.featureGates, hsr.eventRecorder)...)
 	klog.Info("Starting the Informers.")
 
 	csoclients.StartGuestInformers(hsr.commonClients, ctx.Done())
