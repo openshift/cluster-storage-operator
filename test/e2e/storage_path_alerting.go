@@ -34,6 +34,10 @@ const (
 	defaultPrometheusNS   = "openshift-monitoring"
 	defaultRuleName       = "csi-volume-path-health"
 	defaultExporterDS     = "volume-device-exporter"
+	defaultISCSIClass     = "ci-netapp-iscsi"
+	defaultISCSILUKSClass = "ci-netapp-iscsi-luks"
+	defaultNVMeClass      = "ci-netapp-nvme"
+	defaultNVMeLUKSClass  = "ci-netapp-nvme-luks"
 	alertPollInterval     = 15 * time.Second
 	pvCleanupTimeout      = 15 * time.Minute
 )
@@ -84,7 +88,7 @@ type prometheusAlert struct {
 //   - The caller can create test workloads and short-lived Prometheus tokens.
 //   - oc is in PATH for targeted host firewall fault injection.
 //   - KUBECONFIG identifies the prepared test cluster.
-//   - These required variables identify the four test StorageClasses:
+//   - These optional variables override the FSxN/Trident StorageClass defaults:
 //     ALERT_TEST_ISCSI_STORAGECLASS,
 //     ALERT_TEST_ISCSI_LUKS_STORAGECLASS,
 //     ALERT_TEST_NVME_STORAGECLASS, and
@@ -107,10 +111,10 @@ type prometheusAlert struct {
 // Example:
 //
 //	export KUBECONFIG=/path/to/cluster.kubeconfig
-//	export ALERT_TEST_ISCSI_STORAGECLASS=ci-netapp-iscsi
-//	export ALERT_TEST_ISCSI_LUKS_STORAGECLASS=ci-netapp-iscsi-luks
-//	export ALERT_TEST_NVME_STORAGECLASS=ci-netapp-nvme
-//	export ALERT_TEST_NVME_LUKS_STORAGECLASS=ci-netapp-nvme-luks
+//	export ALERT_TEST_ISCSI_STORAGECLASS=other-iscsi-class
+//	export ALERT_TEST_ISCSI_LUKS_STORAGECLASS=other-iscsi-luks-class
+//	export ALERT_TEST_NVME_STORAGECLASS=other-nvme-class
+//	export ALERT_TEST_NVME_LUKS_STORAGECLASS=other-nvme-luks-class
 //
 // Execution:
 // Run the cso/storage-path-alerting OTE suite with a JUnit output path. The
@@ -196,24 +200,14 @@ var _ = g.Describe("[sig-storage][StoragePathAlert][Serial] CSI storage path ale
 
 func storagePathAlertSettings() (storagePathAlertConfig, error) {
 	settings := storagePathAlertConfig{
-		iscsiStorageClass:     os.Getenv("ALERT_TEST_ISCSI_STORAGECLASS"),
-		iscsiLUKSStorageClass: os.Getenv("ALERT_TEST_ISCSI_LUKS_STORAGECLASS"),
-		nvmeStorageClass:      os.Getenv("ALERT_TEST_NVME_STORAGECLASS"),
-		nvmeLUKSStorageClass:  os.Getenv("ALERT_TEST_NVME_LUKS_STORAGECLASS"),
+		iscsiStorageClass:     envOrDefault("ALERT_TEST_ISCSI_STORAGECLASS", defaultISCSIClass),
+		iscsiLUKSStorageClass: envOrDefault("ALERT_TEST_ISCSI_LUKS_STORAGECLASS", defaultISCSILUKSClass),
+		nvmeStorageClass:      envOrDefault("ALERT_TEST_NVME_STORAGECLASS", defaultNVMeClass),
+		nvmeLUKSStorageClass:  envOrDefault("ALERT_TEST_NVME_LUKS_STORAGECLASS", defaultNVMeLUKSClass),
 		exporterNamespace:     envOrDefault("ALERT_TEST_EXPORTER_NAMESPACE", defaultExporterNS),
 		exporterDaemonSet:     envOrDefault("ALERT_TEST_EXPORTER_DAEMONSET", defaultExporterDS),
 		prometheusNamespace:   envOrDefault("ALERT_TEST_PROMETHEUS_NAMESPACE", defaultPrometheusNS),
 		prometheusRule:        envOrDefault("ALERT_TEST_PROMETHEUS_RULE", defaultRuleName),
-	}
-	for name, value := range map[string]string{
-		"ALERT_TEST_ISCSI_STORAGECLASS":      settings.iscsiStorageClass,
-		"ALERT_TEST_ISCSI_LUKS_STORAGECLASS": settings.iscsiLUKSStorageClass,
-		"ALERT_TEST_NVME_STORAGECLASS":       settings.nvmeStorageClass,
-		"ALERT_TEST_NVME_LUKS_STORAGECLASS":  settings.nvmeLUKSStorageClass,
-	} {
-		if value == "" {
-			return storagePathAlertConfig{}, fmt.Errorf("set %s to run storage path alert tests", name)
-		}
 	}
 	return settings, nil
 }
