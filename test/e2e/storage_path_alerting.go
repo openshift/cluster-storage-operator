@@ -35,6 +35,7 @@ const (
 	defaultRuleName       = "csi-volume-path-health"
 	defaultExporterDS     = "volume-device-exporter"
 	alertPollInterval     = 15 * time.Second
+	pvCleanupTimeout      = 15 * time.Minute
 )
 
 type storagePathAlertConfig struct {
@@ -82,14 +83,42 @@ type prometheusAlert struct {
 //   - Platform Prometheus is accessible through the prometheus-k8s route.
 //   - The caller can create test workloads and short-lived Prometheus tokens.
 //   - oc is in PATH for targeted host firewall fault injection.
-//   - ALERT_TEST_*_STORAGECLASS environment variables identify iSCSI and
-//     NVMe/TCP unencrypted and LUKS StorageClasses.
+//   - KUBECONFIG identifies the prepared test cluster.
+//   - These required variables identify the four test StorageClasses:
+//     ALERT_TEST_ISCSI_STORAGECLASS,
+//     ALERT_TEST_ISCSI_LUKS_STORAGECLASS,
+//     ALERT_TEST_NVME_STORAGECLASS, and
+//     ALERT_TEST_NVME_LUKS_STORAGECLASS.
+//     Discover candidate values with:
+//     oc get storageclass
+//     Confirm each class provisions the expected protocol and encryption mode
+//     from its Trident backend and StorageClass parameters.
+//   - These optional variables use the shown defaults and only need setting
+//     when the target cluster differs:
+//     ALERT_TEST_EXPORTER_NAMESPACE=openshift-cluster-storage-operator
+//     ALERT_TEST_EXPORTER_DAEMONSET=volume-device-exporter
+//     ALERT_TEST_PROMETHEUS_NAMESPACE=openshift-monitoring
+//     ALERT_TEST_PROMETHEUS_RULE=csi-volume-path-health
+//     Discover their values with:
+//     oc get daemonset -A | grep volume-device-exporter
+//     oc get prometheusrule -A | grep csi-volume-path-health
+//     oc get route -n openshift-monitoring prometheus-k8s
+//
+// Example:
+//
+//	export KUBECONFIG=/path/to/cluster.kubeconfig
+//	export ALERT_TEST_ISCSI_STORAGECLASS=ci-netapp-iscsi
+//	export ALERT_TEST_ISCSI_LUKS_STORAGECLASS=ci-netapp-iscsi-luks
+//	export ALERT_TEST_NVME_STORAGECLASS=ci-netapp-nvme
+//	export ALERT_TEST_NVME_LUKS_STORAGECLASS=ci-netapp-nvme-luks
 //
 // Execution:
 // Run the cso/storage-path-alerting OTE suite with a JUnit output path. The
 // suite is serial and disruptive. It runs T1-T8 for filesystem and raw-block
 // volumes, then T9 lifecycle coverage. Every injected firewall rule is
-// registered for restoration before the fault is applied.
+// registered for restoration before the fault is applied. Cleanup captures PVs
+// owned by the test namespace, requests their VolumeAttachment deletion after
+// deleting the namespace, and waits for both attachments and PVs to disappear.
 var _ = g.Describe("[sig-storage][StoragePathAlert][Serial] CSI storage path alerting", g.Serial, g.Label(storagePathAlertLabel), g.Label("Serial"), func() {
 	var env *storagePathAlertEnv
 
@@ -130,8 +159,8 @@ var _ = g.Describe("[sig-storage][StoragePathAlert][Serial] CSI storage path ale
 		}
 		env.namespace = ns.Name
 		g.DeferCleanup(func(ctx context.Context) {
-			if err := deleteNamespace(ctx, env.kube, env.namespace); err != nil {
-				g.Fail(fmt.Sprintf("delete test namespace: %v", err))
+			if err := env.cleanupNamespace(ctx); err != nil {
+				g.Fail(fmt.Sprintf("clean up test storage: %v", err))
 			}
 		})
 	})
@@ -356,6 +385,75 @@ func (env *storagePathAlertEnv) runLifecycleCase(ctx context.Context) {
 	if _, err := env.waitForDevice(ctx, replacementPV.Spec.CSI.VolumeHandle, replacementPod.Spec.NodeName); err != nil {
 		g.Fail(err.Error())
 	}
+}
+
+func (env *storagePathAlertEnv) cleanupNamespace(ctx context.Context) error {
+	pvs, err := env.testPersistentVolumes(ctx)
+	if err != nil {
+		return fmt.Errorf("list test PVs: %w", err)
+	}
+	if err := deleteNamespace(ctx, env.kube, env.namespace); err != nil {
+		return err
+	}
+	for _, pv := range pvs {
+		if err := env.requestPVDetach(ctx, pv); err != nil {
+			return err
+		}
+		if err := env.waitForPVDeletion(ctx, pv); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (env *storagePathAlertEnv) requestPVDetach(ctx context.Context, pv string) error {
+	attachments, err := env.kube.StorageV1().VolumeAttachments().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, attachment := range attachments.Items {
+		if attachment.Spec.Source.PersistentVolumeName == nil || *attachment.Spec.Source.PersistentVolumeName != pv {
+			continue
+		}
+		g.GinkgoLogr.Info("Requesting test volume detach", "persistentVolume", pv, "volumeAttachment", attachment.Name)
+		if err := env.kube.StorageV1().VolumeAttachments().Delete(ctx, attachment.Name, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
+			return fmt.Errorf("delete VolumeAttachment %s for PV %s: %w", attachment.Name, pv, err)
+		}
+	}
+	return nil
+}
+
+func (env *storagePathAlertEnv) testPersistentVolumes(ctx context.Context) ([]string, error) {
+	pvs, err := env.kube.CoreV1().PersistentVolumes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]string, 0)
+	for _, pv := range pvs.Items {
+		if pv.Spec.ClaimRef != nil && pv.Spec.ClaimRef.Namespace == env.namespace {
+			result = append(result, pv.Name)
+		}
+	}
+	return result, nil
+}
+
+func (env *storagePathAlertEnv) waitForPVDeletion(ctx context.Context, pv string) error {
+	return wait.PollUntilContextTimeout(ctx, 10*time.Second, pvCleanupTimeout, true, func(ctx context.Context) (bool, error) {
+		attachments, err := env.kube.StorageV1().VolumeAttachments().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return false, err
+		}
+		for _, attachment := range attachments.Items {
+			if attachment.Spec.Source.PersistentVolumeName != nil && *attachment.Spec.Source.PersistentVolumeName == pv {
+				return false, nil
+			}
+		}
+		_, err = env.kube.CoreV1().PersistentVolumes().Get(ctx, pv, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			return true, nil
+		}
+		return false, err
+	})
 }
 
 func (env *storagePathAlertEnv) storageClass(kind string) string {
