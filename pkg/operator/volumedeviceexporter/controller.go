@@ -63,7 +63,7 @@ func NewControllers(clients *csoclients.Clients, featureGates featuregates.Featu
 	staticController := staticresourcecontroller.NewStaticResourceController(
 		"VolumeDeviceExporterStaticResources",
 		assets.ReadFile,
-		nil,
+		staticAssets,
 		resourceapply.NewKubeClientHolder(clients.KubeClient).WithDynamicClient(clients.DynamicClient),
 		clients.OperatorClient,
 		c.recorder,
@@ -73,7 +73,6 @@ func NewControllers(clients *csoclients.Clients, featureGates featuregates.Featu
 
 	daemonSetController := factory.New().WithSync(c.syncDaemonSet).WithSyncDegradedOnError(clients.OperatorClient).WithInformers(
 		clients.OperatorClient.Informer(),
-		clients.ConfigInformers.Config().V1().Infrastructures().Informer(),
 		clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Apps().V1().DaemonSets().Informer(),
 		clients.KubeInformers.InformersFor(csoclients.MonitoringNamespace).Core().V1().ConfigMaps().Informer(),
 		clients.ConfigInformers.Config().V1().FeatureGates().Informer(),
@@ -97,13 +96,6 @@ func (c *controller) syncDaemonSet(ctx context.Context, syncCtx factory.SyncCont
 		return err
 	}
 	return c.applyDaemonSet(ctx, spec)
-}
-
-func supportedHyperShiftPlatform(platform *configv1.PlatformStatus) bool {
-	if platform == nil {
-		return false
-	}
-	return platform.Type == configv1.AWSPlatformType || platform.Type == configv1.AzurePlatformType || platform.Type == configv1.GCPPlatformType
 }
 
 func (c *controller) syncMetricsClientCA(ctx context.Context) error {

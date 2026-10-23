@@ -3,29 +3,8 @@ package volumedeviceexporter
 import (
 	"testing"
 
-	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 )
-
-func TestSupportedHyperShiftPlatform(t *testing.T) {
-	for _, tc := range []struct {
-		name     string
-		platform *configv1.PlatformStatus
-		want     bool
-	}{
-		{name: "nil", platform: nil, want: false},
-		{name: "aws", platform: &configv1.PlatformStatus{Type: configv1.AWSPlatformType}, want: true},
-		{name: "azure", platform: &configv1.PlatformStatus{Type: configv1.AzurePlatformType}, want: true},
-		{name: "gcp", platform: &configv1.PlatformStatus{Type: configv1.GCPPlatformType}, want: true},
-		{name: "vsphere", platform: &configv1.PlatformStatus{Type: configv1.VSpherePlatformType}, want: false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := supportedHyperShiftPlatform(tc.platform); got != tc.want {
-				t.Fatalf("supportedHyperShiftPlatform() = %t, want %t", got, tc.want)
-			}
-		})
-	}
-}
 
 func TestMetricsClientCAConfigMap(t *testing.T) {
 	for _, key := range []string{metricsClientCAKey, "client-ca.crt", "ca.crt", "service-ca.crt"} {
