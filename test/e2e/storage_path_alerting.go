@@ -288,6 +288,7 @@ func (env *storagePathAlertEnv) requireAlertRules(ctx context.Context) error {
 func (env *storagePathAlertEnv) runPathAlertCase(ctx context.Context, tc storagePathCase) {
 	name := strings.ToLower(fmt.Sprintf("%s-%s", tc.id, tc.volumeMode))
 	storageClass := env.storageClass(tc.storageClass)
+	g.By(fmt.Sprintf("Creating %s workload with StorageClass %s", tc.id, storageClass))
 	pvc, pod, err := env.createWorkload(ctx, name, storageClass, tc.volumeMode)
 	if err != nil {
 		g.Fail(fmt.Sprintf("create workload: %v", err))
@@ -315,21 +316,26 @@ func (env *storagePathAlertEnv) runPathAlertCase(ctx context.Context, tc storage
 		}
 	})
 	for _, lif := range lifs {
+		g.By(fmt.Sprintf("Blocking %s path %s on %s", tc.protocol, lif, pod.Spec.NodeName))
 		if err := env.blockLIF(ctx, pod.Spec.NodeName, tc.protocol, lif); err != nil {
 			g.Fail(fmt.Sprintf("block path %s: %v", lif, err))
 		}
 	}
+	g.By(fmt.Sprintf("Waiting for pending %s alert", tc.alert))
 	if err := env.waitForAlert(ctx, tc.alert, tc.severity, pvc.Name, pv.Name, pod.Spec.NodeName, "pending", 3*time.Minute); err != nil {
 		g.Fail(err.Error())
 	}
+	g.By(fmt.Sprintf("Waiting for firing %s alert", tc.alert))
 	if err := env.waitForAlert(ctx, tc.alert, tc.severity, pvc.Name, pv.Name, pod.Spec.NodeName, "firing", 10*time.Minute); err != nil {
 		g.Fail(err.Error())
 	}
 	for _, lif := range lifs {
+		g.By(fmt.Sprintf("Restoring %s path %s on %s", tc.protocol, lif, pod.Spec.NodeName))
 		if err := env.restoreLIF(ctx, pod.Spec.NodeName, tc.protocol, lif); err != nil {
 			g.Fail(fmt.Sprintf("restore path %s: %v", lif, err))
 		}
 	}
+	g.By(fmt.Sprintf("Waiting for %s alert to resolve", tc.alert))
 	if err := env.waitForAlertResolution(ctx, tc.alert, pvc.Name, 5*time.Minute); err != nil {
 		g.Fail(err.Error())
 	}
@@ -473,7 +479,17 @@ func (env *storagePathAlertEnv) createWorkload(ctx context.Context, name, storag
 		pod = current
 		return current.Status.Phase == v1.PodRunning, nil
 	})
-	return pvc, pod, err
+	if err != nil {
+		return nil, nil, err
+	}
+	pvc, err = env.kube.CoreV1().PersistentVolumeClaims(env.namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, nil, err
+	}
+	if pvc.Spec.VolumeName == "" {
+		return nil, nil, fmt.Errorf("PVC %s is running in Pod %s without a bound PV", pvc.Name, pod.Name)
+	}
+	return pvc, pod, nil
 }
 
 func volumeModePtr(mode v1.PersistentVolumeMode) *v1.PersistentVolumeMode { return &mode }
