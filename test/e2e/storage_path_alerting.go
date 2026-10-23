@@ -575,6 +575,7 @@ func (env *storagePathAlertEnv) waitForAlert(ctx context.Context, alert, severit
 		for _, current := range alerts {
 			labels := current.Labels
 			if current.State == state && labels["alertname"] == alert && labels["severity"] == severity && labels["persistentvolumeclaim"] == pvc && labels["persistentvolume"] == pv && labels["namespace"] == env.namespace && labels["node"] == node && labels["device"] != "" {
+				g.By(fmt.Sprintf("Observed %s alert in %s state for PV %s, PVC %s, node %s, device %s", alert, state, pv, pvc, node, labels["device"]))
 				return true, nil
 			}
 		}
@@ -593,6 +594,7 @@ func (env *storagePathAlertEnv) waitForAlertResolution(ctx context.Context, aler
 				return false, nil
 			}
 		}
+		g.By(fmt.Sprintf("Confirmed %s alert is resolved for PVC %s", alert, pvc))
 		return true, nil
 	})
 }
