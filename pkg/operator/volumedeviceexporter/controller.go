@@ -28,7 +28,7 @@ import (
 const (
 	volumeDeviceExporterImage   = "VOLUME_DEVICE_EXPORTER_IMAGE"
 	kubeRBACProxyImage          = "KUBE_RBAC_PROXY_IMAGE"
-	featureGateStoragePathAlert = configv1.FeatureGateName("StoragePathAlert") // TODO(STOR-3187): use features.FeatureGateStoragePathAlert after PR1 is vendored.
+	featureGateStoragePathAlert = configv1.FeatureGateName("StoragePathAlert") // TODO(STOR-3187): use features.FeatureGateStoragePathAlert
 	metricsClientCAConfigMap    = "metrics-client-ca"
 	metricsClientCAKey          = "ca-bundle.crt"
 	exporterClientCAConfigMap   = "volume-device-exporter-client-ca"
@@ -50,16 +50,14 @@ type controller struct {
 	operatorClient v1helpers.OperatorClient
 	clients        *csoclients.Clients
 	featureGates   featuregates.FeatureGate
-	isHyperShift   bool
 	recorder       events.Recorder
 }
 
-func NewControllers(clients *csoclients.Clients, featureGates featuregates.FeatureGate, isHyperShift bool, recorder events.Recorder) []factory.Controller {
+func NewControllers(clients *csoclients.Clients, featureGates featuregates.FeatureGate, recorder events.Recorder) []factory.Controller {
 	c := &controller{
 		operatorClient: clients.OperatorClient,
 		clients:        clients,
 		featureGates:   featureGates,
-		isHyperShift:   isHyperShift,
 		recorder:       recorder.WithComponentSuffix("VolumeDeviceExporter"),
 	}
 	staticController := staticresourcecontroller.NewStaticResourceController(
@@ -69,10 +67,8 @@ func NewControllers(clients *csoclients.Clients, featureGates featuregates.Featu
 		resourceapply.NewKubeClientHolder(clients.KubeClient).WithDynamicClient(clients.DynamicClient),
 		clients.OperatorClient,
 		c.recorder,
-	).WithConditionalResources(assets.ReadFile, staticAssets, c.shouldManage, nil).
+	).
 		AddKubeInformers(clients.KubeInformers).
-		AddInformer(clients.ConfigInformers.Config().V1().Infrastructures().Informer()).
-		AddInformer(clients.ConfigInformers.Config().V1().FeatureGates().Informer()).
 		AddInformer(clients.MonitoringInformer.Monitoring().V1().ServiceMonitors().Informer())
 
 	daemonSetController := factory.New().WithSync(c.syncDaemonSet).WithSyncDegradedOnError(clients.OperatorClient).WithInformers(
@@ -97,26 +93,10 @@ func (c *controller) syncDaemonSet(ctx context.Context, syncCtx factory.SyncCont
 	if spec.ManagementState != operatorapi.Managed {
 		return nil
 	}
-	if !c.shouldManage() {
-		return c.deleteDaemonSetAndSCC(ctx)
-	}
-	if err := c.deleteSCC(ctx); err != nil {
-		return err
-	}
 	if err := c.syncMetricsClientCA(ctx); err != nil {
 		return err
 	}
 	return c.applyDaemonSet(ctx, spec)
-}
-
-func (c *controller) shouldManage() bool {
-	// Keep the exporter enabled during local integration testing until the
-	// StoragePathAlert feature gate is available from openshift/api.
-	infra, err := c.clients.ConfigInformers.Config().V1().Infrastructures().Lister().Get("cluster")
-	if err != nil {
-		return false
-	}
-	return !c.isHyperShift || supportedHyperShiftPlatform(infra.Status.PlatformStatus)
 }
 
 func supportedHyperShiftPlatform(platform *configv1.PlatformStatus) bool {
@@ -124,29 +104,6 @@ func supportedHyperShiftPlatform(platform *configv1.PlatformStatus) bool {
 		return false
 	}
 	return platform.Type == configv1.AWSPlatformType || platform.Type == configv1.AzurePlatformType || platform.Type == configv1.GCPPlatformType
-}
-
-func (c *controller) deleteDaemonSetAndSCC(ctx context.Context) error {
-	data, err := assets.ReadFile("volumedeviceexporter/05_daemonset.yaml")
-	if err != nil {
-		return err
-	}
-	if _, _, err := resourceapply.DeleteDaemonSet(ctx, c.clients.KubeClient.AppsV1(), c.recorder, resourceread.ReadDaemonSetV1OrDie(data)); err != nil {
-		return err
-	}
-	clientCA := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: exporterClientCAConfigMap, Namespace: csoclients.OperatorNamespace}}
-	if _, _, err := resourceapply.DeleteConfigMap(ctx, c.clients.KubeClient.CoreV1(), c.recorder, clientCA); err != nil {
-		return err
-	}
-	return c.deleteSCC(ctx)
-}
-
-func (c *controller) deleteSCC(ctx context.Context) error {
-	err := c.clients.DynamicClient.Resource(securityContextConstraintsGVR).Delete(ctx, "volume-device-exporter", metav1.DeleteOptions{})
-	if apierrors.IsNotFound(err) {
-		return nil
-	}
-	return err
 }
 
 func (c *controller) syncMetricsClientCA(ctx context.Context) error {

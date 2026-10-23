@@ -13,6 +13,6 @@ metadata:
   labels:
     openshift.io/cluster-monitoring: "true"
     # The volume device exporter requires read-only hostPath mounts and UID 0
-    # to inspect kubelet metadata. Its dedicated SCC still limits the Pod.
+    # to inspect kubelet metadata.
     pod-security.kubernetes.io/enforce: privileged
   name: openshift-cluster-storage-operator

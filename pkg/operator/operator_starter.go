@@ -205,7 +205,7 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 		ssr.eventRecorder,
 		csiDriverConfigs)
 	ssr.controllers = append(ssr.controllers, csiDriverController)
-	ssr.controllers = append(ssr.controllers, volumedeviceexporter.NewControllers(ssr.commonClients, ssr.featureGates, false, ssr.eventRecorder)...)
+	ssr.controllers = append(ssr.controllers, volumedeviceexporter.NewControllers(ssr.commonClients, ssr.featureGates, ssr.eventRecorder)...)
 
 	vsphereProblemDetector := vsphereproblemdetector.NewVSphereProblemDetectorStarter(
 		ssr.commonClients,
@@ -317,7 +317,7 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	)
 
 	hsr.controllers = append(hsr.controllers, csiDriverController)
-	hsr.controllers = append(hsr.controllers, volumedeviceexporter.NewControllers(hsr.commonClients, hsr.featureGates, true, hsr.eventRecorder)...)
+	hsr.controllers = append(hsr.controllers, volumedeviceexporter.NewControllers(hsr.commonClients, hsr.featureGates, hsr.eventRecorder)...)
 	klog.Info("Starting the Informers.")
 
 	csoclients.StartGuestInformers(hsr.commonClients, ctx.Done())

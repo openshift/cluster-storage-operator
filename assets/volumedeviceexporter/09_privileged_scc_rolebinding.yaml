@@ -1,5 +1,3 @@
-# TEST ONLY: grants the exporter ServiceAccount the privileged SCC to confirm
-# the kubelet vol_data.json SELinux denial is the discovery blocker.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
