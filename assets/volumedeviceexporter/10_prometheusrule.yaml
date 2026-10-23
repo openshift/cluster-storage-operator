@@ -1,0 +1,156 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+# TODO(STOR-3188): define missing-mapping semantics when the exporter mapping
+# disappears because a device is detached or no longer discoverable.
+metadata:
+  name: csi-volume-path-health
+  namespace: openshift-cluster-storage-operator
+  labels:
+    role: alert-rules
+spec:
+  groups:
+  - name: csi-volume-path-health
+    rules:
+    - record: csiaddons:volume_pv_context_info
+      expr: |
+        (
+          (
+            label_replace(
+              label_replace(kube_persistentvolume_info, "volume_handle", "$1", "csi_volume_handle", "(.+)"),
+              "driver", "$1", "csi_driver", "(.+)"
+            )
+            * on(persistentvolume) group_left(persistentvolumeclaim, namespace)
+            label_replace(kube_persistentvolumeclaim_info{volumename!=""}, "persistentvolume", "$1", "volumename", "(.+)")
+          )
+          or
+          (
+            label_replace(
+              label_replace(kube_persistentvolume_info, "volume_handle", "$1", "csi_volume_handle", "(.+)"),
+              "driver", "$1", "csi_driver", "(.+)"
+            )
+            unless on(persistentvolume)
+            label_replace(kube_persistentvolumeclaim_info{volumename!=""}, "persistentvolume", "$1", "volumename", "(.+)")
+          )
+        )
+    - alert: CSIAddonsVolumeMultipathDegraded
+      expr: |
+        (
+          label_replace(
+            (
+              csiaddons:volume_pv_context_info
+              * on(driver, volume_handle) group_left(device, node)
+              csiaddons_volume_node_device_info
+            ),
+            "sysfs_name", "$1", "device", "(.*)"
+          )
+          * on(sysfs_name, node) group_left(device)
+          label_replace(node_dmmultipath_device_info, "node", "$1", "instance", "(.+)")
+        )
+        * on(device, node) group_left()
+        (
+          count by(device, node) (
+            label_replace(node_dmmultipath_path_state{state!~"running|live"}, "node", "$1", "instance", "(.+)") == 1
+          ) > 0
+          and on(device, node)
+          label_replace(node_dmmultipath_device_paths_active, "node", "$1", "instance", "(.+)") > 0
+        )
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: PV {{ $labels.persistentvolume }} on {{ $labels.node }} has degraded multipath (device {{ $labels.device }})
+        description: At least one path to the multipath device has failed while at least one usable path remains.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeMultipathDegraded.md
+    - alert: CSIAddonsVolumeMultipathLost
+      expr: |
+        (
+          label_replace(
+            (
+              csiaddons:volume_pv_context_info
+              * on(driver, volume_handle) group_left(device, node)
+              csiaddons_volume_node_device_info
+            ),
+            "sysfs_name", "$1", "device", "(.*)"
+          )
+          * on(sysfs_name, node) group_left(device)
+          label_replace(node_dmmultipath_device_info, "node", "$1", "instance", "(.+)")
+        )
+        * on(device, node) group_left()
+        (
+          label_replace(node_dmmultipath_device_paths_active, "node", "$1", "instance", "(.+)") == 0
+        )
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: PV {{ $labels.persistentvolume }} on {{ $labels.node }} has lost all multipath paths (device {{ $labels.device }})
+        description: All paths to the multipath device are down. Immediate investigation of storage connectivity is required.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeMultipathLost.md
+    - alert: CSIAddonsVolumeNVMeSubsystemDegraded
+      expr: |
+        (
+          (
+            csiaddons:volume_pv_context_info
+            * on(driver, volume_handle) group_left(device, node)
+            csiaddons_volume_node_device_info{device=~"nvme.*"}
+          )
+          * on(device, node) group_left(subsystem)
+          label_replace(node_nvmesubsystem_namespace_info, "node", "$1", "instance", "(.+)")
+        )
+        * on(subsystem, node) group_left()
+        (
+          (
+            label_replace(node_nvmesubsystem_paths, "node", "$1", "instance", "(.+)")
+            - label_replace(node_nvmesubsystem_paths_live, "node", "$1", "instance", "(.+)")
+          ) > 0
+          and on(subsystem, node)
+          label_replace(node_nvmesubsystem_paths_live, "node", "$1", "instance", "(.+)") > 0
+        )
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: PV {{ $labels.persistentvolume }} on {{ $labels.node }} has degraded NVMe-oF subsystem ({{ $labels.subsystem }})
+        description: At least one NVMe-oF controller path is not live while at least one usable path remains.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeNVMeSubsystemDegraded.md
+    - alert: CSIAddonsVolumeNVMeSubsystemLost
+      expr: |
+        (
+          (
+            csiaddons:volume_pv_context_info
+            * on(driver, volume_handle) group_left(device, node)
+            csiaddons_volume_node_device_info{device=~"nvme.*"}
+          )
+          * on(device, node) group_left(subsystem)
+          label_replace(node_nvmesubsystem_namespace_info, "node", "$1", "instance", "(.+)")
+        )
+        * on(subsystem, node) group_left()
+        (
+          label_replace(node_nvmesubsystem_paths_live, "node", "$1", "instance", "(.+)") == 0
+        )
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: PV {{ $labels.persistentvolume }} on {{ $labels.node }} has lost all NVMe-oF subsystem paths ({{ $labels.subsystem }})
+        description: All NVMe-oF controller paths are dead. Immediate investigation of storage connectivity is required.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeNVMeSubsystemLost.md
+    - alert: CSIAddonsVolumeDeviceExporterDown
+      expr: absent(up{job="csi-volume-device-exporter"}) == 1
+      for: 5m
+      labels:
+        severity: warning
+        operator_health_impact: warning
+      annotations:
+        summary: CSI volume device exporter is not running
+        description: No CSI volume device exporter target has been scraped for five minutes.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeDeviceExporterDown.md
+    - alert: CSIAddonsVolumeDeviceExporterNodeDown
+      expr: up{job="csi-volume-device-exporter"} == 0
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: CSI volume device exporter is down on {{ $labels.instance }}
+        description: A CSI volume device exporter target has been unreachable for ten minutes.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeDeviceExporterDown.md
