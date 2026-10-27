@@ -11,40 +11,73 @@ spec:
   groups:
   - name: csi-volume-path-health
     rules:
+    # Build a stable mapping from a CSI (driver, volume_handle) pair to its PV
+    # and, when one exists, its bound PVC and namespace.
+    #
+    # kube_persistentvolume_info and kube_persistentvolumeclaim_info may contain
+    # duplicate scrape series with labels such as job, instance, or pod. The
+    # max aggregations remove those incidental labels. A malformed or stale
+    # cluster can also report more than one PVC for a PV, so topk selects one
+    # bound claim and prevents a many-to-many join from invalidating the rule.
+    # The `or on(persistentvolume)` branch retains unclaimed CSI PVs.
+    # Finally, label_replace normalizes kube-state-metrics' csi_driver and
+    # csi_volume_handle labels to the labels exported by the device exporter.
     - record: csiaddons:volume_pv_context_info
       expr: |
-        (
-          (
+        max by(persistentvolume, persistentvolumeclaim, namespace, driver, volume_handle) (
+          label_replace(
             label_replace(
-              label_replace(kube_persistentvolume_info, "volume_handle", "$1", "csi_volume_handle", "(.+)"),
-              "driver", "$1", "csi_driver", "(.+)"
-            )
-            * on(persistentvolume) group_left(persistentvolumeclaim, namespace)
-            label_replace(kube_persistentvolumeclaim_info{volumename!=""}, "persistentvolume", "$1", "volumename", "(.+)")
-          )
-          or
-          (
-            label_replace(
-              label_replace(kube_persistentvolume_info, "volume_handle", "$1", "csi_volume_handle", "(.+)"),
-              "driver", "$1", "csi_driver", "(.+)"
-            )
-            unless on(persistentvolume)
-            label_replace(kube_persistentvolumeclaim_info{volumename!=""}, "persistentvolume", "$1", "volumename", "(.+)")
+              (
+                (
+                  max by(persistentvolume, csi_driver, csi_volume_handle) (
+                    kube_persistentvolume_info{csi_driver!="", csi_volume_handle!=""}
+                  )
+                  * on(persistentvolume) group_left(persistentvolumeclaim, namespace)
+                  topk by(persistentvolume) (1,
+                    label_replace(
+                      kube_persistentvolumeclaim_info{volumename!=""}
+                      * on(namespace, persistentvolumeclaim) group_left()
+                      max by(namespace, persistentvolumeclaim) (
+                        kube_persistentvolumeclaim_status_phase{phase="Bound"} == 1
+                      ),
+                      "persistentvolume", "$1", "volumename", "(.+)"
+                    )
+                  )
+                )
+                or on(persistentvolume)
+                max by(persistentvolume, csi_driver, csi_volume_handle) (
+                  kube_persistentvolume_info{csi_driver!="", csi_volume_handle!=""}
+                )
+              ),
+              "volume_handle", "$1", "csi_volume_handle", "(.+)"
+            ),
+            "driver", "$1", "csi_driver", "(.+)"
           )
         )
+    # Start with every per-node device mapping reported by the exporter. It is
+    # intentionally the many side of the join because the same volume can be
+    # staged on several nodes during RWX use, live migration, or attach
+    # handover. Add PV/PVC context, map the kernel dm-N name to its multipath
+    # device name, and alert when at least one path is down but another remains
+    # active. Aggregations and topk make each join key unique even if targets
+    # are scraped more than once or report conflicting metadata.
     - alert: CSIAddonsVolumeMultipathDegraded
       expr: |
         (
           label_replace(
             (
-              csiaddons:volume_pv_context_info
-              * on(driver, volume_handle) group_left(device, node)
-              csiaddons_volume_node_device_info
+              max by(driver, volume_handle, node, device) (
+                csiaddons_volume_node_device_info
+              )
+              * on(driver, volume_handle) group_left(persistentvolume, persistentvolumeclaim, namespace)
+              topk by(driver, volume_handle) (1, csiaddons:volume_pv_context_info)
             ),
             "sysfs_name", "$1", "device", "(.*)"
           )
           * on(sysfs_name, node) group_left(device)
-          label_replace(node_dmmultipath_device_info, "node", "$1", "instance", "(.+)")
+          topk by(sysfs_name, node) (1,
+            label_replace(node_dmmultipath_device_info, "node", "$1", "instance", "(.+)")
+          )
         )
         * on(device, node) group_left()
         (
@@ -52,89 +85,123 @@ spec:
             label_replace(node_dmmultipath_path_state{state!~"running|live"}, "node", "$1", "instance", "(.+)") == 1
           ) > 0
           and on(device, node)
-          label_replace(node_dmmultipath_device_paths_active, "node", "$1", "instance", "(.+)") > 0
+          max by(device, node) (
+            label_replace(node_dmmultipath_device_paths_active, "node", "$1", "instance", "(.+)")
+          ) > 0
         )
       for: 5m
       labels:
         severity: warning
       annotations:
-        summary: PV {{ $labels.persistentvolume }} on {{ $labels.node }} has degraded multipath (device {{ $labels.device }})
-        description: At least one path to the multipath device has failed while at least one usable path remains.
+        summary: A CSI volume has degraded multipath connectivity
+        description: PV {{ $labels.persistentvolume }} on node {{ $labels.node }} has at least one failed path to multipath device {{ $labels.device }}, while at least one usable path remains.
         runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeMultipathDegraded.md
+    # Use the same exporter -> PV -> multipath-device mapping as the degraded
+    # alert, but fire when the multipath device has no active paths.
     - alert: CSIAddonsVolumeMultipathLost
       expr: |
         (
           label_replace(
             (
-              csiaddons:volume_pv_context_info
-              * on(driver, volume_handle) group_left(device, node)
-              csiaddons_volume_node_device_info
+              max by(driver, volume_handle, node, device) (
+                csiaddons_volume_node_device_info
+              )
+              * on(driver, volume_handle) group_left(persistentvolume, persistentvolumeclaim, namespace)
+              topk by(driver, volume_handle) (1, csiaddons:volume_pv_context_info)
             ),
             "sysfs_name", "$1", "device", "(.*)"
           )
           * on(sysfs_name, node) group_left(device)
-          label_replace(node_dmmultipath_device_info, "node", "$1", "instance", "(.+)")
+          topk by(sysfs_name, node) (1,
+            label_replace(node_dmmultipath_device_info, "node", "$1", "instance", "(.+)")
+          )
         )
         * on(device, node) group_left()
         (
-          label_replace(node_dmmultipath_device_paths_active, "node", "$1", "instance", "(.+)") == 0
+          max by(device, node) (
+            label_replace(node_dmmultipath_device_paths_active, "node", "$1", "instance", "(.+)")
+          ) == 0
         )
       for: 1m
       labels:
         severity: critical
       annotations:
-        summary: PV {{ $labels.persistentvolume }} on {{ $labels.node }} has lost all multipath paths (device {{ $labels.device }})
-        description: All paths to the multipath device are down. Immediate investigation of storage connectivity is required.
+        summary: A CSI volume has lost all multipath connectivity
+        description: All paths to multipath device {{ $labels.device }} for PV {{ $labels.persistentvolume }} on node {{ $labels.node }} are down. Immediate investigation of storage connectivity is required.
         runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeMultipathLost.md
+    # Start with every per-node NVMe device mapping, attach its PV/PVC context,
+    # and map the namespace device to an NVMe subsystem. Fire when total paths
+    # exceed live paths while at least one path remains live. Keeping the
+    # exporter mapping on the many side preserves all nodes for one volume.
     - alert: CSIAddonsVolumeNVMeSubsystemDegraded
       expr: |
         (
           (
-            csiaddons:volume_pv_context_info
-            * on(driver, volume_handle) group_left(device, node)
-            csiaddons_volume_node_device_info{device=~"nvme.*"}
+            max by(driver, volume_handle, node, device) (
+              csiaddons_volume_node_device_info{device=~"nvme.*"}
+            )
+            * on(driver, volume_handle) group_left(persistentvolume, persistentvolumeclaim, namespace)
+            topk by(driver, volume_handle) (1, csiaddons:volume_pv_context_info)
           )
           * on(device, node) group_left(subsystem)
-          label_replace(node_nvmesubsystem_namespace_info, "node", "$1", "instance", "(.+)")
+          topk by(device, node) (1,
+            label_replace(node_nvmesubsystem_namespace_info, "node", "$1", "instance", "(.+)")
+          )
         )
         * on(subsystem, node) group_left()
         (
           (
-            label_replace(node_nvmesubsystem_paths, "node", "$1", "instance", "(.+)")
-            - label_replace(node_nvmesubsystem_paths_live, "node", "$1", "instance", "(.+)")
+            max by(subsystem, node) (
+              label_replace(node_nvmesubsystem_paths, "node", "$1", "instance", "(.+)")
+            )
+            - max by(subsystem, node) (
+              label_replace(node_nvmesubsystem_paths_live, "node", "$1", "instance", "(.+)")
+            )
           ) > 0
           and on(subsystem, node)
-          label_replace(node_nvmesubsystem_paths_live, "node", "$1", "instance", "(.+)") > 0
+          max by(subsystem, node) (
+            label_replace(node_nvmesubsystem_paths_live, "node", "$1", "instance", "(.+)")
+          ) > 0
         )
       for: 5m
       labels:
         severity: warning
       annotations:
-        summary: PV {{ $labels.persistentvolume }} on {{ $labels.node }} has degraded NVMe-oF subsystem ({{ $labels.subsystem }})
-        description: At least one NVMe-oF controller path is not live while at least one usable path remains.
+        summary: A CSI volume has degraded NVMe-oF connectivity
+        description: PV {{ $labels.persistentvolume }} on node {{ $labels.node }} has at least one non-live path to NVMe-oF subsystem {{ $labels.subsystem }}, while at least one usable path remains.
         runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeNVMeSubsystemDegraded.md
+    # Use the same exporter -> PV -> NVMe-subsystem mapping as the degraded
+    # alert, but fire when the subsystem has no live paths.
     - alert: CSIAddonsVolumeNVMeSubsystemLost
       expr: |
         (
           (
-            csiaddons:volume_pv_context_info
-            * on(driver, volume_handle) group_left(device, node)
-            csiaddons_volume_node_device_info{device=~"nvme.*"}
+            max by(driver, volume_handle, node, device) (
+              csiaddons_volume_node_device_info{device=~"nvme.*"}
+            )
+            * on(driver, volume_handle) group_left(persistentvolume, persistentvolumeclaim, namespace)
+            topk by(driver, volume_handle) (1, csiaddons:volume_pv_context_info)
           )
           * on(device, node) group_left(subsystem)
-          label_replace(node_nvmesubsystem_namespace_info, "node", "$1", "instance", "(.+)")
+          topk by(device, node) (1,
+            label_replace(node_nvmesubsystem_namespace_info, "node", "$1", "instance", "(.+)")
+          )
         )
         * on(subsystem, node) group_left()
         (
-          label_replace(node_nvmesubsystem_paths_live, "node", "$1", "instance", "(.+)") == 0
+          max by(subsystem, node) (
+            label_replace(node_nvmesubsystem_paths_live, "node", "$1", "instance", "(.+)")
+          ) == 0
         )
       for: 1m
       labels:
         severity: critical
       annotations:
-        summary: PV {{ $labels.persistentvolume }} on {{ $labels.node }} has lost all NVMe-oF subsystem paths ({{ $labels.subsystem }})
-        description: All NVMe-oF controller paths are dead. Immediate investigation of storage connectivity is required.
+        summary: A CSI volume has lost all NVMe-oF connectivity
+        description: All paths to NVMe-oF subsystem {{ $labels.subsystem }} for PV {{ $labels.persistentvolume }} on node {{ $labels.node }} are dead. Immediate investigation of storage connectivity is required.
         runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeNVMeSubsystemLost.md
+    # Detect a cluster-wide monitoring gap: Prometheus has discovered no
+    # volume-device-exporter target at all for five minutes.
     - alert: CSIAddonsVolumeDeviceExporterDown
       expr: absent(up{job="csi-volume-device-exporter"}) == 1
       for: 5m
@@ -145,12 +212,14 @@ spec:
         summary: CSI volume device exporter is not running
         description: No CSI volume device exporter target has been scraped for five minutes.
         runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeDeviceExporterDown.md
+    # Detect a node-specific monitoring gap: a discovered exporter target has
+    # remained unreachable for ten minutes.
     - alert: CSIAddonsVolumeDeviceExporterNodeDown
       expr: up{job="csi-volume-device-exporter"} == 0
       for: 10m
       labels:
         severity: warning
       annotations:
-        summary: CSI volume device exporter is down on {{ $labels.instance }}
-        description: A CSI volume device exporter target has been unreachable for ten minutes.
+        summary: A CSI volume device exporter target is down
+        description: The CSI volume device exporter target {{ $labels.instance }} has been unreachable for ten minutes.
         runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeDeviceExporterDown.md
