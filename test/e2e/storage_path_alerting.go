@@ -38,7 +38,7 @@ const (
 	defaultISCSILUKSClass = "ci-netapp-iscsi-luks"
 	defaultNVMeClass      = "ci-netapp-nvme"
 	defaultNVMeLUKSClass  = "ci-netapp-nvme-luks"
-	alertPollInterval     = 15 * time.Second
+	alertPollInterval     = 5 * time.Second
 	pvCleanupTimeout      = 15 * time.Minute
 )
 
@@ -123,7 +123,7 @@ type prometheusAlert struct {
 // registered for restoration before the fault is applied. Cleanup captures PVs
 // owned by the test namespace, requests their VolumeAttachment deletion after
 // deleting the namespace, and waits for both attachments and PVs to disappear.
-var _ = g.Describe("[sig-storage][StoragePathAlert][Serial] CSI storage path alerting", g.Serial, g.Label(storagePathAlertLabel), g.Label("Serial"), func() {
+var _ = g.Describe("[sig-storage][OCPFeatureGate:StoragePathAlert][Serial] CSI storage path alerting", g.Serial, g.Label(storagePathAlertLabel), g.Label("OCPFeatureGate:"+storagePathAlertLabel), g.Label("Serial"), func() {
 	var env *storagePathAlertEnv
 
 	g.BeforeEach(func(ctx context.Context) {
@@ -157,13 +157,18 @@ var _ = g.Describe("[sig-storage][StoragePathAlert][Serial] CSI storage path ale
 		if err := env.preflight(ctx); err != nil {
 			g.Fail(err.Error())
 		}
+		g.By("Creating the storage path alert test namespace")
 		ns, err := env.kube.CoreV1().Namespaces().Create(ctx, &v1.Namespace{ObjectMeta: metav1.ObjectMeta{GenerateName: alertTestNamespace}}, metav1.CreateOptions{})
 		if err != nil {
 			g.Fail(fmt.Sprintf("create test namespace: %v", err))
 		}
 		env.namespace = ns.Name
 		g.DeferCleanup(func(ctx context.Context) {
+			if g.CurrentSpecReport().Failed() {
+				env.dumpStorageDiagnostics(ctx)
+			}
 			if err := env.cleanupNamespace(ctx); err != nil {
+				env.dumpStorageDiagnostics(ctx)
 				g.Fail(fmt.Sprintf("clean up test storage: %v", err))
 			}
 		})
@@ -220,6 +225,7 @@ func envOrDefault(name, fallback string) string {
 }
 
 func (env *storagePathAlertEnv) preflight(ctx context.Context) error {
+	g.By("Checking exporter and Prometheus prerequisites")
 	if _, err := env.kube.AppsV1().DaemonSets(env.settings.exporterNamespace).Get(ctx, env.settings.exporterDaemonSet, metav1.GetOptions{}); err != nil {
 		return fmt.Errorf("get exporter DaemonSet: %w", err)
 	}
@@ -325,10 +331,9 @@ func (env *storagePathAlertEnv) runPathAlertCase(ctx context.Context, tc storage
 	if err := env.waitForAlert(ctx, tc.alert, tc.severity, pvc.Name, pv.Name, pod.Spec.NodeName, "pending", 3*time.Minute); err != nil {
 		g.Fail(err.Error())
 	}
-	g.By(fmt.Sprintf("Waiting for firing %s alert", tc.alert))
-	if err := env.waitForAlert(ctx, tc.alert, tc.severity, pvc.Name, pv.Name, pod.Spec.NodeName, "firing", 10*time.Minute); err != nil {
-		g.Fail(err.Error())
-	}
+	// Pending is sufficient to validate the alert expression and volume labels.
+	// Do not wait for Firing: the alert hold time adds about five minutes per
+	// case (roughly 80 minutes across the suite), exceeding the CI time budget.
 	for _, lif := range lifs {
 		g.By(fmt.Sprintf("Restoring %s path %s on %s", tc.protocol, lif, pod.Spec.NodeName))
 		if err := env.restoreLIF(ctx, pod.Spec.NodeName, tc.protocol, lif); err != nil {
@@ -353,15 +358,19 @@ func (env *storagePathAlertEnv) runLifecycleCase(ctx context.Context) {
 	if _, err := env.waitForDevice(ctx, pv.Spec.CSI.VolumeHandle, pod.Spec.NodeName); err != nil {
 		g.Fail(err.Error())
 	}
-	if output, err := exec.CommandContext(ctx, "oc", "rollout", "restart", "daemonset/"+env.settings.exporterDaemonSet, "-n", env.settings.exporterNamespace).CombinedOutput(); err != nil {
+	g.By("Restarting the volume device exporter")
+	if output, err := env.runCommand(ctx, "rollout", "restart", "daemonset/"+env.settings.exporterDaemonSet, "-n", env.settings.exporterNamespace); err != nil {
 		g.Fail(fmt.Sprintf("restart exporter: %v: %s", err, output))
 	}
-	if output, err := exec.CommandContext(ctx, "oc", "rollout", "status", "daemonset/"+env.settings.exporterDaemonSet, "-n", env.settings.exporterNamespace, "--timeout=10m").CombinedOutput(); err != nil {
+	g.By("Waiting for the volume device exporter rollout")
+	if output, err := env.runCommand(ctx, "rollout", "status", "daemonset/"+env.settings.exporterDaemonSet, "-n", env.settings.exporterNamespace, "--timeout=10m"); err != nil {
 		g.Fail(fmt.Sprintf("wait for exporter restart: %v: %s", err, output))
 	}
+	g.By(fmt.Sprintf("Deleting lifecycle Pod %s/%s", env.namespace, pod.Name))
 	if err := env.kube.CoreV1().Pods(env.namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{}); err != nil {
 		g.Fail(fmt.Sprintf("delete lifecycle pod: %v", err))
 	}
+	g.By(fmt.Sprintf("Deleting lifecycle PVC %s/%s", env.namespace, pvc.Name))
 	if err := env.kube.CoreV1().PersistentVolumeClaims(env.namespace).Delete(ctx, pvc.Name, metav1.DeleteOptions{}); err != nil {
 		g.Fail(fmt.Sprintf("delete lifecycle PVC: %v", err))
 	}
@@ -388,6 +397,7 @@ func (env *storagePathAlertEnv) runLifecycleCase(ctx context.Context) {
 }
 
 func (env *storagePathAlertEnv) cleanupNamespace(ctx context.Context) error {
+	g.By(fmt.Sprintf("Finding PVs owned by test namespace %s before cleanup", env.namespace))
 	pvs, err := env.testPersistentVolumes(ctx)
 	if err != nil {
 		return fmt.Errorf("list test PVs: %w", err)
@@ -438,7 +448,8 @@ func (env *storagePathAlertEnv) testPersistentVolumes(ctx context.Context) ([]st
 }
 
 func (env *storagePathAlertEnv) waitForPVDeletion(ctx context.Context, pv string) error {
-	return wait.PollUntilContextTimeout(ctx, 10*time.Second, pvCleanupTimeout, true, func(ctx context.Context) (bool, error) {
+	g.By(fmt.Sprintf("Waiting for PV %s and its VolumeAttachments to be deleted", pv))
+	return wait.PollUntilContextTimeout(ctx, time.Second, pvCleanupTimeout, true, func(ctx context.Context) (bool, error) {
 		attachments, err := env.kube.StorageV1().VolumeAttachments().List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
@@ -462,15 +473,18 @@ func (env *storagePathAlertEnv) storageClass(kind string) string {
 }
 
 func (env *storagePathAlertEnv) createWorkload(ctx context.Context, name, storageClass, volumeMode string) (*v1.PersistentVolumeClaim, *v1.Pod, error) {
+	g.By(fmt.Sprintf("Creating PVC %s/%s with StorageClass %s and volume mode %s", env.namespace, name, storageClass, volumeMode))
 	pvc, err := env.kube.CoreV1().PersistentVolumeClaims(env.namespace).Create(ctx, &v1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{Name: name}, Spec: v1.PersistentVolumeClaimSpec{AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}, StorageClassName: &storageClass, VolumeMode: volumeModePtr(v1.PersistentVolumeMode(volumeMode)), Resources: v1.VolumeResourceRequirements{Requests: v1.ResourceList{v1.ResourceStorage: resourceMustParse("1Gi")}}}}, metav1.CreateOptions{})
 	if err != nil {
 		return nil, nil, err
 	}
 	pod := testStoragePathPod(env.namespace, name, volumeMode)
+	g.By(fmt.Sprintf("Creating Pod %s/%s", env.namespace, name))
 	pod, err = env.kube.CoreV1().Pods(env.namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		return nil, nil, err
 	}
+	g.By(fmt.Sprintf("Waiting for Pod %s/%s to be Running", env.namespace, name))
 	err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 10*time.Minute, true, func(ctx context.Context) (bool, error) {
 		current, err := env.kube.CoreV1().Pods(env.namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
@@ -482,6 +496,7 @@ func (env *storagePathAlertEnv) createWorkload(ctx context.Context, name, storag
 	if err != nil {
 		return nil, nil, err
 	}
+	g.By(fmt.Sprintf("Reading the bound PV for PVC %s/%s (Pod node %s)", env.namespace, name, pod.Spec.NodeName))
 	pvc, err = env.kube.CoreV1().PersistentVolumeClaims(env.namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, err
@@ -508,8 +523,9 @@ func testStoragePathPod(namespace, name, volumeMode string) *v1.Pod {
 }
 
 func (env *storagePathAlertEnv) waitForDevice(ctx context.Context, volumeHandle, node string) (string, error) {
+	g.By(fmt.Sprintf("Waiting for the exporter device mapping for volume %s on node %s", volumeHandle, node))
 	var device string
-	err := wait.PollUntilContextTimeout(ctx, 10*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
+	err := wait.PollUntilContextTimeout(ctx, time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
 		result, err := env.query(ctx, fmt.Sprintf("csiaddons_volume_node_device_info{volume_handle=%q,node=%q}", volumeHandle, node))
 		if err != nil {
 			return false, nil
@@ -527,6 +543,7 @@ func (env *storagePathAlertEnv) waitForDevice(ctx context.Context, volumeHandle,
 }
 
 func (env *storagePathAlertEnv) discoverLIFs(ctx context.Context, protocol, node, device string) ([]string, error) {
+	g.By(fmt.Sprintf("Discovering %s paths for device %s on node %s", protocol, device, node))
 	var command string
 	if protocol == "iscsi" {
 		command = fmt.Sprintf(`for slave in /sys/block/%[1]s/slaves/*; do [ -e "${slave}" ] || slave=/sys/block/%[1]s; session=$(readlink -f "${slave}" | grep -o 'session[0-9]\+' | awk 'END { print }'); [ -n "${session}" ] || continue; iscsiadm -m session -r "${session#session}" -P 3 | awk '/Current Portal:/ {split($3, portal, /[:,]/); print portal[1]}'; done | sort -u`, device)
@@ -550,6 +567,7 @@ func (env *storagePathAlertEnv) blockLIF(ctx context.Context, node, protocol, li
 }
 
 func (env *storagePathAlertEnv) restoreLIF(ctx context.Context, node, protocol, lif string) error {
+	g.GinkgoLogr.Info("Restoring storage path", "node", node, "protocol", protocol, "lif", lif)
 	port := 4420
 	if protocol == "iscsi" {
 		port = 3260
@@ -559,11 +577,68 @@ func (env *storagePathAlertEnv) restoreLIF(ctx context.Context, node, protocol, 
 }
 
 func (env *storagePathAlertEnv) nodeCommand(ctx context.Context, node, command string) (string, error) {
-	output, err := exec.CommandContext(ctx, "oc", "debug", "--quiet", "node/"+node, "--", "chroot", "/host", "bash", "-ceu", command).CombinedOutput()
+	output, err := env.runCommand(ctx, "debug", "--quiet", "node/"+node, "--", "chroot", "/host", "bash", "-ceu", command)
 	if err != nil {
 		return "", fmt.Errorf("oc debug node/%s: %w: %s", node, err, output)
 	}
 	return string(output), nil
+}
+
+// runCommand logs every oc command and its output, including successful commands.
+// Callers must not pass credentials or other secrets in command arguments.
+func (env *storagePathAlertEnv) runCommand(ctx context.Context, args ...string) ([]byte, error) {
+	g.GinkgoLogr.Info("Running command", "command", "oc", "args", args)
+	output, err := exec.CommandContext(ctx, "oc", args...).CombinedOutput()
+	g.GinkgoLogr.Info("Command completed", "command", "oc", "args", args, "output", string(output), "error", err)
+	return output, err
+}
+
+// Diagnostics are best-effort and use runCommand to log commands and output.
+// They must not fail the test or prevent normal cleanup when a request fails.
+func (env *storagePathAlertEnv) dumpStorageDiagnostics(ctx context.Context) {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	env.dumpNamespace(ctx, env.namespace)
+	env.runDiagnosticCommand(ctx, "get", "pv,volumeattachments", "-o", "wide")
+	if env.settings.exporterNamespace != env.namespace {
+		env.dumpNamespace(ctx, env.settings.exporterNamespace)
+	}
+}
+
+// dumpNamespace can be reused for any namespace relevant to a failed test.
+func (env *storagePathAlertEnv) dumpNamespace(ctx context.Context, namespace string) {
+	if namespace == "" {
+		return
+	}
+	for _, args := range [][]string{
+		{"get", "pods,pvc", "-n", namespace, "-o", "wide"},
+		{"describe", "pods", "-n", namespace},
+		{"describe", "pvc", "-n", namespace},
+		{"get", "events", "-n", namespace, "--sort-by=.metadata.creationTimestamp"},
+	} {
+		env.runDiagnosticCommand(ctx, args...)
+	}
+	pods := env.runDiagnosticCommand(ctx, "get", "pods", "-n", namespace, "-o", "name")
+	for _, pod := range nonEmptyLines(string(pods)) {
+		// CombinedOutput may also contain oc warnings; only accept pod names.
+		if strings.HasPrefix(pod, "pod/") {
+			env.runDiagnosticCommand(ctx, "logs", pod, "-n", namespace,
+				"--all-containers", "--tail=200", "--timestamps", "--limit-bytes=131072")
+		}
+	}
+}
+
+func (env *storagePathAlertEnv) runDiagnosticCommand(ctx context.Context, args ...string) []byte {
+	if ctx.Err() != nil {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	output, err := env.runCommand(ctx, args...)
+	if err != nil {
+		return nil // The command and its error/output have already been logged.
+	}
+	return output
 }
 
 func (env *storagePathAlertEnv) waitForAlert(ctx context.Context, alert, severity, pvc, pv, node, state string, timeout time.Duration) error {
@@ -600,7 +675,8 @@ func (env *storagePathAlertEnv) waitForAlertResolution(ctx context.Context, aler
 }
 
 func (env *storagePathAlertEnv) waitForMappingRemoval(ctx context.Context, volumeHandle string, timeout time.Duration) error {
-	return wait.PollUntilContextTimeout(ctx, 10*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+	g.By(fmt.Sprintf("Waiting for exporter mapping removal for volume %s", volumeHandle))
+	return wait.PollUntilContextTimeout(ctx, time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 		result, err := env.query(ctx, fmt.Sprintf("csiaddons_volume_node_device_info{volume_handle=%q}", volumeHandle))
 		if err != nil {
 			return false, nil
@@ -665,10 +741,12 @@ func (env *storagePathAlertEnv) prometheusRequest(ctx context.Context, path stri
 }
 
 func deleteNamespace(ctx context.Context, kube kubernetes.Interface, namespace string) error {
+	g.By(fmt.Sprintf("Deleting namespace %s and its Pods and PVCs", namespace))
 	err := kube.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
+	g.By(fmt.Sprintf("Waiting for namespace %s to be deleted", namespace))
 	return wait.PollUntilContextTimeout(ctx, 5*time.Second, 15*time.Minute, true, func(ctx context.Context) (bool, error) {
 		_, err := kube.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 		return apierrors.IsNotFound(err), nil
