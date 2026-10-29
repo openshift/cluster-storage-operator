@@ -35,6 +35,7 @@ export NODE_DRIVER_REGISTRAR_IMAGE=quay.io/openshift/origin-csi-node-driver-regi
 export LIVENESS_PROBE_IMAGE=quay.io/openshift/origin-csi-livenessprobe:latest  
 export KUBE_RBAC_PROXY_IMAGE=quay.io/openshift/origin-kube-rbac-proxy:latest  
 export VOLUME_DATA_SOURCE_VALIDATOR_IMAGE=quay.io/openshift/origin-volume-data-source-validator:latest
+export VOLUME_DEVICE_EXPORTER_IMAGE=quay.io/openshift/origin-csi-volume-device-exporter:latest
 ```
 
 #### Configure provider specific variables
