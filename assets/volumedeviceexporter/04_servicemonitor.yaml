@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: volume-device-exporter
+  namespace: openshift-cluster-storage-operator
+spec:
+  jobLabel: app
+  selector:
+    matchLabels:
+      app: csi-volume-device-exporter
+  endpoints:
+  - port: https-metrics
+    scheme: https
+    path: /metrics
+    interval: 30s
+    tlsConfig:
+      caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
+      serverName: volume-device-exporter.openshift-cluster-storage-operator.svc
+      certFile: /etc/prometheus/secrets/metrics-client-certs/tls.crt
+      keyFile: /etc/prometheus/secrets/metrics-client-certs/tls.key
+  serviceDiscoveryRole: EndpointSlice
