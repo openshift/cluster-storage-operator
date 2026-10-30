@@ -12,4 +12,7 @@ metadata:
     workload.openshift.io/allowed: "management"
   labels:
     openshift.io/cluster-monitoring: "true"
+    # The volume device exporter requires read-only hostPath mounts and UID 0
+    # to inspect kubelet metadata.
+    pod-security.kubernetes.io/enforce: privileged
   name: openshift-cluster-storage-operator
