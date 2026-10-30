@@ -94,7 +94,11 @@ spec:
         severity: warning
       annotations:
         summary: A CSI volume has degraded multipath connectivity
-        description: PV {{ $labels.persistentvolume }} on node {{ $labels.node }} has at least one failed path to multipath device {{ $labels.device }}, while at least one usable path remains.
+        description: >-
+          PV {{ $labels.persistentvolume }}{{ if $labels.persistentvolumeclaim }}
+          (PVC {{ $labels.persistentvolumeclaim }} in namespace {{ $labels.namespace }}){{ end }}
+          on node {{ $labels.node }} has at least one failed path to multipath device
+          {{ $labels.device }}, while at least one usable path remains.
         runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeMultipathDegraded.md
     # Use the same exporter -> PV -> multipath-device mapping as the degraded
     # alert, but fire when the multipath device has no active paths.
@@ -127,7 +131,12 @@ spec:
         severity: critical
       annotations:
         summary: A CSI volume has lost all multipath connectivity
-        description: All paths to multipath device {{ $labels.device }} for PV {{ $labels.persistentvolume }} on node {{ $labels.node }} are down. Immediate investigation of storage connectivity is required.
+        description: >-
+          All paths to multipath device {{ $labels.device }} for PV
+          {{ $labels.persistentvolume }}{{ if $labels.persistentvolumeclaim }}
+          (PVC {{ $labels.persistentvolumeclaim }} in namespace {{ $labels.namespace }}){{ end }}
+          on node {{ $labels.node }} are down.
+          Immediate investigation of storage connectivity is required.
         runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeMultipathLost.md
     # Start with every per-node NVMe device mapping, attach its PV/PVC context,
     # and map the namespace device to an NVMe subsystem. Fire when total paths
@@ -168,7 +177,11 @@ spec:
         severity: warning
       annotations:
         summary: A CSI volume has degraded NVMe-oF connectivity
-        description: PV {{ $labels.persistentvolume }} on node {{ $labels.node }} has at least one non-live path to NVMe-oF subsystem {{ $labels.subsystem }}, while at least one usable path remains.
+        description: >-
+          PV {{ $labels.persistentvolume }}{{ if $labels.persistentvolumeclaim }}
+          (PVC {{ $labels.persistentvolumeclaim }} in namespace {{ $labels.namespace }}){{ end }}
+          on node {{ $labels.node }} has at least one non-live path to NVMe-oF subsystem
+          {{ $labels.subsystem }}, while at least one usable path remains.
         runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeNVMeSubsystemDegraded.md
     # Use the same exporter -> PV -> NVMe-subsystem mapping as the degraded
     # alert, but fire when the subsystem has no live paths.
@@ -198,7 +211,12 @@ spec:
         severity: critical
       annotations:
         summary: A CSI volume has lost all NVMe-oF connectivity
-        description: All paths to NVMe-oF subsystem {{ $labels.subsystem }} for PV {{ $labels.persistentvolume }} on node {{ $labels.node }} are dead. Immediate investigation of storage connectivity is required.
+        description: >-
+          All paths to NVMe-oF subsystem {{ $labels.subsystem }} for PV
+          {{ $labels.persistentvolume }}{{ if $labels.persistentvolumeclaim }}
+          (PVC {{ $labels.persistentvolumeclaim }} in namespace {{ $labels.namespace }}){{ end }}
+          on node {{ $labels.node }} are non-live.
+          Immediate investigation of storage connectivity is required.
         runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeNVMeSubsystemLost.md
     # Detect a cluster-wide monitoring gap: Prometheus has discovered no
     # volume-device-exporter target at all for five minutes.
