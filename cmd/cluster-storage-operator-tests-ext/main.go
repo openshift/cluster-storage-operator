@@ -42,6 +42,14 @@ func main() {
 		Qualifiers: []string{`labels.exists(l, l == "Serial") && labels.exists(l, l == "Conformance")`},
 	})
 
+	kubeTestsExtension.AddSuite(e.Suite{
+		Name:             "cso/storage-path-alerting",
+		Description:      "Destructive CSI storage-path alert tests for prepared multipath environments",
+		Qualifiers:       []string{`labels.exists(l, l == "StoragePathAlert")`},
+		Parallelism:      1,
+		ClusterStability: e.ClusterStabilityDisruptive,
+	})
+
 	// Build our specs from ginkgo
 	specs, err := g.BuildExtensionTestSpecsFromOpenShiftGinkgoSuite()
 	if err != nil {
