@@ -8,7 +8,8 @@ import (
 
 // Listers implement the configobserver.Listers interface.
 type Listers struct {
-	ProxyLister_ configlistersv1.ProxyLister
+	ProxyLister_     configlistersv1.ProxyLister
+	APIServerLister_ configlistersv1.APIServerLister
 
 	ResourceSync       resourcesynccontroller.ResourceSyncer
 	PreRunCachesSynced []cache.InformerSynced
@@ -16,6 +17,10 @@ type Listers struct {
 
 func (l Listers) ProxyLister() configlistersv1.ProxyLister {
 	return l.ProxyLister_
+}
+
+func (l Listers) APIServerLister() configlistersv1.APIServerLister {
+	return l.APIServerLister_
 }
 
 func (l Listers) ResourceSyncer() resourcesynccontroller.ResourceSyncer {

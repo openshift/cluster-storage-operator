@@ -3,9 +3,13 @@ package configobservercontroller
 import (
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/openshift/api/features"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/configobserver"
+	libgoapiserver "github.com/openshift/library-go/pkg/operator/configobserver/apiserver"
+	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/operator/configobserver/proxy"
+	"github.com/openshift/library-go/pkg/operator/csi/csiconfigobservercontroller"
 	"github.com/openshift/library-go/pkg/operator/events"
 
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
@@ -23,10 +27,12 @@ type ConfigObserverController struct {
 func NewConfigObserverController(
 	clients *csoclients.Clients,
 	eventRecorder events.Recorder,
+	featureGates featuregates.FeatureGate,
 ) *ConfigObserverController {
 	informers := []factory.Informer{
 		clients.OperatorClient.Informer(),
 		clients.ConfigInformers.Config().V1().Proxies().Informer(),
+		clients.ConfigInformers.Config().V1().APIServers().Informer(),
 	}
 
 	c := &ConfigObserverController{
@@ -35,16 +41,29 @@ func NewConfigObserverController(
 			clients.OperatorClient,
 			eventRecorder.WithComponentSuffix("config-observer-controller-"),
 			configobservation.Listers{
-				ProxyLister_: clients.ConfigInformers.Config().V1().Proxies().Lister(),
+				ProxyLister_:     clients.ConfigInformers.Config().V1().Proxies().Lister(),
+				APIServerLister_: clients.ConfigInformers.Config().V1().APIServers().Lister(),
 				PreRunCachesSynced: append([]cache.InformerSynced{},
 					clients.OperatorClient.Informer().HasSynced,
 					clients.ConfigInformers.Config().V1().Proxies().Informer().HasSynced,
+					clients.ConfigInformers.Config().V1().APIServers().Informer().HasSynced,
 				),
 			},
 			informers,
 			proxy.NewProxyObserveFunc(util.ProxyConfigPath()),
+			observeTLSSecurityProfile(featureGates),
 		),
 	}
 
 	return c
+}
+
+func observeTLSSecurityProfile(featureGates featuregates.FeatureGate) configobserver.ObserveConfigFunc {
+	return func(genericListers configobserver.Listers, recorder events.Recorder, existingConfig map[string]interface{}) (map[string]interface{}, []error) {
+		var groupsPath []string
+		if featureGates.Enabled(features.FeatureGateTLSGroupPreferences) {
+			groupsPath = csiconfigobservercontroller.CurvePreferencesPath()
+		}
+		return libgoapiserver.ObserveTLSSecurityProfileWithGroupPaths(genericListers, recorder, existingConfig, csiconfigobservercontroller.MinTLSVersionPath(), csiconfigobservercontroller.CipherSuitesPath(), groupsPath)
+	}
 }
