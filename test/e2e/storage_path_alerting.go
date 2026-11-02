@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"os"
 	"os/exec"
@@ -86,6 +87,7 @@ type prometheusAlert struct {
 //   - Platform Prometheus is accessible through the prometheus-k8s route.
 //   - The caller can create test workloads and short-lived Prometheus tokens.
 //   - oc is in PATH for targeted host firewall fault injection.
+//   - iSCSI portals use IPv4 and TCP port 3260, as required by the firewall helpers.
 //   - KUBECONFIG identifies the prepared test cluster.
 //   - These optional variables override the FSxN/Trident StorageClass defaults:
 //     ALERT_TEST_ISCSI_STORAGECLASS,
@@ -314,10 +316,14 @@ func (env *storagePathAlertEnv) runPathAlertCase(ctx context.Context, tc storage
 		lifs = lifs[:1]
 	}
 	g.DeferCleanup(func(ctx context.Context) {
+		var failures []string
 		for _, lif := range lifs {
 			if err := env.restoreLIF(ctx, pod.Spec.NodeName, tc.protocol, lif); err != nil {
-				g.Fail(fmt.Sprintf("restore path %s: %v", lif, err))
+				failures = append(failures, fmt.Sprintf("%s: %v", lif, err))
 			}
+		}
+		if len(failures) > 0 {
+			g.Fail("restore paths: " + strings.Join(failures, "; "))
 		}
 	})
 	for _, lif := range lifs {
@@ -326,11 +332,12 @@ func (env *storagePathAlertEnv) runPathAlertCase(ctx context.Context, tc storage
 			g.Fail(fmt.Sprintf("block path %s: %v", lif, err))
 		}
 	}
-	g.By(fmt.Sprintf("Waiting for pending %s alert", tc.alert))
+	g.By(fmt.Sprintf("Waiting for pending or firing %s alert", tc.alert))
 	if err := env.waitForAlert(ctx, tc.alert, tc.severity, pvc.Name, pv.Name, pod.Spec.NodeName, "pending", 3*time.Minute); err != nil {
 		g.Fail(err.Error())
 	}
 	// Pending is sufficient to validate the alert expression and volume labels.
+	// Also accept Firing if the alert progressed before a successful poll.
 	// Do not wait for Firing: the alert hold time adds about five minutes per
 	// case (roughly 80 minutes across the suite), exceeding the CI time budget.
 	for _, lif := range lifs {
@@ -406,7 +413,21 @@ func (env *storagePathAlertEnv) storageClass(kind string) string {
 
 func (env *storagePathAlertEnv) createWorkload(ctx context.Context, name, storageClass, volumeMode string) (*v1.PersistentVolumeClaim, *v1.Pod, error) {
 	g.By(fmt.Sprintf("Creating PVC %s/%s with StorageClass %s and volume mode %s", env.namespace, name, storageClass, volumeMode))
-	pvc, err := env.kube.CoreV1().PersistentVolumeClaims(env.namespace).Create(ctx, &v1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{Name: name}, Spec: v1.PersistentVolumeClaimSpec{AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}, StorageClassName: &storageClass, VolumeMode: volumeModePtr(v1.PersistentVolumeMode(volumeMode)), Resources: v1.VolumeResourceRequirements{Requests: v1.ResourceList{v1.ResourceStorage: resourceMustParse("1Gi")}}}}, metav1.CreateOptions{})
+	pvc, err := env.kube.CoreV1().PersistentVolumeClaims(env.namespace).Create(ctx, &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			StorageClassName: &storageClass,
+			VolumeMode:       volumeModePtr(v1.PersistentVolumeMode(volumeMode)),
+			Resources: v1.VolumeResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceStorage: resourceMustParse("1Gi"),
+				},
+			},
+		},
+	}, metav1.CreateOptions{})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -445,7 +466,41 @@ func resourceMustParse(value string) resource.Quantity { return resource.MustPar
 
 func testStoragePathPod(namespace, name, volumeMode string) *v1.Pod {
 	trueValue, falseValue := true, false
-	pod := &v1.Pod{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace}, Spec: v1.PodSpec{RestartPolicy: v1.RestartPolicyNever, SecurityContext: &v1.PodSecurityContext{RunAsNonRoot: &trueValue, RunAsUser: int64Ptr(1001), SeccompProfile: &v1.SeccompProfile{Type: v1.SeccompProfileTypeRuntimeDefault}}, Containers: []v1.Container{{Name: "consumer", Image: "registry.access.redhat.com/ubi9/ubi-minimal", Command: []string{"sh", "-c", "sleep 3600"}, SecurityContext: &v1.SecurityContext{AllowPrivilegeEscalation: &falseValue, Capabilities: &v1.Capabilities{Drop: []v1.Capability{"ALL"}}}}}, Volumes: []v1.Volume{{Name: "volume", VolumeSource: v1.VolumeSource{PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{ClaimName: name}}}}}}
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: v1.PodSpec{
+			RestartPolicy: v1.RestartPolicyNever,
+			SecurityContext: &v1.PodSecurityContext{
+				RunAsNonRoot: &trueValue,
+				RunAsUser:    int64Ptr(1001),
+				SeccompProfile: &v1.SeccompProfile{
+					Type: v1.SeccompProfileTypeRuntimeDefault,
+				},
+			},
+			Containers: []v1.Container{{
+				Name:    "consumer",
+				Image:   "registry.access.redhat.com/ubi9/ubi-minimal",
+				Command: []string{"sh", "-c", "sleep 3600"},
+				SecurityContext: &v1.SecurityContext{
+					AllowPrivilegeEscalation: &falseValue,
+					Capabilities: &v1.Capabilities{
+						Drop: []v1.Capability{"ALL"},
+					},
+				},
+			}},
+			Volumes: []v1.Volume{{
+				Name: "volume",
+				VolumeSource: v1.VolumeSource{
+					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						ClaimName: name,
+					},
+				},
+			}},
+		},
+	}
 	if volumeMode == "Block" {
 		pod.Spec.Containers[0].VolumeDevices = []v1.VolumeDevice{{Name: "volume", DevicePath: "/dev/volume"}}
 	} else {
@@ -474,19 +529,85 @@ func (env *storagePathAlertEnv) waitForDevice(ctx context.Context, volumeHandle,
 	return device, nil
 }
 
+// storagePathISCSIDiscoveryScript prints unique portal addresses for the target
+// block device, not for every iSCSI session on the node. Walk slaves recursively
+// to handle dm-crypt -> multipath -> SCSI stacks, then resolve each leaf's sysfs
+// path to its session ID. Read that session's lead connection directly instead
+// of parsing human-readable iscsiadm output. The firewall helpers currently
+// support only IPv4 portals on the standard iSCSI port (3260).
+// The argument is the block device name.
+const storagePathISCSIDiscoveryScript = `
+device=$1
+case "${device}" in
+    ''|*[!a-zA-Z0-9_-]*)
+        printf 'Invalid block device name: %s\n' "${device}" >&2
+        exit 1
+        ;;
+esac
+declare -A visited
+discover() {
+    local device=$1 slave has_slaves=false session connection address port
+    if [[ -n "${visited[${device}]:-}" ]]; then
+        return
+    fi
+    visited[${device}]=1
+    for slave in /sys/block/"${device}"/slaves/*; do
+        [[ -e "${slave}" ]] || continue
+        has_slaves=true
+        discover "${slave##*/}" || return 1
+    done
+    if "${has_slaves}"; then
+        return
+    fi
+    session=$(readlink -f "/sys/block/${device}" | tr '/' '\n' | grep '^session[0-9]\+$' | tail -n 1)
+    [[ -n "${session}" ]] || return 0
+    connection="/sys/class/iscsi_connection/connection${session#session}:0"
+    if ! IFS= read -r address < "${connection}/address" || ! IFS= read -r port < "${connection}/port"; then
+        printf 'Cannot read iSCSI endpoint for %s (%s)\n' "${device}" "${session}" >&2
+        return 1
+    fi
+    if [[ "${port}" != 3260 ]]; then
+        printf 'Unsupported iSCSI port %s for %s; expected 3260\n' "${port}" "${session}" >&2
+        return 1
+    fi
+    printf '%s\n' "${address}"
+}
+addresses=$(discover "${device}")
+if [[ -z "${addresses}" ]]; then
+    printf 'No iSCSI portals found for block device %s\n' "${device}" >&2
+    exit 1
+fi
+printf '%s\n' "${addresses}" | sort -u
+`
+
 func (env *storagePathAlertEnv) discoverLIFs(ctx context.Context, protocol, node, device string) ([]string, error) {
 	g.By(fmt.Sprintf("Discovering %s paths for device %s on node %s", protocol, device, node))
-	var command string
+	var output string
+	var err error
 	if protocol == "iscsi" {
-		command = fmt.Sprintf(`for slave in /sys/block/%[1]s/slaves/*; do [ -e "${slave}" ] || slave=/sys/block/%[1]s; session=$(readlink -f "${slave}" | grep -o 'session[0-9]\+' | awk 'END { print }'); [ -n "${session}" ] || continue; iscsiadm -m session -r "${session#session}" -P 3 | awk '/Current Portal:/ {split($3, portal, /[:,]/); print portal[1]}'; done | sort -u`, device)
+		output, err = env.nodeCommand(ctx, node, storagePathISCSIDiscoveryScript, device)
 	} else {
-		command = fmt.Sprintf(`nvme list-subsys /dev/%s | awk -F'traddr=' '/traddr=/ {split($2, a, /[, ]/); print a[1]}' | sort -u`, device)
+		command := fmt.Sprintf(`nvme list-subsys /dev/%s | awk -F'traddr=' '/traddr=/ {split($2, a, /[, ]/); print a[1]}' | sort -u`, device)
+		output, err = env.nodeCommand(ctx, node, command)
 	}
-	output, err := env.nodeCommand(ctx, node, command)
 	if err != nil {
 		return nil, err
 	}
+	if protocol == "iscsi" {
+		return parseStoragePathISCSILIFs(output)
+	}
 	return nonEmptyLines(output), nil
+}
+
+func parseStoragePathISCSILIFs(output string) ([]string, error) {
+	lifs := nonEmptyLines(output)
+	for _, lif := range lifs {
+		address, err := netip.ParseAddr(lif)
+		if err != nil || !address.Is4() {
+			return nil, fmt.Errorf("unsupported iSCSI portal address %q: firewall fault injection requires IPv4", lif)
+		}
+	}
+	return lifs, nil
 }
 
 func (env *storagePathAlertEnv) blockLIF(ctx context.Context, node, protocol, lif string) error {
@@ -508,8 +629,14 @@ func (env *storagePathAlertEnv) restoreLIF(ctx context.Context, node, protocol, 
 	return err
 }
 
-func (env *storagePathAlertEnv) nodeCommand(ctx context.Context, node, command string) (string, error) {
-	output, err := env.runCommand(ctx, "debug", "--quiet", "node/"+node, "--", "chroot", "/host", "bash", "-ceu", command)
+func (env *storagePathAlertEnv) nodeCommand(ctx context.Context, node, command string, commandArgs ...string) (string, error) {
+	args := []string{"debug", "--quiet", "node/" + node, "--", "chroot", "/host", "bash", "-ceu", command}
+	if len(commandArgs) > 0 {
+		// bash -c uses the first argument as $0; script parameters start at $1.
+		args = append(args, "--")
+		args = append(args, commandArgs...)
+	}
+	output, err := env.runCommand(ctx, args...)
 	if err != nil {
 		return "", fmt.Errorf("oc debug node/%s: %w: %s", node, err, output)
 	}
@@ -521,7 +648,10 @@ func (env *storagePathAlertEnv) nodeCommand(ctx context.Context, node, command s
 func (env *storagePathAlertEnv) runCommand(ctx context.Context, args ...string) ([]byte, error) {
 	g.GinkgoLogr.Info("Running command", "command", "oc", "args", args)
 	output, err := exec.CommandContext(ctx, "oc", args...).CombinedOutput()
-	g.GinkgoLogr.Info("Command completed", "command", "oc", "args", args, "output", string(output), "error", err)
+	g.GinkgoLogr.Info("Command completed", "command", "oc", "args", args, "error", err)
+	if len(output) > 0 {
+		g.GinkgoWriter.Printf("oc %s output:\n%s\n", strings.Join(args, " "), output)
+	}
 	return output, err
 }
 
@@ -581,8 +711,9 @@ func (env *storagePathAlertEnv) waitForAlert(ctx context.Context, alert, severit
 		}
 		for _, current := range alerts {
 			labels := current.Labels
-			if current.State == state && labels["alertname"] == alert && labels["severity"] == severity && labels["persistentvolumeclaim"] == pvc && labels["persistentvolume"] == pv && labels["namespace"] == env.namespace && labels["node"] == node && labels["device"] != "" {
-				g.By(fmt.Sprintf("Observed %s alert in %s state for PV %s, PVC %s, node %s, device %s", alert, state, pv, pvc, node, labels["device"]))
+			stateMatches := current.State == state || (state == "pending" && current.State == "firing")
+			if stateMatches && labels["alertname"] == alert && labels["severity"] == severity && labels["persistentvolumeclaim"] == pvc && labels["persistentvolume"] == pv && labels["namespace"] == env.namespace && labels["node"] == node && labels["device"] != "" {
+				g.By(fmt.Sprintf("Observed %s alert in %s state for PV %s, PVC %s, node %s, device %s", alert, current.State, pv, pvc, node, labels["device"]))
 				return true, nil
 			}
 		}
