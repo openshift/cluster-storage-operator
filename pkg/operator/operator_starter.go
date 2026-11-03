@@ -301,6 +301,7 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	deleteSelinuxConflictsConfigMap(ctx, hsr.commonClients)
 
 	metrics.InitializeVACMismatchMetrics(hsr.commonClients)
+	metrics.CountStorageClasses(hsr.commonClients)
 
 	csiDriverController, _ := csidriveroperator.NewHypershiftDriverStarter(
 		hsr.commonClients,
