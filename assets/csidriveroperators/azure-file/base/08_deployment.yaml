@@ -59,7 +59,7 @@ spec:
         name: azure-file-csi-driver-operator
         resources:
           requests:
-            memory: 50Mi
+            memory: 170Mi
             cpu: 10m
         terminationMessagePolicy: FallbackToLogsOnError
         securityContext:

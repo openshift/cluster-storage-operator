@@ -62,7 +62,7 @@ spec:
         name: vmware-vsphere-csi-driver-operator
         resources:
           requests:
-            memory: 50Mi
+            memory: 90Mi
             cpu: 10m
         ports:
         - containerPort: 8445
