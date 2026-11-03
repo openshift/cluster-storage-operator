@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 const (
@@ -56,7 +55,6 @@ type storagePathAlertConfig struct {
 type storagePathAlertEnv struct {
 	kube       kubernetes.Interface
 	dynamic    dynamic.Interface
-	config     *rest.Config
 	httpClient *http.Client
 	promURL    string
 	promToken  string
@@ -151,7 +149,6 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:StoragePathAlert][Serial] CSI s
 		env = &storagePathAlertEnv{
 			kube:       kube,
 			dynamic:    dyn,
-			config:     config,
 			httpClient: &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}, // Prometheus route certificate is cluster-local.
 			settings:   settings,
 		}
@@ -383,8 +380,11 @@ func (env *storagePathAlertEnv) runLifecycleCase(ctx context.Context) {
 	if err := env.waitForMappingRemoval(ctx, pv.Spec.CSI.VolumeHandle, 5*time.Minute); err != nil {
 		g.Fail(err.Error())
 	}
-	if err := env.waitForAlertResolution(ctx, "CSIAddonsVolumeMultipathDegraded", pvc.Name, 2*time.Minute); err != nil {
-		g.Fail(err.Error())
+	if err := env.waitForAlertResolution(ctx, "CSIAddonsVolumeMultipathDegraded", pvc.Name, 10*time.Second); err != nil {
+		g.Fail("unexpected alert CSIAddonsVolumeMultipathDegraded for PVC " + pvc.Name)
+	}
+	if err := env.waitForAlertResolution(ctx, "CSIAddonsVolumeMultipathLost", pvc.Name, 10*time.Second); err != nil {
+		g.Fail("unexpected alert CSIAddonsVolumeMultipathLost for PVC " + pvc.Name)
 	}
 	replacementPVC, replacementPod, err := env.createWorkload(ctx, "t9-replacement", env.settings.iscsiStorageClass, "Filesystem")
 	if err != nil {
@@ -534,7 +534,7 @@ func (env *storagePathAlertEnv) waitForDevice(ctx context.Context, volumeHandle,
 // to handle dm-crypt -> multipath -> SCSI stacks, then resolve each leaf's sysfs
 // path to its session ID. Read that session's lead connection directly instead
 // of parsing human-readable iscsiadm output. The firewall helpers currently
-// support only IPv4 portals on the standard iSCSI port (3260).
+// support only test/e2e/storage_path_alerting.goIPv4 portals on the standard iSCSI port (3260).
 // The argument is the block device name.
 const storagePathISCSIDiscoveryScript = `
 device=$1
