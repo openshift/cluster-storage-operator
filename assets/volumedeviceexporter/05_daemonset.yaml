@@ -118,7 +118,7 @@ spec:
         configMap:
           name: volume-device-exporter-client-ca
           items:
-          - key: client-ca.crt
+          - key: client-ca-file
             path: client-ca.crt
       - name: kube-rbac-proxy-token
         projected:

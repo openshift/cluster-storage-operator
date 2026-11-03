@@ -5,6 +5,7 @@ metadata:
   namespace: openshift-cluster-storage-operator
 spec:
   jobLabel: app
+  scrapeClass: tls-client-certificate-auth
   selector:
     matchLabels:
       app: csi-volume-device-exporter
@@ -14,8 +15,5 @@ spec:
     path: /metrics
     interval: 30s
     tlsConfig:
-      caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
       serverName: volume-device-exporter.openshift-cluster-storage-operator.svc
-      certFile: /etc/prometheus/secrets/metrics-client-certs/tls.crt
-      keyFile: /etc/prometheus/secrets/metrics-client-certs/tls.key
   serviceDiscoveryRole: EndpointSlice

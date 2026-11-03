@@ -32,7 +32,7 @@ func TestNewControllersFeatureGate(t *testing.T) {
 		disabled        []configv1.FeatureGateName
 		controllerCount int
 	}{
-		{name: "enabled", enabled: []configv1.FeatureGateName{features.FeatureGateStoragePathAlert}, controllerCount: 2},
+		{name: "enabled", enabled: []configv1.FeatureGateName{features.FeatureGateStoragePathAlert}, controllerCount: 3},
 		{name: "disabled", disabled: []configv1.FeatureGateName{features.FeatureGateStoragePathAlert}, controllerCount: 0},
 		{name: "unknown", controllerCount: 0},
 	} {
@@ -111,7 +111,7 @@ func TestApplyDaemonSetTLS(t *testing.T) {
 					if volume.ConfigMap == nil || volume.ConfigMap.Name != clientCAConfigMapName {
 						t.Fatalf("client CA volume must reference %s: %#v", clientCAConfigMapName, volume)
 					}
-					if len(volume.ConfigMap.Items) != 1 || volume.ConfigMap.Items[0].Key != "client-ca.crt" || volume.ConfigMap.Items[0].Path != "client-ca.crt" {
+					if len(volume.ConfigMap.Items) != 1 || volume.ConfigMap.Items[0].Key != clientCAConfigMapKey || volume.ConfigMap.Items[0].Path != "client-ca.crt" {
 						t.Errorf("unexpected client CA volume items: %v", volume.ConfigMap.Items)
 					}
 				}
@@ -184,10 +184,13 @@ func TestServiceMonitorClientCertificateAuthentication(t *testing.T) {
 		t.Fatal("scraping must use HTTPS with TLS configuration")
 	}
 	tls := endpoint.TLSConfig
-	if tls.CertFile != "/etc/prometheus/secrets/metrics-client-certs/tls.crt" || tls.KeyFile != "/etc/prometheus/secrets/metrics-client-certs/tls.key" {
-		t.Errorf("unexpected client certificate configuration: %#v", tls)
+	if monitor.Spec.ScrapeClassName == nil || *monitor.Spec.ScrapeClassName != "tls-client-certificate-auth" {
+		t.Fatalf("scraping must use the monitoring client certificate scrape class: %v", monitor.Spec.ScrapeClassName)
 	}
-	if tls.CAFile != "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt" || tls.ServerName == nil || *tls.ServerName != "volume-device-exporter.openshift-cluster-storage-operator.svc" {
+	if tls.CertFile != "" || tls.KeyFile != "" || tls.CAFile != "" {
+		t.Errorf("certificate paths must be inherited from the scrape class: %#v", tls)
+	}
+	if tls.ServerName == nil || *tls.ServerName != "volume-device-exporter.openshift-cluster-storage-operator.svc" {
 		t.Errorf("unexpected server verification configuration: %#v", tls)
 	}
 }

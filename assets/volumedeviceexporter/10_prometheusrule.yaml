@@ -81,8 +81,8 @@ spec:
         )
         * on(device, node) group_left()
         (
-          count by(device, node) (
-            label_replace(node_dmmultipath_path_state{state!~"running|live"}, "node", "$1", "instance", "(.+)") == 1
+          max by(device, node) (
+            label_replace(node_dmmultipath_device_paths_failed, "node", "$1", "instance", "(.+)")
           ) > 0
           and on(device, node)
           max by(device, node) (

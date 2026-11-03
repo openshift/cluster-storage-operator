@@ -19,10 +19,10 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
+	"github.com/openshift/library-go/pkg/operator/resourcesynccontroller"
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -31,7 +31,9 @@ const (
 	volumeDeviceExporterImage = "VOLUME_DEVICE_EXPORTER_IMAGE"
 	kubeRBACProxyImage        = "KUBE_RBAC_PROXY_IMAGE"
 	daemonSetControllerName   = "VolumeDeviceExporterDaemonSet"
+	clientCAControllerName    = "VolumeDeviceExporterClientCA"
 	clientCAConfigMapName     = "volume-device-exporter-client-ca"
+	clientCAConfigMapKey      = "client-ca-file"
 )
 
 var staticAssets = []string{
@@ -71,7 +73,7 @@ func NewControllers(clients *csoclients.Clients, featureGates featuregates.Featu
 		AddKubeInformers(clients.KubeInformers).
 		AddInformer(clients.MonitoringInformer.Monitoring().V1().ServiceMonitors().Informer()).
 		AddInformer(clients.MonitoringInformer.Monitoring().V1().PrometheusRules().Informer())
-	controllers := []factory.Controller{staticController}
+	controllers := []factory.Controller{staticController, newClientCASyncController(clients, c.recorder)}
 
 	daemonSetController := factory.New().
 		WithControllerInstanceName(factory.ControllerInstanceName(daemonSetControllerName, "DaemonSet")).
@@ -81,11 +83,32 @@ func NewControllers(clients *csoclients.Clients, featureGates featuregates.Featu
 			clients.OperatorClient.Informer(),
 			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Apps().V1().DaemonSets().Informer(),
 			clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().ConfigMaps().Informer(),
-			clients.KubeInformers.InformersFor(metav1.NamespaceSystem).Core().V1().ConfigMaps().Informer(),
 		).
 		ToController(daemonSetControllerName, c.recorder)
 
 	return append(controllers, daemonSetController)
+}
+
+func newClientCASyncController(clients *csoclients.Clients, recorder events.Recorder) *resourcesynccontroller.ResourceSyncController {
+	clientCASyncController := resourcesynccontroller.NewResourceSyncController(
+		clientCAControllerName,
+		clients.OperatorClient,
+		clients.KubeInformers,
+		clients.KubeClient.CoreV1(),
+		clients.KubeClient.CoreV1(),
+		recorder,
+	)
+	// Trust ordinary API client certificates, not request-header proxy certificates.
+	// Keep the source key; the DaemonSet maps it to the proxy's CA filename.
+	if err := clientCASyncController.SyncPartialConfigMap(
+		resourcesynccontroller.ResourceLocation{Namespace: csoclients.OperatorNamespace, Name: clientCAConfigMapName},
+		resourcesynccontroller.ResourceLocation{Namespace: metav1.NamespaceSystem, Name: "extension-apiserver-authentication"},
+		clientCAConfigMapKey,
+	); err != nil {
+		panic(fmt.Sprintf("configure volume device exporter client CA sync: %v", err))
+	}
+
+	return clientCASyncController
 }
 
 func (c *controller) syncDaemonSet(ctx context.Context, syncCtx factory.SyncContext) error {
@@ -100,7 +123,7 @@ func (c *controller) syncDaemonSet(ctx context.Context, syncCtx factory.SyncCont
 		return nil
 	}
 
-	if err := c.syncClientCA(ctx); err != nil {
+	if err := c.validateClientCA(); err != nil {
 		return err
 	}
 
@@ -111,29 +134,13 @@ func (c *controller) syncDaemonSet(ctx context.Context, syncCtx factory.SyncCont
 	return c.updateStatus(ctx, daemonSet)
 }
 
-func (c *controller) syncClientCA(ctx context.Context) error {
-	// Use the same client trust as CSO's delegated metrics authentication, not
-	// the service-serving CA. kube-rbac-proxy consumes this trust from a file.
-	sourceInformer := c.clients.KubeInformers.InformersFor(metav1.NamespaceSystem).Core().V1().ConfigMaps()
-	source, err := sourceInformer.Lister().ConfigMaps(metav1.NamespaceSystem).Get("extension-apiserver-authentication")
+func (c *controller) validateClientCA() error {
+	clientCA, err := c.clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().ConfigMaps().Lister().ConfigMaps(csoclients.OperatorNamespace).Get(clientCAConfigMapName)
 	if err != nil {
-		return fmt.Errorf("reading metrics client CA: %w", err)
+		return fmt.Errorf("reading synchronized metrics client CA: %w", err)
 	}
-	clientCA := source.Data["client-ca-file"]
-	if !x509.NewCertPool().AppendCertsFromPEM([]byte(clientCA)) {
-		// Preserve the last known good bundle and report Degraded. On first
-		// deployment, do not create the DaemonSet without usable client trust.
-		return fmt.Errorf("no client CA certificates in kube-system/extension-apiserver-authentication data[client-ca-file]")
-	}
-	required := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      clientCAConfigMapName,
-			Namespace: csoclients.OperatorNamespace,
-		},
-		Data: map[string]string{"client-ca.crt": clientCA},
-	}
-	if _, _, err := resourceapply.ApplyConfigMap(ctx, c.clients.KubeClient.CoreV1(), c.recorder, required); err != nil {
-		return fmt.Errorf("applying metrics client CA: %w", err)
+	if !x509.NewCertPool().AppendCertsFromPEM([]byte(clientCA.Data[clientCAConfigMapKey])) {
+		return fmt.Errorf("no client CA certificates in synchronized ConfigMap %s/%s data[%s]", csoclients.OperatorNamespace, clientCAConfigMapName, clientCAConfigMapKey)
 	}
 	return nil
 }

@@ -140,8 +140,7 @@ func (csr *commonStarter) CreateCommonControllers() error {
 		"RemoveStaleConditionsController",
 		[]string{
 			"VSphereProblemDetectorDeploymentControllerAvailable",
-			"VolumeDeviceExporterDaemonSetAvailable",
-			"VolumeDeviceExporterDaemonSetProgressing",
+			"SELinuxMountGAReadinessControllerUpgradeable",
 		},
 		csr.commonClients.OperatorClient,
 		csr.eventRecorder,

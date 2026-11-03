@@ -8,7 +8,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"errors"
 	"math/big"
 	"strings"
 	"testing"
@@ -16,159 +15,123 @@ import (
 
 	operatorapi "github.com/openshift/api/operator/v1"
 	"github.com/openshift/cluster-storage-operator/pkg/csoclients"
+	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/resourcesynccontroller"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	fakecore "k8s.io/client-go/kubernetes/fake"
-	clienttesting "k8s.io/client-go/testing"
 	clocktesting "k8s.io/utils/clock/testing"
 )
 
 const observedTLSConfig = `{"targetcsiconfig":{"servingInfo":{"minTLSVersion":"VersionTLS12","cipherSuites":["TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"]}}}`
 
-func TestSyncClientCA(t *testing.T) {
+func TestClientCASync(t *testing.T) {
 	oldCA := testCAPEM(t, "old")
 	newCA := testCAPEM(t, "new")
+	c, clients := newClientCAController(t, operatorapi.Managed, oldCA, nil)
+	syncer := newClientCASyncer(t, clients, c.recorder)
 
-	t.Run("copies only client CA and rotates bundles", func(t *testing.T) {
-		c, clients := newClientCAController(t, operatorapi.Managed, oldCA, nil)
-		if err := c.syncClientCA(context.Background()); err != nil {
-			t.Fatal(err)
-		}
-		assertClientCA(t, clients, oldCA)
+	syncClientCA(t, syncer, c.recorder)
+	assertClientCA(t, clients, oldCA)
+	cacheDestination(t, c, clients)
 
-		setSourceClientCA(t, c, oldCA+newCA)
-		if err := c.syncClientCA(context.Background()); err != nil {
-			t.Fatal(err)
-		}
-		assertClientCA(t, clients, oldCA+newCA)
+	setSourceClientCA(t, c, oldCA+newCA)
+	syncClientCA(t, syncer, c.recorder)
+	assertClientCA(t, clients, oldCA+newCA)
+	cacheDestination(t, c, clients)
 
-		setSourceClientCA(t, c, newCA)
-		if err := c.syncClientCA(context.Background()); err != nil {
-			t.Fatal(err)
-		}
-		assertClientCA(t, clients, newCA)
-	})
-
-	t.Run("is idempotent", func(t *testing.T) {
-		destination := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: clientCAConfigMapName, Namespace: csoclients.OperatorNamespace},
-			Data:       map[string]string{"client-ca.crt": oldCA},
-		}
-		c, clients := newClientCAController(t, operatorapi.Managed, oldCA, destination)
-		if err := c.syncClientCA(context.Background()); err != nil {
-			t.Fatal(err)
-		}
-		for _, action := range fakeKubeClient(t, clients).Actions() {
-			if action.GetVerb() == "update" || action.GetVerb() == "create" {
-				t.Errorf("unexpected %s action for unchanged client CA", action.GetVerb())
-			}
-		}
-	})
-
-	for _, tc := range []struct {
-		name      string
-		source    *corev1.ConfigMap
-		wantError string
-	}{
-		{name: "missing source", wantError: "reading metrics client CA"},
-		{name: "missing key", source: sourceConfigMap(""), wantError: "no client CA certificates"},
-		{name: "empty key", source: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "extension-apiserver-authentication", Namespace: metav1.NamespaceSystem}, Data: map[string]string{"client-ca-file": ""}}, wantError: "no client CA certificates"},
-		{name: "whitespace key", source: sourceConfigMap(" \n\t"), wantError: "no client CA certificates"},
-		{name: "malformed PEM", source: sourceConfigMap("not a certificate"), wantError: "no client CA certificates"},
-	} {
-		t.Run("preserves last good bundle on "+tc.name, func(t *testing.T) {
-			destination := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: clientCAConfigMapName, Namespace: csoclients.OperatorNamespace},
-				Data:       map[string]string{"client-ca.crt": oldCA},
-			}
-			c, clients := newClientCAController(t, operatorapi.Managed, "", destination)
-			if tc.source != nil {
-				seedSourceConfigMap(t, c, tc.source)
-			}
-			err := c.syncClientCA(context.Background())
-			if err == nil || !strings.Contains(err.Error(), tc.wantError) {
-				t.Fatalf("error = %v, want %q", err, tc.wantError)
-			}
-			assertClientCA(t, clients, oldCA)
-		})
-	}
-
-	t.Run("propagates destination create error", func(t *testing.T) {
-		c, clients := newClientCAController(t, operatorapi.Managed, oldCA, nil)
-		fakeKubeClient(t, clients).PrependReactor("create", "configmaps", func(clienttesting.Action) (bool, runtime.Object, error) {
-			return true, nil, errors.New("create failed")
-		})
-		if err := c.syncClientCA(context.Background()); err == nil || !strings.Contains(err.Error(), "create failed") {
-			t.Fatalf("error = %v, want create failure", err)
-		}
-	})
-
-	t.Run("propagates destination update error", func(t *testing.T) {
-		destination := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: clientCAConfigMapName, Namespace: csoclients.OperatorNamespace},
-			Data:       map[string]string{"client-ca.crt": oldCA},
-		}
-		c, clients := newClientCAController(t, operatorapi.Managed, newCA, destination)
-		fakeKubeClient(t, clients).PrependReactor("update", "configmaps", func(clienttesting.Action) (bool, runtime.Object, error) {
-			return true, nil, errors.New("update failed")
-		})
-		if err := c.syncClientCA(context.Background()); err == nil || !strings.Contains(err.Error(), "update failed") {
-			t.Fatalf("error = %v, want update failure", err)
-		}
-	})
+	setSourceClientCA(t, c, newCA)
+	syncClientCA(t, syncer, c.recorder)
+	assertClientCA(t, clients, newCA)
 }
 
-func TestSyncDaemonSetClientCARequirements(t *testing.T) {
+func TestClientCASyncExcludesUnrelatedKeys(t *testing.T) {
+	ca := testCAPEM(t, "client")
+	c, clients := newClientCAController(t, operatorapi.Managed, ca, nil)
+	syncClientCA(t, newClientCASyncer(t, clients, c.recorder), c.recorder)
+	assertClientCA(t, clients, ca)
+}
+
+func TestClientCASyncSkipsUnmanaged(t *testing.T) {
+	ca := testCAPEM(t, "client")
+	c, clients := newClientCAController(t, operatorapi.Unmanaged, ca, nil)
+	syncClientCA(t, newClientCASyncer(t, clients, c.recorder), c.recorder)
+	if _, err := clients.KubeClient.CoreV1().ConfigMaps(csoclients.OperatorNamespace).Get(context.Background(), clientCAConfigMapName, metav1.GetOptions{}); err == nil {
+		t.Fatal("client CA ConfigMap was created while unmanaged")
+	}
+}
+
+func TestClientCAInvalidSourcePreventsDaemonSet(t *testing.T) {
+	c, clients := newClientCAController(t, operatorapi.Managed, "not a certificate", nil)
+	syncer := newClientCASyncer(t, clients, c.recorder)
+	syncClientCA(t, syncer, c.recorder)
+	cacheDestination(t, c, clients)
+
+	err := c.syncDaemonSet(context.Background(), nil)
+	if err == nil || !strings.Contains(err.Error(), "no client CA certificates") {
+		t.Fatalf("error = %v, want invalid client CA error", err)
+	}
+	if _, err := clients.KubeClient.AppsV1().DaemonSets(csoclients.OperatorNamespace).Get(context.Background(), "volume-device-exporter", metav1.GetOptions{}); err == nil {
+		t.Fatal("DaemonSet was created with invalid client trust")
+	}
+
+	validCA := testCAPEM(t, "recovered")
+	setSourceClientCA(t, c, validCA)
+	syncClientCA(t, syncer, c.recorder)
+	cacheDestination(t, c, clients)
+	if err := c.syncDaemonSet(context.Background(), nil); err != nil {
+		t.Fatalf("DaemonSet reconciliation did not recover after valid CA sync: %v", err)
+	}
+	if _, err := clients.KubeClient.AppsV1().DaemonSets(csoclients.OperatorNamespace).Get(context.Background(), "volume-device-exporter", metav1.GetOptions{}); err != nil {
+		t.Fatalf("DaemonSet was not created after valid CA sync: %v", err)
+	}
+}
+
+func TestDaemonSetWaitsForValidSynchronizedClientCA(t *testing.T) {
 	validCA := testCAPEM(t, "valid")
 	for _, tc := range []struct {
-		name   string
-		state  operatorapi.ManagementState
-		source string
-		wantDS bool
-		wantCA bool
+		name string
+		ca   string
+		want string
 	}{
-		{name: "managed missing source creates nothing", state: operatorapi.Managed},
-		{name: "managed invalid source creates nothing", state: operatorapi.Managed, source: "invalid"},
-		{name: "managed valid source creates both", state: operatorapi.Managed, source: validCA, wantDS: true, wantCA: true},
-		{name: "unmanaged skips", state: operatorapi.Unmanaged, source: validCA},
-		{name: "removed skips", state: operatorapi.Removed, source: validCA},
+		{name: "missing", want: "reading synchronized metrics client CA"},
+		{name: "invalid", ca: "invalid", want: "no client CA certificates"},
+		{name: "valid", ca: validCA},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			c, clients := newClientCAController(t, tc.state, tc.source, nil)
+			destination := (*corev1.ConfigMap)(nil)
+			if tc.ca != "" {
+				destination = destinationConfigMap(tc.ca)
+			}
+			c, _ := newClientCAController(t, operatorapi.Managed, "", destination)
+			if destination != nil {
+				seedDestinationConfigMap(t, c, destination)
+			}
 			err := c.syncDaemonSet(context.Background(), nil)
-			if tc.state == operatorapi.Managed && !tc.wantDS && err == nil {
-				t.Fatal("expected invalid source error")
+			if tc.want != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.want) {
+					t.Fatalf("error = %v, want %q", err, tc.want)
+				}
+				return
 			}
-			if (tc.state != operatorapi.Managed || tc.wantDS) && err != nil {
+			if err != nil {
 				t.Fatal(err)
-			}
-			_, dsErr := clients.KubeClient.AppsV1().DaemonSets(csoclients.OperatorNamespace).Get(context.Background(), "volume-device-exporter", metav1.GetOptions{})
-			if got := dsErr == nil; got != tc.wantDS {
-				t.Errorf("DaemonSet exists = %t, want %t (error: %v)", got, tc.wantDS, dsErr)
-			}
-			_, caErr := clients.KubeClient.CoreV1().ConfigMaps(csoclients.OperatorNamespace).Get(context.Background(), clientCAConfigMapName, metav1.GetOptions{})
-			if got := caErr == nil; got != tc.wantCA {
-				t.Errorf("client CA ConfigMap exists = %t, want %t (error: %v)", got, tc.wantCA, caErr)
 			}
 		})
 	}
+}
 
-	t.Run("recovers after valid source is observed", func(t *testing.T) {
-		c, clients := newClientCAController(t, operatorapi.Managed, "invalid", nil)
-		if err := c.syncDaemonSet(context.Background(), nil); err == nil {
-			t.Fatal("expected invalid source error")
-		}
-		setSourceClientCA(t, c, validCA)
-		if err := c.syncDaemonSet(context.Background(), nil); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := clients.KubeClient.AppsV1().DaemonSets(csoclients.OperatorNamespace).Get(context.Background(), "volume-device-exporter", metav1.GetOptions{}); err != nil {
-			t.Fatal(err)
-		}
-		assertClientCA(t, clients, validCA)
-	})
+func newClientCASyncer(t *testing.T, clients *csoclients.Clients, recorder events.Recorder) *resourcesynccontroller.ResourceSyncController {
+	t.Helper()
+	return newClientCASyncController(clients, recorder)
+}
+
+func syncClientCA(t *testing.T, syncer *resourcesynccontroller.ResourceSyncController, recorder events.Recorder) {
+	t.Helper()
+	if err := syncer.Sync(context.Background(), factory.NewSyncContext("test", recorder)); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func newClientCAController(t *testing.T, state operatorapi.ManagementState, clientCA string, destination *corev1.ConfigMap) (*controller, *csoclients.Clients) {
@@ -195,11 +158,20 @@ func newClientCAController(t *testing.T, state operatorapi.ManagementState, clie
 }
 
 func sourceConfigMap(clientCA string) *corev1.ConfigMap {
-	data := map[string]string{"requestheader-client-ca-file": "must not be copied"}
-	if clientCA != "" {
-		data["client-ca-file"] = clientCA
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: "extension-apiserver-authentication", Namespace: metav1.NamespaceSystem},
+		Data: map[string]string{
+			clientCAConfigMapKey:           clientCA,
+			"requestheader-client-ca-file": "must not be copied",
+		},
 	}
-	return &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "extension-apiserver-authentication", Namespace: metav1.NamespaceSystem}, Data: data}
+}
+
+func destinationConfigMap(clientCA string) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: clientCAConfigMapName, Namespace: csoclients.OperatorNamespace},
+		Data:       map[string]string{clientCAConfigMapKey: clientCA},
+	}
 }
 
 func seedSourceConfigMap(t *testing.T, c *controller, source *corev1.ConfigMap) {
@@ -218,24 +190,37 @@ func setSourceClientCA(t *testing.T, c *controller, clientCA string) {
 	}
 }
 
+func seedDestinationConfigMap(t *testing.T, c *controller, destination *corev1.ConfigMap) {
+	t.Helper()
+	store := c.clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().ConfigMaps().Informer().GetStore()
+	if err := store.Add(destination); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func cacheDestination(t *testing.T, c *controller, clients *csoclients.Clients) {
+	t.Helper()
+	destination, err := clients.KubeClient.CoreV1().ConfigMaps(csoclients.OperatorNamespace).Get(context.Background(), clientCAConfigMapName, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := c.clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().ConfigMaps().Informer().GetStore()
+	if err := store.Add(destination); err != nil {
+		if err := store.Update(destination); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func assertClientCA(t *testing.T, clients *csoclients.Clients, want string) {
 	t.Helper()
 	actual, err := clients.KubeClient.CoreV1().ConfigMaps(csoclients.OperatorNamespace).Get(context.Background(), clientCAConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(actual.Data) != 1 || actual.Data["client-ca.crt"] != want {
-		t.Errorf("client CA data = %#v, want only client-ca.crt with expected bundle", actual.Data)
+	if len(actual.Data) != 1 || actual.Data[clientCAConfigMapKey] != want {
+		t.Errorf("client CA data = %#v, want only %s with expected bundle", actual.Data, clientCAConfigMapKey)
 	}
-}
-
-func fakeKubeClient(t *testing.T, clients *csoclients.Clients) *fakecore.Clientset {
-	t.Helper()
-	client, ok := clients.KubeClient.(*fakecore.Clientset)
-	if !ok {
-		t.Fatalf("KubeClient = %T, want *fake.Clientset", clients.KubeClient)
-	}
-	return client
 }
 
 func testCAPEM(t *testing.T, commonName string) string {
