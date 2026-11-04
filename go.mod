@@ -16,7 +16,7 @@ require (
 	github.com/prometheus-operator/prometheus-operator/pkg/client v0.71.2
 	github.com/prometheus/client_golang v1.18.0
 	github.com/spf13/cobra v1.8.0
-	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/net v1.26.9 // indirect
 	k8s.io/api v0.29.1
 	k8s.io/apiextensions-apiserver v0.29.1
 	k8s.io/apimachinery v0.29.1
