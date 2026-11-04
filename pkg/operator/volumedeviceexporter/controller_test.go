@@ -95,8 +95,8 @@ func TestApplyDaemonSetTLS(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if daemonSet.Spec.Template.Spec.PriorityClassName != "system-node-critical" {
-				t.Errorf("priority class = %q, want system-node-critical", daemonSet.Spec.Template.Spec.PriorityClassName)
+			if daemonSet.Spec.Template.Spec.PriorityClassName != "system-cluster-critical" {
+				t.Errorf("priority class = %q, want system-cluster-critical", daemonSet.Spec.Template.Spec.PriorityClassName)
 			}
 			if _, exists := daemonSet.Spec.Template.Labels["priorityClassName"]; exists {
 				t.Error("priorityClassName must be a pod spec field, not a label")
@@ -165,7 +165,7 @@ func TestApplyDaemonSetTLS(t *testing.T) {
 }
 
 func TestServiceMonitorClientCertificateAuthentication(t *testing.T) {
-	data, err := assets.ReadFile("volumedeviceexporter/04_servicemonitor.yaml")
+	data, err := assets.ReadFile("volumedeviceexporter/07_servicemonitor.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -38,12 +38,12 @@ const (
 
 var staticAssets = []string{
 	"volumedeviceexporter/01_serviceaccount.yaml",
-	"volumedeviceexporter/03_auth_proxy_clusterrole.yaml",
-	"volumedeviceexporter/04_auth_proxy_clusterrolebinding.yaml",
-	"volumedeviceexporter/09_privileged_scc_rolebinding.yaml",
-	"volumedeviceexporter/03_service.yaml",
-	"volumedeviceexporter/04_servicemonitor.yaml",
-	"volumedeviceexporter/10_prometheusrule.yaml",
+	"volumedeviceexporter/02_auth_proxy_clusterrole.yaml",
+	"volumedeviceexporter/03_auth_proxy_clusterrolebinding.yaml",
+	"volumedeviceexporter/04_privileged_scc_rolebinding.yaml",
+	"volumedeviceexporter/05_service.yaml",
+	"volumedeviceexporter/07_servicemonitor.yaml",
+	"volumedeviceexporter/08_prometheusrule.yaml",
 }
 
 type controller struct {
@@ -146,7 +146,7 @@ func (c *controller) validateClientCA() error {
 }
 
 func (c *controller) applyDaemonSet(ctx context.Context, spec *operatorapi.OperatorSpec, status *operatorapi.OperatorStatus) (*appsv1.DaemonSet, error) {
-	data, err := assets.ReadFile("volumedeviceexporter/05_daemonset.yaml")
+	data, err := assets.ReadFile("volumedeviceexporter/06_daemonset.yaml")
 	if err != nil {
 		return nil, err
 	}
