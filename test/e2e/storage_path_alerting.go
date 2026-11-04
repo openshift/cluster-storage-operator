@@ -96,6 +96,10 @@ type prometheusAlert struct {
 //     oc get storageclass
 //     Confirm each class provisions the expected protocol and encryption mode
 //     from its Trident backend and StorageClass parameters.
+//     Cases whose configured StorageClass is absent are skipped before checking
+//     the exporter or creating workloads. An existing class is expected to
+//     provide multipath storage; provisioning and path discovery failures fail
+//     the test rather than skip it.
 //   - These optional variables use the shown defaults and only need setting
 //     when the target cluster differs:
 //     ALERT_TEST_EXPORTER_NAMESPACE=openshift-cluster-storage-operator
@@ -152,24 +156,6 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:StoragePathAlert][Serial] CSI s
 			httpClient: &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}, // Prometheus route certificate is cluster-local.
 			settings:   settings,
 		}
-		if err := env.preflight(ctx); err != nil {
-			g.Fail(err.Error())
-		}
-		g.By("Creating the storage path alert test namespace")
-		ns, err := env.kube.CoreV1().Namespaces().Create(ctx, &v1.Namespace{ObjectMeta: metav1.ObjectMeta{GenerateName: alertTestNamespace}}, metav1.CreateOptions{})
-		if err != nil {
-			g.Fail(fmt.Sprintf("create test namespace: %v", err))
-		}
-		env.namespace = ns.Name
-		g.DeferCleanup(func(ctx context.Context) {
-			if g.CurrentSpecReport().Failed() {
-				env.dumpStorageDiagnostics(ctx)
-			}
-			if err := env.cleanupNamespace(ctx); err != nil {
-				env.dumpStorageDiagnostics(ctx)
-				g.Fail(fmt.Sprintf("clean up test storage: %v", err))
-			}
-		})
 	})
 
 	for _, tc := range []storagePathCase{
@@ -220,6 +206,46 @@ func envOrDefault(name, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func (env *storagePathAlertEnv) storageClassAvailable(ctx context.Context, name string) (bool, error) {
+	_, err := env.kube.StorageV1().StorageClasses().Get(ctx, name, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("get multipath test StorageClass %q: %w", name, err)
+	}
+	return true, nil
+}
+
+func (env *storagePathAlertEnv) setup(ctx context.Context, storageClass string) {
+	g.GinkgoHelper()
+	available, err := env.storageClassAvailable(ctx, storageClass)
+	if err != nil {
+		g.Fail(err.Error())
+	}
+	if !available {
+		g.Skip(fmt.Sprintf("multipath test StorageClass %q is not available; prepare a multipath backend or configure the corresponding ALERT_TEST_*_STORAGECLASS override", storageClass))
+	}
+	if err := env.preflight(ctx); err != nil {
+		g.Fail(err.Error())
+	}
+	g.By("Creating the storage path alert test namespace")
+	ns, err := env.kube.CoreV1().Namespaces().Create(ctx, &v1.Namespace{ObjectMeta: metav1.ObjectMeta{GenerateName: alertTestNamespace}}, metav1.CreateOptions{})
+	if err != nil {
+		g.Fail(fmt.Sprintf("create test namespace: %v", err))
+	}
+	env.namespace = ns.Name
+	g.DeferCleanup(func(ctx context.Context) {
+		if g.CurrentSpecReport().Failed() {
+			env.dumpStorageDiagnostics(ctx)
+		}
+		if err := env.cleanupNamespace(ctx); err != nil {
+			env.dumpStorageDiagnostics(ctx)
+			g.Fail(fmt.Sprintf("clean up test storage: %v", err))
+		}
+	})
 }
 
 func (env *storagePathAlertEnv) preflight(ctx context.Context) error {
@@ -292,6 +318,7 @@ func (env *storagePathAlertEnv) requireAlertRules(ctx context.Context) error {
 func (env *storagePathAlertEnv) runPathAlertCase(ctx context.Context, tc storagePathCase) {
 	name := strings.ToLower(fmt.Sprintf("%s-%s", tc.id, tc.volumeMode))
 	storageClass := env.storageClass(tc.storageClass)
+	env.setup(ctx, storageClass)
 	g.By(fmt.Sprintf("Creating %s workload with StorageClass %s", tc.id, storageClass))
 	pvc, pod, err := env.createWorkload(ctx, name, storageClass, tc.volumeMode)
 	if err != nil {
@@ -350,6 +377,7 @@ func (env *storagePathAlertEnv) runPathAlertCase(ctx context.Context, tc storage
 }
 
 func (env *storagePathAlertEnv) runLifecycleCase(ctx context.Context) {
+	env.setup(ctx, env.settings.iscsiStorageClass)
 	pvc, pod, err := env.createWorkload(ctx, "t9-filesystem", env.settings.iscsiStorageClass, "Filesystem")
 	if err != nil {
 		g.Fail(fmt.Sprintf("create lifecycle workload: %v", err))
