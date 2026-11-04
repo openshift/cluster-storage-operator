@@ -1,6 +1,8 @@
 package configobservercontroller
 
 import (
+	"slices"
+
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/openshift/api/features"
@@ -61,7 +63,8 @@ func NewConfigObserverController(
 func observeTLSSecurityProfile(featureGates featuregates.FeatureGate) configobserver.ObserveConfigFunc {
 	return func(genericListers configobserver.Listers, recorder events.Recorder, existingConfig map[string]interface{}) (map[string]interface{}, []error) {
 		var groupsPath []string
-		if featureGates.Enabled(features.FeatureGateTLSGroupPreferences) {
+		if slices.Contains(featureGates.KnownFeatures(), features.FeatureGateTLSGroupPreferences) &&
+			featureGates.Enabled(features.FeatureGateTLSGroupPreferences) {
 			groupsPath = csiconfigobservercontroller.CurvePreferencesPath()
 		}
 		return libgoapiserver.ObserveTLSSecurityProfileWithGroupPaths(genericListers, recorder, existingConfig, csiconfigobservercontroller.MinTLSVersionPath(), csiconfigobservercontroller.CipherSuitesPath(), groupsPath)

@@ -15,10 +15,9 @@ spec:
       labels:
         app: volume-device-exporter
         openshift.storage.network-policy.dns: allow
-        openshift.storage.network-policy.api-server: allow
         openshift.storage.network-policy.operator-metrics: allow
     spec:
-      priorityClassName: system-node-critical
+      priorityClassName: system-cluster-critical
       serviceAccountName: volume-device-exporter
       automountServiceAccountToken: false
       nodeSelector:
@@ -32,14 +31,13 @@ spec:
         - --listen-address=127.0.0.1:9710
         - --poll-interval=30s
         - --log-level=info
+        imagePullPolicy: IfNotPresent
         env:
         - name: NODE_NAME
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
         ports:
-        - name: metrics
-          containerPort: 9710
         securityContext:
           privileged: true
           readOnlyRootFilesystem: true
@@ -52,9 +50,7 @@ spec:
           requests:
             cpu: 10m
             memory: 32Mi
-          limits:
-            cpu: 100m
-            memory: 64Mi
+        terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - name: kubelet-root
           mountPath: /var/lib/kubelet
@@ -136,3 +132,7 @@ spec:
               - path: namespace
                 fieldRef:
                   fieldPath: metadata.namespace
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 30%
+    type: RollingUpdate
