@@ -4,3 +4,4 @@
 exclude:
   global:
     - vendor/**
+    - test/e2e/storage_path_alerting.go
