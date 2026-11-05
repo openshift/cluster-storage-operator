@@ -2,7 +2,6 @@ package volumedeviceexporter
 
 import (
 	"context"
-	"crypto/x509"
 	"fmt"
 	"os"
 	"slices"
@@ -123,26 +122,11 @@ func (c *controller) syncDaemonSet(ctx context.Context, syncCtx factory.SyncCont
 		return nil
 	}
 
-	if err := c.validateClientCA(); err != nil {
-		return err
-	}
-
 	daemonSet, err := c.applyDaemonSet(ctx, spec, status)
 	if err != nil {
 		return err
 	}
 	return c.updateStatus(ctx, daemonSet)
-}
-
-func (c *controller) validateClientCA() error {
-	clientCA, err := c.clients.KubeInformers.InformersFor(csoclients.OperatorNamespace).Core().V1().ConfigMaps().Lister().ConfigMaps(csoclients.OperatorNamespace).Get(clientCAConfigMapName)
-	if err != nil {
-		return fmt.Errorf("reading synchronized metrics client CA: %w", err)
-	}
-	if !x509.NewCertPool().AppendCertsFromPEM([]byte(clientCA.Data[clientCAConfigMapKey])) {
-		return fmt.Errorf("no client CA certificates in synchronized ConfigMap %s/%s data[%s]", csoclients.OperatorNamespace, clientCAConfigMapName, clientCAConfigMapKey)
-	}
-	return nil
 }
 
 func (c *controller) applyDaemonSet(ctx context.Context, spec *operatorapi.OperatorSpec, status *operatorapi.OperatorStatus) (*appsv1.DaemonSet, error) {
