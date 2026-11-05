@@ -87,6 +87,7 @@ spec:
           requests:
             cpu: 10m
             memory: 20Mi
+        terminationMessagePolicy=FallbackToLogsOnError
         volumeMounts:
         - name: serving-cert
           mountPath: /etc/tls/private
