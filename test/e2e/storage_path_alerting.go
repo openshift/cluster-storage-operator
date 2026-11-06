@@ -682,7 +682,9 @@ func (env *storagePathAlertEnv) restoreLIF(ctx context.Context, node, protocol, 
 }
 
 func (env *storagePathAlertEnv) nodeCommand(ctx context.Context, node, command string, commandArgs ...string) (string, error) {
-	args := []string{"debug", "-n", env.namespace, "--quiet", "node/" + node, "--", "chroot", "/host", "bash", "-ceu", command}
+	// The workload namespace enforces restricted Pod Security, which rejects
+	// the privileged host access required by node debug pods.
+	args := []string{"debug", "-n", "default", "--quiet", "node/" + node, "--", "chroot", "/host", "bash", "-ceu", command}
 	if len(commandArgs) > 0 {
 		// bash -c uses the first argument as $0; script parameters start at $1.
 		args = append(args, "--")
