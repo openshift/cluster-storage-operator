@@ -58,7 +58,7 @@ spec:
         name: aws-ebs-csi-driver-operator
         resources:
           requests:
-            memory: 50Mi
+            memory: 130Mi
             cpu: 10m
         terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
