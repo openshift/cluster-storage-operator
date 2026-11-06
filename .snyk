@@ -4,3 +4,5 @@
 exclude:
   global:
     - vendor/**
+    # The test use {InsecureSkipVerify: true} which makes ci/prow/security scan fail
+    - test/e2e/storage_path_alerting.go

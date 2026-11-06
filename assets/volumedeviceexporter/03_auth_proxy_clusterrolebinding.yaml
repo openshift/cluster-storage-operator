@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: volume-device-exporter-auth-proxy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: volume-device-exporter-auth-proxy
+subjects:
+- kind: ServiceAccount
+  name: volume-device-exporter
+  namespace: openshift-cluster-storage-operator
