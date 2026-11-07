@@ -135,7 +135,7 @@ var _ = g.Describe("[sig-storage][OCPFeatureGate:StoragePathAlert][Serial] CSI s
 			g.Skip(err.Error())
 		}
 		if _, err := exec.LookPath("oc"); err != nil {
-			g.Skip("oc is required for controlled node fault injection")
+			g.Skip(fmt.Sprintf("oc is required for controlled node fault injection: %v", err))
 		}
 
 		config, err := newClientConfigForTest()
@@ -325,16 +325,22 @@ func (env *storagePathAlertEnv) runPathAlertCase(ctx context.Context, tc storage
 		g.Fail(fmt.Sprintf("create workload: %v", err))
 	}
 	pv, err := env.kube.CoreV1().PersistentVolumes().Get(ctx, pvc.Spec.VolumeName, metav1.GetOptions{})
-	if err != nil || pv.Spec.CSI == nil {
+	if err != nil {
 		g.Fail(fmt.Sprintf("get CSI PV: %v", err))
+	}
+	if pv.Spec.CSI == nil {
+		g.Fail(fmt.Sprintf("PV %s is not a CSI volume", pv.Name))
 	}
 	device, err := env.waitForDevice(ctx, pv.Spec.CSI.VolumeHandle, pod.Spec.NodeName)
 	if err != nil {
 		g.Fail(err.Error())
 	}
 	lifs, err := env.discoverLIFs(ctx, tc.protocol, pod.Spec.NodeName, device)
-	if err != nil || len(lifs) < 2 {
+	if err != nil {
 		g.Fail(fmt.Sprintf("discover independent %s LIFs for %s: %v", tc.protocol, device, err))
+	}
+	if len(lifs) < 2 {
+		g.Fail(fmt.Sprintf("expected at least two independent %s LIFs for %s, found %v", tc.protocol, device, lifs))
 	}
 	if tc.failedPaths == "one" {
 		lifs = lifs[:1]
@@ -383,8 +389,11 @@ func (env *storagePathAlertEnv) runLifecycleCase(ctx context.Context) {
 		g.Fail(fmt.Sprintf("create lifecycle workload: %v", err))
 	}
 	pv, err := env.kube.CoreV1().PersistentVolumes().Get(ctx, pvc.Spec.VolumeName, metav1.GetOptions{})
-	if err != nil || pv.Spec.CSI == nil {
+	if err != nil {
 		g.Fail(fmt.Sprintf("get lifecycle PV: %v", err))
+	}
+	if pv.Spec.CSI == nil {
+		g.Fail(fmt.Sprintf("lifecycle PV %s is not a CSI volume", pv.Name))
 	}
 	if _, err := env.waitForDevice(ctx, pv.Spec.CSI.VolumeHandle, pod.Spec.NodeName); err != nil {
 		g.Fail(err.Error())
@@ -409,18 +418,21 @@ func (env *storagePathAlertEnv) runLifecycleCase(ctx context.Context) {
 		g.Fail(err.Error())
 	}
 	if err := env.waitForAlertResolution(ctx, "CSIAddonsVolumeMultipathDegraded", pvc.Name, 10*time.Second); err != nil {
-		g.Fail("unexpected alert CSIAddonsVolumeMultipathDegraded for PVC " + pvc.Name)
+		g.Fail(fmt.Sprintf("unexpected alert CSIAddonsVolumeMultipathDegraded for PVC %s: %v", pvc.Name, err))
 	}
 	if err := env.waitForAlertResolution(ctx, "CSIAddonsVolumeMultipathLost", pvc.Name, 10*time.Second); err != nil {
-		g.Fail("unexpected alert CSIAddonsVolumeMultipathLost for PVC " + pvc.Name)
+		g.Fail(fmt.Sprintf("unexpected alert CSIAddonsVolumeMultipathLost for PVC %s: %v", pvc.Name, err))
 	}
 	replacementPVC, replacementPod, err := env.createWorkload(ctx, "t9-replacement", env.settings.iscsiStorageClass, "Filesystem")
 	if err != nil {
 		g.Fail(fmt.Sprintf("create replacement workload: %v", err))
 	}
 	replacementPV, err := env.kube.CoreV1().PersistentVolumes().Get(ctx, replacementPVC.Spec.VolumeName, metav1.GetOptions{})
-	if err != nil || replacementPV.Spec.CSI == nil {
+	if err != nil {
 		g.Fail(fmt.Sprintf("get replacement PV: %v", err))
+	}
+	if replacementPV.Spec.CSI == nil {
+		g.Fail(fmt.Sprintf("replacement PV %s is not a CSI volume", replacementPV.Name))
 	}
 	if replacementPV.Spec.CSI.VolumeHandle == pv.Spec.CSI.VolumeHandle {
 		g.Fail("replacement workload reused the deleted CSI volume handle")
@@ -457,30 +469,37 @@ func (env *storagePathAlertEnv) createWorkload(ctx context.Context, name, storag
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("create PVC %s/%s: %w", env.namespace, name, err)
 	}
 	pod := testStoragePathPod(env.namespace, name, volumeMode)
 	g.By(fmt.Sprintf("Creating Pod %s/%s", env.namespace, name))
 	pod, err = env.kube.CoreV1().Pods(env.namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("create Pod %s/%s: %w", env.namespace, name, err)
 	}
 	g.By(fmt.Sprintf("Waiting for Pod %s/%s to be Running", env.namespace, name))
 	err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 10*time.Minute, true, func(ctx context.Context) (bool, error) {
 		current, err := env.kube.CoreV1().Pods(env.namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("get Pod %s/%s: %w", env.namespace, name, err)
 		}
 		pod = current
+		if current.Status.Phase != v1.PodRunning {
+			g.GinkgoLogr.Info("Pod is not Running yet", "namespace", env.namespace, "pod", name,
+				"phase", current.Status.Phase, "reason", current.Status.Reason, "message", current.Status.Message,
+				"conditions", current.Status.Conditions, "initContainerStatuses", current.Status.InitContainerStatuses,
+				"containerStatuses", current.Status.ContainerStatuses)
+		}
 		return current.Status.Phase == v1.PodRunning, nil
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("wait for Pod %s/%s to be Running (last phase %s, reason %q, message %q, conditions %+v, init container statuses %+v, container statuses %+v): %w",
+			env.namespace, name, pod.Status.Phase, pod.Status.Reason, pod.Status.Message, pod.Status.Conditions, pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses, err)
 	}
 	g.By(fmt.Sprintf("Reading the bound PV for PVC %s/%s (Pod node %s)", env.namespace, name, pod.Spec.NodeName))
 	pvc, err = env.kube.CoreV1().PersistentVolumeClaims(env.namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("get bound PVC %s/%s: %w", env.namespace, name, err)
 	}
 	if pvc.Spec.VolumeName == "" {
 		return nil, nil, fmt.Errorf("PVC %s is running in Pod %s without a bound PV", pvc.Name, pod.Name)
@@ -540,19 +559,24 @@ func testStoragePathPod(namespace, name, volumeMode string) *v1.Pod {
 func (env *storagePathAlertEnv) waitForDevice(ctx context.Context, volumeHandle, node string) (string, error) {
 	g.By(fmt.Sprintf("Waiting for the exporter device mapping for volume %s on node %s", volumeHandle, node))
 	var device string
+	lastObservation := "no query completed"
 	err := wait.PollUntilContextTimeout(ctx, time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
 		result, err := env.query(ctx, fmt.Sprintf("csiaddons_volume_node_device_info{volume_handle=%q,node=%q}", volumeHandle, node))
 		if err != nil {
+			g.GinkgoLogr.Error(err, "Query exporter device mapping; retrying", "volumeHandle", volumeHandle, "node", node)
+			lastObservation = err.Error()
 			return false, nil
 		}
 		if len(result.Data.Result) == 0 {
+			lastObservation = "query returned no device mappings"
 			return false, nil
 		}
 		device = result.Data.Result[0].Metric["device"]
+		lastObservation = fmt.Sprintf("first mapping labels: %v", result.Data.Result[0].Metric)
 		return device != "", nil
 	})
 	if err != nil {
-		return "", fmt.Errorf("wait for exporter mapping for %s on %s: %w", volumeHandle, node, err)
+		return "", fmt.Errorf("wait for exporter mapping for %s on %s: %w; last observation: %s", volumeHandle, node, err, lastObservation)
 	}
 	return device, nil
 }
@@ -658,7 +682,7 @@ func (env *storagePathAlertEnv) restoreLIF(ctx context.Context, node, protocol, 
 }
 
 func (env *storagePathAlertEnv) nodeCommand(ctx context.Context, node, command string, commandArgs ...string) (string, error) {
-	args := []string{"debug", "--quiet", "node/" + node, "--", "chroot", "/host", "bash", "-ceu", command}
+	args := []string{"debug", "-n", env.namespace, "--quiet", "node/" + node, "--", "chroot", "/host", "bash", "-ceu", command}
 	if len(commandArgs) > 0 {
 		// bash -c uses the first argument as $0; script parameters start at $1.
 		args = append(args, "--")
@@ -732,11 +756,15 @@ func (env *storagePathAlertEnv) runDiagnosticCommand(ctx context.Context, args .
 }
 
 func (env *storagePathAlertEnv) waitForAlert(ctx context.Context, alert, severity, pvc, pv, node, state string, timeout time.Duration) error {
-	return wait.PollUntilContextTimeout(ctx, alertPollInterval, timeout, true, func(ctx context.Context) (bool, error) {
+	lastObservation := "no query completed"
+	err := wait.PollUntilContextTimeout(ctx, alertPollInterval, timeout, true, func(ctx context.Context) (bool, error) {
 		alerts, err := env.alerts(ctx)
 		if err != nil {
+			g.GinkgoLogr.Error(err, "Query alerts while waiting for alert; retrying", "alert", alert, "pvc", pvc)
+			lastObservation = err.Error()
 			return false, nil
 		}
+		lastObservation = fmt.Sprintf("no matching alert; observed alerts: %+v", alerts)
 		for _, current := range alerts {
 			labels := current.Labels
 			stateMatches := current.State == state || (state == "pending" && current.State == "firing")
@@ -747,33 +775,53 @@ func (env *storagePathAlertEnv) waitForAlert(ctx context.Context, alert, severit
 		}
 		return false, nil
 	})
+	if err != nil {
+		return fmt.Errorf("wait for %s alert in %s state with severity %s for PVC %s/%s, PV %s on node %s: %w; last observation: %s", alert, state, severity, env.namespace, pvc, pv, node, err, lastObservation)
+	}
+	return nil
 }
 
 func (env *storagePathAlertEnv) waitForAlertResolution(ctx context.Context, alert, pvc string, timeout time.Duration) error {
-	return wait.PollUntilContextTimeout(ctx, alertPollInterval, timeout, true, func(ctx context.Context) (bool, error) {
+	lastObservation := "no query completed"
+	err := wait.PollUntilContextTimeout(ctx, alertPollInterval, timeout, true, func(ctx context.Context) (bool, error) {
 		alerts, err := env.alerts(ctx)
 		if err != nil {
+			g.GinkgoLogr.Error(err, "Query alerts while waiting for resolution; retrying", "alert", alert, "pvc", pvc)
+			lastObservation = err.Error()
 			return false, nil
 		}
 		for _, current := range alerts {
 			if current.Labels["alertname"] == alert && current.Labels["persistentvolumeclaim"] == pvc {
+				lastObservation = fmt.Sprintf("alert still present: %+v", current)
 				return false, nil
 			}
 		}
 		g.By(fmt.Sprintf("Confirmed %s alert is resolved for PVC %s", alert, pvc))
 		return true, nil
 	})
+	if err != nil {
+		return fmt.Errorf("wait for %s alert to resolve for PVC %s/%s: %w; last observation: %s", alert, env.namespace, pvc, err, lastObservation)
+	}
+	return nil
 }
 
 func (env *storagePathAlertEnv) waitForMappingRemoval(ctx context.Context, volumeHandle string, timeout time.Duration) error {
 	g.By(fmt.Sprintf("Waiting for exporter mapping removal for volume %s", volumeHandle))
-	return wait.PollUntilContextTimeout(ctx, time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+	lastObservation := "no query completed"
+	err := wait.PollUntilContextTimeout(ctx, time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 		result, err := env.query(ctx, fmt.Sprintf("csiaddons_volume_node_device_info{volume_handle=%q}", volumeHandle))
 		if err != nil {
+			g.GinkgoLogr.Error(err, "Query exporter mapping while waiting for removal; retrying", "volumeHandle", volumeHandle)
+			lastObservation = err.Error()
 			return false, nil
 		}
+		lastObservation = fmt.Sprintf("remaining mappings: %+v", result.Data.Result)
 		return len(result.Data.Result) == 0, nil
 	})
+	if err != nil {
+		return fmt.Errorf("wait for exporter mapping removal for volume %s: %w; last observation: %s", volumeHandle, err, lastObservation)
+	}
+	return nil
 }
 
 type storagePathPrometheusQueryResponse struct {
@@ -835,13 +883,24 @@ func deleteNamespace(ctx context.Context, kube kubernetes.Interface, namespace s
 	g.By(fmt.Sprintf("Deleting namespace %s and its Pods and PVCs", namespace))
 	err := kube.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
-		return err
+		return fmt.Errorf("delete namespace %s: %w", namespace, err)
 	}
 	g.By(fmt.Sprintf("Waiting for namespace %s to be deleted", namespace))
-	return wait.PollUntilContextTimeout(ctx, 5*time.Second, 15*time.Minute, true, func(ctx context.Context) (bool, error) {
-		_, err := kube.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	lastObservation := "no namespace lookup completed"
+	err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 15*time.Minute, true, func(ctx context.Context) (bool, error) {
+		current, err := kube.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+		if err != nil && !apierrors.IsNotFound(err) {
+			g.GinkgoLogr.Error(err, "Get namespace while waiting for deletion; retrying", "namespace", namespace)
+			lastObservation = err.Error()
+		} else if err == nil {
+			lastObservation = fmt.Sprintf("namespace still exists: phase %s, finalizers %v, conditions %+v", current.Status.Phase, current.Spec.Finalizers, current.Status.Conditions)
+		}
 		return apierrors.IsNotFound(err), nil
 	})
+	if err != nil {
+		return fmt.Errorf("wait for namespace %s to be deleted: %w; last observation: %s", namespace, err, lastObservation)
+	}
+	return nil
 }
 
 func nonEmptyLines(value string) []string {
