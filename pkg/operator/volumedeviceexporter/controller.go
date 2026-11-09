@@ -29,9 +29,9 @@ import (
 const (
 	volumeDeviceExporterImage = "VOLUME_DEVICE_EXPORTER_IMAGE"
 	kubeRBACProxyImage        = "KUBE_RBAC_PROXY_IMAGE"
-	daemonSetControllerName   = "VolumeDeviceExporterDaemonSet"
-	clientCAControllerName    = "VolumeDeviceExporterClientCA"
-	clientCAConfigMapName     = "volume-device-exporter-client-ca"
+	daemonSetControllerName   = "CSIVolumeDeviceExporterDaemonSet"
+	clientCAControllerName    = "CSIVolumeDeviceExporterClientCA"
+	clientCAConfigMapName     = "csi-volume-device-exporter-client-ca"
 	clientCAConfigMapKey      = "client-ca-file"
 )
 

@@ -219,7 +219,7 @@ spec:
           Immediate investigation of storage connectivity is required.
         runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeNVMeSubsystemLost.md
     # Detect a cluster-wide monitoring gap: Prometheus has discovered no
-    # volume-device-exporter target at all for five minutes.
+    # csi-volume-device-exporter target at all for five minutes.
     - alert: CSIAddonsVolumeDeviceExporterDown
       expr: absent(up{job="csi-volume-device-exporter"}) == 1
       for: 5m

@@ -190,7 +190,7 @@ func TestServiceMonitorClientCertificateAuthentication(t *testing.T) {
 	if tls.CertFile != "" || tls.KeyFile != "" || tls.CAFile != "" {
 		t.Errorf("certificate paths must be inherited from the scrape class: %#v", tls)
 	}
-	if tls.ServerName == nil || *tls.ServerName != "volume-device-exporter.openshift-cluster-storage-operator.svc" {
+	if tls.ServerName == nil || *tls.ServerName != "csi-volume-device-exporter.openshift-cluster-storage-operator.svc" {
 		t.Errorf("unexpected server verification configuration: %#v", tls)
 	}
 }
@@ -233,7 +233,7 @@ func TestUpdateStatusDoesNotReportPodReadiness(t *testing.T) {
 			c := &controller{operatorClient: clients.OperatorClient}
 			daemonSet := &appsv1.DaemonSet{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "volume-device-exporter", Namespace: csoclients.OperatorNamespace, Generation: 1,
+					Name: "csi-volume-device-exporter", Namespace: csoclients.OperatorNamespace, Generation: 1,
 				},
 				Status: tc.status,
 			}
