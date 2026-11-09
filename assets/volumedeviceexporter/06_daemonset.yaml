@@ -50,6 +50,22 @@ spec:
           requests:
             cpu: 10m
             memory: 32Mi
+        livenessProbe:
+          exec:
+            command:
+            - curl
+            - --fail
+            - http://127.0.0.1:9710/healthz
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - curl
+            - --fail
+            - http://127.0.0.1:9710/healthz
+          initialDelaySeconds: 5
+          periodSeconds: 10
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - name: kubelet-root
