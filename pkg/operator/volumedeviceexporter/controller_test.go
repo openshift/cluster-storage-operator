@@ -45,6 +45,27 @@ func TestNewControllersFeatureGate(t *testing.T) {
 	}
 }
 
+func TestLogLevelToExporter(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		logLevel operatorapi.LogLevel
+		want     string
+	}{
+		{name: "empty", logLevel: "", want: "info"},
+		{name: "Normal", logLevel: operatorapi.Normal, want: "info"},
+		{name: "Debug", logLevel: operatorapi.Debug, want: "debug"},
+		{name: "Trace", logLevel: operatorapi.Trace, want: "debug"},
+		{name: "TraceAll", logLevel: operatorapi.TraceAll, want: "debug"},
+		{name: "unknown", logLevel: operatorapi.LogLevel("bogus"), want: "info"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := logLevelToExporter(tc.logLevel); got != tc.want {
+				t.Fatalf("logLevelToExporter(%q) = %q, want %q", tc.logLevel, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestApplyDaemonSetTLS(t *testing.T) {
 	for _, tc := range []struct {
 		name           string
@@ -142,8 +163,8 @@ func TestApplyDaemonSetTLS(t *testing.T) {
 							t.Errorf("unexpected client CA argument: %s", arg)
 						}
 					}
-					if strings.Contains(arg, "${TLS_") {
-						t.Fatalf("unresolved TLS placeholder in %s: %s", container.Name, arg)
+					if strings.Contains(arg, "${TLS_") || strings.Contains(arg, "${DEVICE_EXPORTER_LOG_LEVEL}") {
+						t.Fatalf("unresolved placeholder in %s: %s", container.Name, arg)
 					}
 					if strings.HasPrefix(arg, "--tls-") && !strings.HasPrefix(arg, "--tls-cert-") && !strings.HasPrefix(arg, "--tls-private-key-") {
 						tlsArgs = append(tlsArgs, arg)
@@ -162,6 +183,59 @@ func TestApplyDaemonSetTLS(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestApplyDaemonSetLogLevel(t *testing.T) {
+	observedConfig := `{"targetcsiconfig":{"servingInfo":{"minTLSVersion":"VersionTLS12","cipherSuites":["TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"]}}}`
+	for _, tc := range []struct {
+		name     string
+		logLevel operatorapi.LogLevel
+		wantArg  string
+	}{
+		{name: "default", logLevel: "", wantArg: "--log-level=info"},
+		{name: "Normal", logLevel: operatorapi.Normal, wantArg: "--log-level=info"},
+		{name: "Debug", logLevel: operatorapi.Debug, wantArg: "--log-level=debug"},
+		{name: "Trace", logLevel: operatorapi.Trace, wantArg: "--log-level=debug"},
+		{name: "TraceAll", logLevel: operatorapi.TraceAll, wantArg: "--log-level=debug"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			clients := csoclients.NewFakeClients(&csoclients.FakeTestObjects{})
+			c := &controller{
+				clients:  clients,
+				recorder: events.NewInMemoryRecorder("test", clocktesting.NewFakePassiveClock(time.Now())),
+			}
+			spec := &operatorapi.OperatorSpec{
+				LogLevel:       tc.logLevel,
+				ObservedConfig: runtime.RawExtension{Raw: []byte(observedConfig)},
+			}
+			daemonSet, err := c.applyDaemonSet(context.Background(), spec, &operatorapi.OperatorStatus{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := exporterLogLevelArg(t, daemonSet); got != tc.wantArg {
+				t.Fatalf("exporter log-level arg = %q, want %q", got, tc.wantArg)
+			}
+		})
+	}
+}
+
+func exporterLogLevelArg(t *testing.T, daemonSet *appsv1.DaemonSet) string {
+	t.Helper()
+	for _, container := range daemonSet.Spec.Template.Spec.Containers {
+		if container.Name != "exporter" {
+			continue
+		}
+		for _, arg := range container.Args {
+			if strings.Contains(arg, "${DEVICE_EXPORTER_LOG_LEVEL}") {
+				t.Fatalf("unresolved log level placeholder: %s", arg)
+			}
+			if strings.HasPrefix(arg, "--log-level=") {
+				return arg
+			}
+		}
+	}
+	t.Fatal("exporter container missing --log-level argument")
+	return ""
 }
 
 func TestServiceMonitorClientCertificateAuthentication(t *testing.T) {
