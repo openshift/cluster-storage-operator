@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: volume-device-exporter
+  namespace: openshift-cluster-storage-operator
+spec:
+  jobLabel: app
+  scrapeClass: tls-client-certificate-auth
+  selector:
+    matchLabels:
+      app: csi-volume-device-exporter
+  endpoints:
+  - port: https-metrics
+    scheme: https
+    path: /metrics
+    interval: 30s
+    tlsConfig:
+      serverName: volume-device-exporter.openshift-cluster-storage-operator.svc
+  serviceDiscoveryRole: EndpointSlice
