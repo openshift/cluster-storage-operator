@@ -30,7 +30,7 @@ spec:
         args:
         - --listen-address=127.0.0.1:9710
         - --poll-interval=30s
-        - --log-level=info
+        - --log-level=${DEVICE_EXPORTER_LOG_LEVEL}
         imagePullPolicy: IfNotPresent
         env:
         - name: NODE_NAME
