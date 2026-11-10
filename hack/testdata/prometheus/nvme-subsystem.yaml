@@ -1,0 +1,151 @@
+rule_files:
+- replaced-by-test-script
+
+evaluation_interval: 1m
+
+tests:
+- name: NVMe healthy partial and total path states are exclusive
+  interval: 1m
+  input_series:
+  - series: 'up{job="csi-volume-device-exporter",instance="exporter-a"}'
+    values: '1x8'
+  - series: 'kube_persistentvolume_info{persistentvolume="pv-nvme",csi_driver="example.csi.io",csi_volume_handle="volume-nvme"}'
+    values: '1x8'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-nvme",node="node-healthy",device="nvme0n1"}'
+    values: '1x8'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-nvme",node="node-partial",device="nvme-shared"}'
+    values: '1x8'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-nvme",node="node-lost",device="nvme-shared"}'
+    values: '1x8'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-healthy",device="nvme0n1",subsystem="nqn-healthy"}'
+    values: '1x8'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-partial",device="nvme-shared",subsystem="nqn-shared",pod="a"}'
+    values: '1x8'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-partial",device="nvme-shared",subsystem="nqn-shared",pod="b"}'
+    values: '1x8'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-lost",device="nvme-shared",subsystem="nqn-shared"}'
+    values: '1x8'
+  - series: 'node_nvmesubsystem_paths{instance="node-healthy",subsystem="nqn-healthy"}'
+    values: '2x8'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-healthy",subsystem="nqn-healthy"}'
+    values: '2x8'
+  - series: 'node_nvmesubsystem_paths{instance="node-partial",subsystem="nqn-shared",job="a"}'
+    values: '2x8'
+  - series: 'node_nvmesubsystem_paths{instance="node-partial",subsystem="nqn-shared",job="b"}'
+    values: '2x8'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-partial",subsystem="nqn-shared",job="a"}'
+    values: '1x8'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-partial",subsystem="nqn-shared",job="b"}'
+    values: '1x8'
+  - series: 'node_nvmesubsystem_paths{instance="node-lost",subsystem="nqn-shared"}'
+    values: '2x8'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-lost",subsystem="nqn-shared"}'
+    values: '0x8'
+  promql_expr_test:
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeNVMeSubsystemDegraded",alertstate="firing",node="node-partial"})'
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeNVMeSubsystemLost",alertstate="firing",node="node-lost"})'
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolumeNVMeSubsystem(Degraded|Lost)",node="node-healthy"})'
+    eval_time: 7m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeNVMeSubsystemLost",node="node-partial"} or ALERTS{alertname="CSIAddonsVolumeNVMeSubsystemDegraded",node="node-lost"})'
+    eval_time: 6m
+    exp_samples: []
+
+- name: NVMe timers reset on recovery and restart after loss recovery
+  interval: 1m
+  input_series:
+  - series: 'up{job="csi-volume-device-exporter",instance="exporter-a"}'
+    values: '1x24'
+  - series: 'kube_persistentvolume_info{persistentvolume="pv-nvme-timing",csi_driver="example.csi.io",csi_volume_handle="volume-nvme-timing"}'
+    values: '1x24'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-nvme-timing",node="node-a",device="nvme0n1"}'
+    values: '1x24'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-a",device="nvme0n1",subsystem="nqn-timing"}'
+    values: '1x24'
+  - series: 'node_nvmesubsystem_paths{instance="node-a",subsystem="nqn-timing"}'
+    values: '2x24'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-a",subsystem="nqn-timing"}'
+    values: '1x5 2x1 1x6 0x2 2x1 0x3'
+  promql_expr_test:
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeNVMeSubsystemDegraded",alertstate="pending"})'
+    eval_time: 4m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeNVMeSubsystemDegraded",alertstate="firing"})'
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolumeNVMeSubsystem(Degraded|Lost)"})'
+    eval_time: 6m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeNVMeSubsystemDegraded",alertstate="pending"})'
+    eval_time: 12m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeNVMeSubsystemDegraded",alertstate="firing"})'
+    eval_time: 13m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeNVMeSubsystemLost",alertstate="pending"})'
+    eval_time: 15m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeNVMeSubsystemLost",alertstate="firing"})'
+    eval_time: 16m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolumeNVMeSubsystem(Degraded|Lost)"})'
+    eval_time: 18m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeNVMeSubsystemLost",alertstate="firing"})'
+    eval_time: 21m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+
+- name: NVMe missing live metric is not a zero live metric
+  interval: 1m
+  input_series:
+  - series: 'up{job="csi-volume-device-exporter",instance="exporter-a"}'
+    values: '1x8'
+  - series: 'kube_persistentvolume_info{persistentvolume="pv-nvme-missing",csi_driver="example.csi.io",csi_volume_handle="handle-nvme-missing"}'
+    values: '1x8'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="handle-nvme-missing",node="node-missing",device="nvme0n1"}'
+    values: '1x8'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="handle-nvme-missing",node="node-zero",device="nvme0n1"}'
+    values: '1x8'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-missing",device="nvme0n1",subsystem="nqn-shared"}'
+    values: '1x8'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-zero",device="nvme0n1",subsystem="nqn-shared"}'
+    values: '1x8'
+  - series: 'node_nvmesubsystem_paths{instance="node-missing",subsystem="nqn-shared"}'
+    values: '2x8'
+  - series: 'node_nvmesubsystem_paths{instance="node-zero",subsystem="nqn-shared"}'
+    values: '2x8'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-missing",subsystem="nqn-shared"}'
+    values: '1x4 stale'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-zero",subsystem="nqn-shared"}'
+    values: '0x8'
+  promql_expr_test:
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolumeNVMeSubsystem(Degraded|Lost)",node="node-missing"})'
+    eval_time: 6m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeNVMeSubsystemLost",alertstate="firing",node="node-zero"})'
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 1

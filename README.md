@@ -69,3 +69,23 @@ oc -n openshift-cluster-storage-operator delete lease/cluster-storage-operator-l
 # Run the operator via CLI
 ./cluster-storage-operator start --kubeconfig $KUBECONFIG --namespace openshift-cluster-storage-operator
 ```
+
+## Prometheus rule tests
+
+From the repository root, run the tests using the target release's Prometheus
+image (replace `<target-release>`). Podman is the default; for Docker, add
+`CONTAINER_RUNTIME=docker`.
+
+```shell
+PROMETHEUS_IMAGE="registry.ci.openshift.org/ocp/<target-release>:prometheus" \
+  make verify-prometheus-rules
+```
+
+Alternatively, use a local promtool binary:
+
+```shell
+PROMTOOL=/absolute/path/to/promtool \
+  make verify-prometheus-rules
+```
+
+For detailed evaluation output, prefix the command with `PROMTOOL_DEBUG=1`.

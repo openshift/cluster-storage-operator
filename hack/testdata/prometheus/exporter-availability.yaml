@@ -1,0 +1,87 @@
+rule_files:
+- replaced-by-test-script
+
+evaluation_interval: 1m
+
+tests:
+- name: exporter absence recovers and recurrence restarts its timer
+  interval: 1m
+  input_series:
+  # An unrelated target must not satisfy the exporter-specific selector.
+  - series: 'up{job="unrelated",instance="elsewhere"}'
+    values: '1x16'
+  - series: 'up{job="csi-volume-device-exporter",instance="node-a"}'
+    values: 'stale stale stale stale stale stale 1 1 stale stale stale stale stale stale'
+  promql_expr_test:
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeDeviceExporterDown",alertstate="pending"})'
+    eval_time: 4m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeDeviceExporterDown",alertstate="firing"})'
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeDeviceExporterDown"})'
+    eval_time: 6m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeDeviceExporterDown",alertstate="pending"})'
+    eval_time: 12m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeDeviceExporterDown",alertstate="firing"})'
+    eval_time: 13m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: CSIAddonsVolumeDeviceExporterDown
+    exp_alerts:
+    - exp_labels:
+        job: csi-volume-device-exporter
+        operator_health_impact: warning
+        severity: warning
+      exp_annotations:
+        summary: CSI volume device exporter is not running
+        description: No CSI volume device exporter target has been scraped for five minutes.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeDeviceExporterDown.md
+
+- name: exporter target down fires at ten minutes and healthy target clears alerts
+  interval: 1m
+  input_series:
+  - series: 'up{job="csi-volume-device-exporter",instance="node-a"}'
+    values: '0x11 1x2'
+  - series: 'up{job="csi-volume-device-exporter",instance="node-b"}'
+    values: '_ _ _ _ _ _ 1x7'
+  promql_expr_test:
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeDeviceExporterDown"})'
+    eval_time: 5m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeDeviceExporterNodeDown",alertstate="pending"})'
+    eval_time: 9m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeDeviceExporterNodeDown",alertstate="firing"})'
+    eval_time: 10m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolumeDeviceExporter(Down|NodeDown)"})'
+    eval_time: 12m
+    exp_samples: []
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: CSIAddonsVolumeDeviceExporterNodeDown
+    exp_alerts:
+    - exp_labels:
+        instance: node-a
+        job: csi-volume-device-exporter
+        severity: warning
+      exp_annotations:
+        summary: A CSI volume device exporter target is down
+        description: The CSI volume device exporter target node-a has been unreachable for ten minutes.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeDeviceExporterDown.md

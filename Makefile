@@ -16,6 +16,22 @@ include $(addprefix ./vendor/github.com/openshift/build-machinery-go/make/, \
 check: | verify test-unit
 .PHONY: check
 
+# Select the target release's image explicitly, or set PROMTOOL for native tests.
+PROMETHEUS_IMAGE ?=
+CONTAINER_RUNTIME ?= podman
+PROMETHEUS_CONTAINER_SECURITY_OPT ?= label=disable
+PROMTOOL ?=
+
+verify: verify-prometheus-rules
+
+verify-prometheus-rules:
+	PROMTOOL="$(PROMTOOL)" \
+	PROMETHEUS_IMAGE="$(PROMETHEUS_IMAGE)" \
+	CONTAINER_RUNTIME="$(CONTAINER_RUNTIME)" \
+	PROMETHEUS_CONTAINER_SECURITY_OPT="$(PROMETHEUS_CONTAINER_SECURITY_OPT)" \
+	./hack/test-prometheus-rules.sh
+.PHONY: verify-prometheus-rules
+
 IMAGE_REGISTRY?=registry.svc.ci.openshift.org
 
 # This will call a macro called "build-image" which will generate image specific targets based on the parameters:
