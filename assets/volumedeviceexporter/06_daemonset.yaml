@@ -52,8 +52,6 @@ spec:
           # needs the hostmount-anyuid-v2 SCC and a "privileged" PSA namespace.
           seLinuxOptions:
             type: spc_t
-          seccompProfile:
-            type: RuntimeDefault
         resources:
           requests:
             cpu: 10m
@@ -105,8 +103,6 @@ spec:
           capabilities:
             drop:
             - ALL
-          seccompProfile:
-            type: RuntimeDefault
         resources:
           requests:
             cpu: 10m
