@@ -14,7 +14,6 @@ import (
 	"github.com/openshift/cluster-storage-operator/pkg/operator/defaultstorageclass"
 	metrics "github.com/openshift/cluster-storage-operator/pkg/operator/metrics"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/volumedatasourcevalidator"
-	"github.com/openshift/cluster-storage-operator/pkg/operator/volumedeviceexporter"
 	"github.com/openshift/cluster-storage-operator/pkg/operator/vsphereproblemdetector"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/controller/factory"
@@ -135,7 +134,7 @@ func (csr *commonStarter) CreateCommonControllers() error {
 	logLevelController := loglevel.NewClusterOperatorLoggingController(csr.commonClients.OperatorClient, csr.eventRecorder)
 	csr.controllers = append(csr.controllers, logLevelController)
 
-	// This controller removes conditions that are no longer reported by their controllers.
+	// This controller removes stale conditions from the storage status
 	staleConditionsController := staleconditions.NewRemoveStaleConditionsController(
 		"RemoveStaleConditionsController",
 		[]string{
@@ -147,8 +146,8 @@ func (csr *commonStarter) CreateCommonControllers() error {
 	)
 	csr.controllers = append(csr.controllers, staleConditionsController)
 
-	// This controller observes proxy and TLS configuration and writes it to CR.Spec.ObservedConfig for later use by the operator.
-	configObserverController := configobservercontroller.NewConfigObserverController(csr.commonClients, csr.eventRecorder, csr.featureGates)
+	// This controller observes a config (proxy for now) and writes it to CR.Spec.ObservedConfig for later use by the operator
+	configObserverController := configobservercontroller.NewConfigObserverController(csr.commonClients, csr.eventRecorder)
 	csr.controllers = append(csr.controllers, configObserverController)
 	return nil
 }
@@ -181,12 +180,12 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = ssr.commonStarter.getFeatureGate(ctx)
+	err = ssr.commonStarter.CreateCommonControllers()
 	if err != nil {
 		return err
 	}
 
-	err = ssr.commonStarter.CreateCommonControllers()
+	err = ssr.commonStarter.getFeatureGate(ctx)
 	if err != nil {
 		return err
 	}
@@ -206,7 +205,6 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 		ssr.eventRecorder,
 		csiDriverConfigs)
 	ssr.controllers = append(ssr.controllers, csiDriverController)
-	ssr.controllers = append(ssr.controllers, volumedeviceexporter.NewControllers(ssr.commonClients, ssr.featureGates, ssr.eventRecorder)...)
 
 	vsphereProblemDetector := vsphereproblemdetector.NewVSphereProblemDetectorStarter(
 		ssr.commonClients,
@@ -287,7 +285,7 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = hsr.commonStarter.getFeatureGate(ctx)
+	err = hsr.commonStarter.CreateCommonControllers()
 	if err != nil {
 		return err
 	}
@@ -295,7 +293,7 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	controlPlaneNamespace := hsr.controllerConfig.OperatorNamespace
 	csiDriverConfigs := hsr.populateConfigs(hsr.mgmtClient)
 
-	err = hsr.commonStarter.CreateCommonControllers()
+	err = hsr.commonStarter.getFeatureGate(ctx)
 	if err != nil {
 		return err
 	}
@@ -318,7 +316,6 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	)
 
 	hsr.controllers = append(hsr.controllers, csiDriverController)
-	hsr.controllers = append(hsr.controllers, volumedeviceexporter.NewControllers(hsr.commonClients, hsr.featureGates, hsr.eventRecorder)...)
 	klog.Info("Starting the Informers.")
 
 	csoclients.StartGuestInformers(hsr.commonClients, ctx.Done())

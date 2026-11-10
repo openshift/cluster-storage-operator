@@ -84,7 +84,6 @@ var (
 		CSIOperatorNamespace,
 		CloudConfigNamespace,
 		ManagedConfigNamespace,
-		"kube-system", // Source of the client CA for exporter metrics authentication.
 	}
 )
 

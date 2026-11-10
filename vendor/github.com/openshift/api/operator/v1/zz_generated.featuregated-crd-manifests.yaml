@@ -114,8 +114,7 @@ consoles.operator.openshift.io:
   CRDName: consoles.operator.openshift.io
   Capability: ""
   Category: ""
-  FeatureGates:
-  - AuthenticationComponentProxyExternalOIDC
+  FeatureGates: []
   FilenameOperatorName: console
   FilenameOperatorOrdering: "01"
   FilenameRunLevel: "0000_50"
