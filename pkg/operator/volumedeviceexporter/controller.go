@@ -144,23 +144,11 @@ func (c *controller) applyDaemonSet(ctx context.Context, spec *operatorapi.Opera
 	data = []byte(strings.NewReplacer(
 		"${VOLUME_DEVICE_EXPORTER_IMAGE}", os.Getenv(volumeDeviceExporterImage),
 		"${KUBE_RBAC_PROXY_IMAGE}", os.Getenv(kubeRBACProxyImage),
-		"${DEVICE_EXPORTER_LOG_LEVEL}", logLevelToExporter(spec.LogLevel),
 	).Replace(string(data)))
 	daemonSet := resourceread.ReadDaemonSetV1OrDie(data)
 	expectedGeneration := resourcemerge.ExpectedDaemonSetGeneration(daemonSet, status.Generations)
 	actual, _, err := resourceapply.ApplyDaemonSet(ctx, c.clients.KubeClient.AppsV1(), c.recorder, daemonSet, expectedGeneration)
 	return actual, err
-}
-
-// logLevelToExporter maps operator CR logLevel to the exporter --log-level flag.
-// Debug/Trace/TraceAll map to debug; everything else (including empty/Normal) maps to info.
-func logLevelToExporter(logLevel operatorapi.LogLevel) string {
-	switch logLevel {
-	case operatorapi.Debug, operatorapi.Trace, operatorapi.TraceAll:
-		return "debug"
-	default:
-		return "info"
-	}
 }
 
 func (c *controller) updateStatus(ctx context.Context, daemonSet *appsv1.DaemonSet) error {
