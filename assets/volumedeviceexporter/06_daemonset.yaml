@@ -151,5 +151,5 @@ spec:
                   fieldPath: metadata.namespace
   updateStrategy:
     rollingUpdate:
-      maxUnavailable: 30%
+      maxUnavailable: 33%
     type: RollingUpdate
