@@ -14,18 +14,6 @@ rules:
   verbs:
   - use
 - apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - watch
-  - list
-  - get
-  - create
-  - delete
-  - patch
-  - update
-- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - clusterroles
@@ -140,7 +128,6 @@ rules:
 - apiGroups:
   - apps
   resources:
-  - deployments
   - daemonsets
   - replicasets
   - statefulsets
@@ -276,28 +263,6 @@ rules:
   - tokenreviews
   verbs:
   - create
-- apiGroups:
-  - monitoring.coreos.com
-  resources:
-  - servicemonitors
-  verbs:
-  - get
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - services
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
 - apiGroups:
   - ""
   resources:
