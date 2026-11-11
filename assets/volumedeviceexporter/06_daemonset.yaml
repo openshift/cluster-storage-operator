@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: volume-device-exporter
+  name: csi-volume-device-exporter
   namespace: openshift-cluster-storage-operator
 spec:
   selector:
     matchLabels:
-      app: volume-device-exporter
+      app: csi-volume-device-exporter
   template:
     metadata:
       annotations:
         openshift.io/required-scc: privileged
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
-        app: volume-device-exporter
+        app: csi-volume-device-exporter
         openshift.storage.network-policy.dns: allow
         openshift.storage.network-policy.operator-metrics: allow
     spec:
       priorityClassName: system-cluster-critical
-      serviceAccountName: volume-device-exporter
+      serviceAccountName: csi-volume-device-exporter
       automountServiceAccountToken: false
       nodeSelector:
         kubernetes.io/os: linux
@@ -126,10 +126,10 @@ spec:
           path: /sys
       - name: serving-cert
         secret:
-          secretName: volume-device-exporter-serving-cert
+          secretName: csi-volume-device-exporter-serving-cert
       - name: client-ca
         configMap:
-          name: volume-device-exporter-client-ca
+          name: csi-volume-device-exporter-client-ca
           items:
           - key: client-ca-file
             path: client-ca.crt

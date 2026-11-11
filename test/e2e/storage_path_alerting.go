@@ -33,7 +33,7 @@ const (
 	defaultExporterNS     = "openshift-cluster-storage-operator"
 	defaultPrometheusNS   = "openshift-monitoring"
 	defaultRuleName       = "csi-volume-path-health"
-	defaultExporterDS     = "volume-device-exporter"
+	defaultExporterDS     = "csi-volume-device-exporter"
 	defaultISCSIClass     = "ci-netapp-iscsi"
 	defaultISCSILUKSClass = "ci-netapp-iscsi-luks"
 	defaultNVMeClass      = "ci-netapp-nvme"
@@ -103,11 +103,11 @@ type prometheusAlert struct {
 //   - These optional variables use the shown defaults and only need setting
 //     when the target cluster differs:
 //     ALERT_TEST_EXPORTER_NAMESPACE=openshift-cluster-storage-operator
-//     ALERT_TEST_EXPORTER_DAEMONSET=volume-device-exporter
+//     ALERT_TEST_EXPORTER_DAEMONSET=csi-volume-device-exporter
 //     ALERT_TEST_PROMETHEUS_NAMESPACE=openshift-monitoring
 //     ALERT_TEST_PROMETHEUS_RULE=csi-volume-path-health
 //     Discover their values with:
-//     oc get daemonset -A | grep volume-device-exporter
+//     oc get daemonset -A | grep csi-volume-device-exporter
 //     oc get prometheusrule -A | grep csi-volume-path-health
 //     oc get route -n openshift-monitoring prometheus-k8s
 //
