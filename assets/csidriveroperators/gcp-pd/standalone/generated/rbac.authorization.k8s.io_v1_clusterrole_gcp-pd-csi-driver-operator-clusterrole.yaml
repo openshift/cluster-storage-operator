@@ -35,21 +35,6 @@ rules:
   - update
   - patch
 - apiGroups:
-  - ""
-  resourceNames:
-  - extension-apiserver-authentication
-  - gcp-pd-csi-driver-operator-lock
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - clusterroles
@@ -91,9 +76,6 @@ rules:
   resources:
   - leases
   verbs:
-  - get
-  - list
-  - watch
   - create
   - update
   - patch
@@ -169,7 +151,6 @@ rules:
 - apiGroups:
   - apps
   resources:
-  - deployments
   - daemonsets
   - replicasets
   - statefulsets
@@ -177,6 +158,15 @@ rules:
   - get
   - list
   - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
   - create
   - update
   - patch

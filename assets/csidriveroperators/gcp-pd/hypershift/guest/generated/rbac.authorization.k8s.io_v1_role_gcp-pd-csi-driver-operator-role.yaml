@@ -7,12 +7,9 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - pods
   - services
   - endpoints
   - events
-  - configmaps
-  - secrets
   - persistentvolumeclaims
   verbs:
   - get
@@ -25,28 +22,21 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - serviceaccounts
+  - pods
   verbs:
-  - get
-  - list
-  - watch
   - create
-  - update
-  - patch
   - delete
+  - patch
+  - update
 - apiGroups:
-  - apps
+  - ""
   resources:
-  - deployments
-  - replicasets
+  - secrets
   verbs:
-  - get
-  - list
-  - watch
   - create
-  - update
-  - patch
   - delete
+  - patch
+  - update
 - apiGroups:
   - policy
   resources:
@@ -60,18 +50,17 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - rbac.authorization.k8s.io
+  - ""
   resources:
-  - roles
-  - rolebindings
+  - configmaps
   verbs:
-  - watch
-  - list
   - get
+  - list
+  - watch
   - create
-  - delete
-  - patch
   - update
+  - patch
+  - delete
 - apiGroups:
   - coordination.k8s.io
   resources:
@@ -80,10 +69,14 @@ rules:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - monitoring.coreos.com
   resources:
