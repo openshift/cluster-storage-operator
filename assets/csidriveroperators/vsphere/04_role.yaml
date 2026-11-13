@@ -7,13 +7,9 @@ rules:
 - apiGroups:
   - ''
   resources:
-  - pods
   - services
   - endpoints
-  - persistentvolumeclaims
   - events
-  - configmaps
-  - secrets
   verbs:
   - get
   - list
@@ -25,22 +21,34 @@ rules:
 - apiGroups:
   - ''
   resources:
-  - namespaces
+  - pods
   verbs:
-  - get
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
-  verbs:
-  - get
-  - list
-  - watch
   - create
+  - patch
+  - delete
   - update
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  verbs:
+  - create
+  - patch
+  - delete
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - delete
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - create
   - patch
   - delete
 - apiGroups:
