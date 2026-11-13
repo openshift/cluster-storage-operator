@@ -7,68 +7,33 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - pods
-  - services
   - endpoints
-  - events
-  - configmaps
-  - secrets
   verbs:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  - replicasets
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - policy
-  resources:
-  - poddisruptionbudgets
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
 - apiGroups:
   - ""
   resources:
-  - serviceaccounts
+  - services
   verbs:
   - get
   - list
   - watch
   - create
-  - update
   - patch
-  - delete
+  - update
 - apiGroups:
-  - rbac.authorization.k8s.io
+  - apps
   resources:
-  - roles
-  - rolebindings
+  - replicasets
+  - daemonsets
+  - deployments
   verbs:
-  - watch
-  - list
   - get
+  - list
+  - watch
   - create
-  - delete
   - patch
   - update
 - apiGroups:
@@ -80,8 +45,60 @@ rules:
   - list
   - watch
   - create
-  - update
   - patch
+  - update
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  - rolebindings
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - update
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - update
+- apiGroups:
+  - ""
+  resourceNames:
+  - kube-cloud-config
+  resources:
+  - configmaps
+  verbs:
   - delete
 - apiGroups:
   - hypershift.openshift.io
