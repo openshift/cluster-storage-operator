@@ -19,7 +19,7 @@ check: | verify test-unit
 verify: verify-prometheus-rules
 
 verify-prometheus-rules:
-	GOBIN="$(CURDIR)/_output/tools/bin" go install github.com/prometheus/prometheus/cmd/promtool@v0.316.0
+	GOBIN="$(CURDIR)/_output/tools/bin" go install -mod=mod github.com/prometheus/prometheus/cmd/promtool@v0.316.0
 	PROMTOOL="$(CURDIR)/_output/tools/bin/promtool" ./hack/test-prometheus-rules.sh
 .PHONY: verify-prometheus-rules
 

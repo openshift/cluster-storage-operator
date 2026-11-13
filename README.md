@@ -79,7 +79,7 @@ make verify-prometheus-rules
 ```
 
 The target installs `promtool` with
-`go install github.com/prometheus/prometheus/cmd/promtool@v0.316.0` into
+`go install -mod=mod github.com/prometheus/prometheus/cmd/promtool@v0.316.0` into
 `_output/tools/bin/`. Go caches downloads and compilation results for subsequent
 runs. Installation requires Go and network access; no container runtime is needed.
 These tests also run as part of `make verify`.
