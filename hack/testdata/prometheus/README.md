@@ -13,22 +13,19 @@ Run the complete fixture suite with:
 make verify-prometheus-rules
 ```
 
-The target runs `hack/test-prometheus-rules.sh`:
+The target installs `promtool` using
+`go install github.com/prometheus/prometheus/cmd/promtool@v0.316.0` into
+`_output/tools/bin/` and runs `hack/test-prometheus-rules.sh`.
+Installation requires Go and network access, but no container runtime.
+Go caches downloads and compilation results for subsequent runs.
 
-- Set `PROMTOOL=/path/to/promtool` for native execution. This takes precedence
-  over `PROMETHEUS_IMAGE`.
-- Otherwise, set `PROMETHEUS_IMAGE` to an image matching the target OpenShift
-  release for container execution; no image is selected automatically.
-- If neither is set, the script uses `promtool` from `PATH`.
-
-CI already inside a Prometheus image can invoke the script directly with
-`PROMTOOL=/bin/promtool`, without Make, Go, or a container runtime.
-See the root README for image and CI setup.
+The script can also be invoked directly with `PROMTOOL=/path/to/promtool`, or
+with `promtool` on `PATH`, without Make or Go.
 
 For detailed evaluation output:
 
 ```sh
-PROMTOOL_DEBUG=1 PROMTOOL=/path/to/promtool make verify-prometheus-rules
+PROMTOOL_DEBUG=1 make verify-prometheus-rules
 ```
 
 ## Fixture coverage

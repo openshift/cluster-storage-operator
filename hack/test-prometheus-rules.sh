@@ -7,26 +7,6 @@ set -o pipefail
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "${repo_dir}"
 
-# An explicit PROMTOOL selects native execution, including inside CI containers.
-# Otherwise, use the selected image or fall back to promtool on PATH.
-if [[ -z "${PROMTOOL:-}" && -n "${PROMETHEUS_IMAGE:-}" ]]; then
-  container_runtime=${CONTAINER_RUNTIME:-podman}
-  security_opt=${PROMETHEUS_CONTAINER_SECURITY_OPT:-label=disable}
-
-  exec "${container_runtime}" run --rm \
-    --security-opt "${security_opt}" \
-    --tmpfs /tmp \
-    --entrypoint /bin/bash \
-    -v "${repo_dir}:/workspace:ro" \
-    -w /workspace \
-    -e PROMTOOL=/bin/promtool \
-    -e "PROMETHEUS_RULE_ASSET=${PROMETHEUS_RULE_ASSET:-}" \
-    -e "PROMETHEUS_FIXTURES_DIR=${PROMETHEUS_FIXTURES_DIR:-}" \
-    -e "PROMTOOL_DEBUG=${PROMTOOL_DEBUG:-0}" \
-    "${PROMETHEUS_IMAGE}" \
-    -c '/bin/promtool --version && ./hack/test-prometheus-rules.sh'
-fi
-
 promtool=${PROMTOOL:-promtool}
 test_args=()
 case "${PROMTOOL_DEBUG:-0}" in
@@ -44,13 +24,14 @@ if ! command -v "${promtool}" >/dev/null 2>&1; then
   printf '%s\n' \
     'Run from the repository root using one of these options:' \
     '' \
-    '  # Use a local promtool binary (replace the path):' \
-    '  PROMTOOL=/absolute/path/to/promtool make verify-prometheus-rules' \
+    '  # Install the pinned promtool with Go and run the tests:' \
+    '  make verify-prometheus-rules' \
     '' \
-    '  # Use the target release image (replace <target-release>):' \
-    '  PROMETHEUS_IMAGE="registry.ci.openshift.org/ocp/<target-release>:prometheus" make verify-prometheus-rules' >&2
+    '  # Use an existing promtool binary (replace the path):' \
+    '  PROMTOOL=/absolute/path/to/promtool ./hack/test-prometheus-rules.sh' >&2
   exit 1
 fi
+"${promtool}" --version
 if [[ ! -r "${rule_asset}" || ! -d "${fixtures_dir}" ]]; then
   printf 'Rule asset must be readable and fixture directory must exist: %s, %s\n' "${rule_asset}" "${fixtures_dir}" >&2
   exit 1
