@@ -7,11 +7,9 @@ rules:
 - apiGroups:
   - ''
   resources:
-  - pods
   - services
   - endpoints
   - events
-  - configmaps
   - secrets
   verbs:
   - get
@@ -83,3 +81,11 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - ''
+  resources:
+  - configmaps
+  verbs:
+  - watch
+  - list
+  - get
