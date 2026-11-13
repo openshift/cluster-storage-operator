@@ -17,7 +17,8 @@ check: | verify test-unit
 .PHONY: check
 
 # Select the target release's image explicitly, or set PROMTOOL for native tests.
-PROMETHEUS_IMAGE ?=
+#PROMETHEUS_IMAGE ?=
+PROMETHEUS_IMAGE="registry.ci.openshift.org/ocp/5.1:prometheus"
 CONTAINER_RUNTIME ?= podman
 PROMETHEUS_CONTAINER_SECURITY_OPT ?= label=disable
 PROMTOOL ?=
