@@ -1,0 +1,309 @@
+rule_files:
+- replaced-by-test-script
+
+evaluation_interval: 1m
+
+tests:
+- name: duplicate PVC mappings and multi-node devices remain evaluable
+  interval: 1m
+  input_series:
+  # Keep the cluster-wide exporter availability alert inactive while testing
+  # storage-path rules.
+  - series: 'up{job="csi-volume-device-exporter",instance="exporter-a"}'
+    values: '1x10'
+  - series: 'kube_persistentvolume_info{persistentvolume="pv-a",csi_driver="example.csi.io",csi_volume_handle="volume-a"}'
+    values: '1x10'
+  - series: 'kube_persistentvolumeclaim_info{namespace="workload",persistentvolumeclaim="claim-a",volumename="pv-a"}'
+    values: '1x10'
+  - series: 'kube_persistentvolumeclaim_status_phase{namespace="workload",persistentvolumeclaim="claim-a",phase="Bound"}'
+    values: '1x10'
+  # A non-Bound claim is filtered; it must not become the selected PVC context.
+  - series: 'kube_persistentvolumeclaim_info{namespace="other",persistentvolumeclaim="duplicate",volumename="pv-a"}'
+    values: '1x10'
+  - series: 'kube_persistentvolumeclaim_status_phase{namespace="other",persistentvolumeclaim="duplicate",phase="Pending"}'
+    values: '1x10'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-a",node="node-a",device="dm-0",pod="exporter-a"}'
+    values: '1x10'
+  # Duplicate scrape labels are intentionally discarded without collapsing
+  # distinct node/device mappings.
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-a",node="node-a",device="dm-0",pod="exporter-a-duplicate"}'
+    values: '1x10'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-a",node="node-b",device="dm-1"}'
+    values: '1x10'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-a",node="node-c",device="nvme0n1"}'
+    values: '1x10'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-a",node="node-d",device="nvme1n1"}'
+    values: '1x10'
+  - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-0",device="mpatha",job="node-exporter-a"}'
+    values: '1x10'
+  - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-0",device="mpatha",job="node-exporter-a-duplicate"}'
+    values: '1x10'
+  - series: 'node_dmmultipath_device_info{instance="node-b",sysfs_name="dm-1",device="mpathb"}'
+    values: '1x10'
+  - series: 'node_dmmultipath_device_paths_failed{instance="node-a",device="mpatha"}'
+    values: '1x10'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-a",device="mpatha"}'
+    values: '1x10'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-b",device="mpathb"}'
+    values: '0x10'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-c",device="nvme0n1",subsystem="nqn-a"}'
+    values: '1x10'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-d",device="nvme1n1",subsystem="nqn-b"}'
+    values: '1x10'
+  - series: 'node_nvmesubsystem_paths{instance="node-c",subsystem="nqn-a"}'
+    values: '2x10'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-c",subsystem="nqn-a"}'
+    values: '1x10'
+  - series: 'node_nvmesubsystem_paths{instance="node-d",subsystem="nqn-b"}'
+    values: '2x10'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-d",subsystem="nqn-b"}'
+    values: '0x10'
+  promql_expr_test:
+  - expr: 'csiaddons:volume_pv_context_info{persistentvolume="pv-a"}'
+    eval_time: 1m
+    exp_samples:
+    - labels: 'csiaddons:volume_pv_context_info{driver="example.csi.io",namespace="workload",persistentvolume="pv-a",persistentvolumeclaim="claim-a",volume_handle="volume-a"}'
+      value: 1
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: CSIAddonsVolumeMultipathDegraded
+    exp_alerts:
+    - exp_labels:
+        device: mpatha
+        driver: example.csi.io
+        namespace: workload
+        node: node-a
+        persistentvolume: pv-a
+        persistentvolumeclaim: claim-a
+        severity: warning
+        sysfs_name: dm-0
+        volume_handle: volume-a
+      exp_annotations:
+        summary: A CSI volume has degraded multipath connectivity
+        description: PV pv-a (PVC claim-a in namespace workload) on node node-a has at least one failed path to multipath device mpatha, while at least one usable path remains.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeMultipathDegraded.md
+  - eval_time: 6m
+    alertname: CSIAddonsVolumeMultipathLost
+    exp_alerts:
+    - exp_labels:
+        device: mpathb
+        driver: example.csi.io
+        namespace: workload
+        node: node-b
+        persistentvolume: pv-a
+        persistentvolumeclaim: claim-a
+        severity: critical
+        sysfs_name: dm-1
+        volume_handle: volume-a
+      exp_annotations:
+        summary: A CSI volume has lost all multipath connectivity
+        description: All paths to multipath device mpathb for PV pv-a (PVC claim-a in namespace workload) on node node-b are down. Immediate investigation of storage connectivity is required.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeMultipathLost.md
+  - eval_time: 6m
+    alertname: CSIAddonsVolumeNVMeSubsystemDegraded
+    exp_alerts:
+    - exp_labels:
+        device: nvme0n1
+        driver: example.csi.io
+        namespace: workload
+        node: node-c
+        persistentvolume: pv-a
+        persistentvolumeclaim: claim-a
+        severity: warning
+        subsystem: nqn-a
+        volume_handle: volume-a
+      exp_annotations:
+        summary: A CSI volume has degraded NVMe-oF connectivity
+        description: PV pv-a (PVC claim-a in namespace workload) on node node-c has at least one non-live path to NVMe-oF subsystem nqn-a, while at least one usable path remains.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeNVMeSubsystemDegraded.md
+  - eval_time: 6m
+    alertname: CSIAddonsVolumeNVMeSubsystemLost
+    exp_alerts:
+    - exp_labels:
+        device: nvme1n1
+        driver: example.csi.io
+        namespace: workload
+        node: node-d
+        persistentvolume: pv-a
+        persistentvolumeclaim: claim-a
+        severity: critical
+        subsystem: nqn-b
+        volume_handle: volume-a
+      exp_annotations:
+        summary: A CSI volume has lost all NVMe-oF connectivity
+        description: All paths to NVMe-oF subsystem nqn-b for PV pv-a (PVC claim-a in namespace workload) on node node-d are non-live. Immediate investigation of storage connectivity is required.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeNVMeSubsystemLost.md
+
+- name: unclaimed CSI PV retains storage context
+  interval: 1m
+  input_series:
+  - series: 'up{job="csi-volume-device-exporter",instance="exporter-a"}'
+    values: '1x10'
+  - series: 'kube_persistentvolume_info{persistentvolume="pv-unclaimed",csi_driver="example.csi.io",csi_volume_handle="volume-unclaimed"}'
+    values: '1x10'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-unclaimed",node="node-a",device="dm-0"}'
+    values: '1x10'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-unclaimed",node="node-b",device="dm-1"}'
+    values: '1x10'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-unclaimed",node="node-c",device="nvme0n1"}'
+    values: '1x10'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-unclaimed",node="node-d",device="nvme1n1"}'
+    values: '1x10'
+  - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-0",device="mpatha"}'
+    values: '1x10'
+  - series: 'node_dmmultipath_device_info{instance="node-b",sysfs_name="dm-1",device="mpathb"}'
+    values: '1x10'
+  - series: 'node_dmmultipath_device_paths_failed{instance="node-a",device="mpatha"}'
+    values: '1x10'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-a",device="mpatha"}'
+    values: '1x10'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-b",device="mpathb"}'
+    values: '0x10'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-c",device="nvme0n1",subsystem="nqn-a"}'
+    values: '1x10'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-d",device="nvme1n1",subsystem="nqn-b"}'
+    values: '1x10'
+  - series: 'node_nvmesubsystem_paths{instance="node-c",subsystem="nqn-a"}'
+    values: '2x10'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-c",subsystem="nqn-a"}'
+    values: '1x10'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-d",subsystem="nqn-b"}'
+    values: '0x10'
+  promql_expr_test:
+  - expr: 'csiaddons:volume_pv_context_info{persistentvolume="pv-unclaimed"}'
+    eval_time: 1m
+    exp_samples:
+    - labels: 'csiaddons:volume_pv_context_info{persistentvolume="pv-unclaimed",driver="example.csi.io",volume_handle="volume-unclaimed"}'
+      value: 1
+  # Missing claim labels must omit the whole PVC/namespace clause cleanly.
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: CSIAddonsVolumeMultipathDegraded
+    exp_alerts:
+    - exp_labels:
+        device: mpatha
+        driver: example.csi.io
+        node: node-a
+        persistentvolume: pv-unclaimed
+        severity: warning
+        sysfs_name: dm-0
+        volume_handle: volume-unclaimed
+      exp_annotations:
+        summary: A CSI volume has degraded multipath connectivity
+        description: PV pv-unclaimed on node node-a has at least one failed path to multipath device mpatha, while at least one usable path remains.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeMultipathDegraded.md
+  - eval_time: 6m
+    alertname: CSIAddonsVolumeMultipathLost
+    exp_alerts:
+    - exp_labels:
+        device: mpathb
+        driver: example.csi.io
+        node: node-b
+        persistentvolume: pv-unclaimed
+        severity: critical
+        sysfs_name: dm-1
+        volume_handle: volume-unclaimed
+      exp_annotations:
+        summary: A CSI volume has lost all multipath connectivity
+        description: All paths to multipath device mpathb for PV pv-unclaimed on node node-b are down. Immediate investigation of storage connectivity is required.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeMultipathLost.md
+  - eval_time: 6m
+    alertname: CSIAddonsVolumeNVMeSubsystemDegraded
+    exp_alerts:
+    - exp_labels:
+        device: nvme0n1
+        driver: example.csi.io
+        node: node-c
+        persistentvolume: pv-unclaimed
+        severity: warning
+        subsystem: nqn-a
+        volume_handle: volume-unclaimed
+      exp_annotations:
+        summary: A CSI volume has degraded NVMe-oF connectivity
+        description: PV pv-unclaimed on node node-c has at least one non-live path to NVMe-oF subsystem nqn-a, while at least one usable path remains.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeNVMeSubsystemDegraded.md
+  - eval_time: 6m
+    alertname: CSIAddonsVolumeNVMeSubsystemLost
+    exp_alerts:
+    - exp_labels:
+        device: nvme1n1
+        driver: example.csi.io
+        node: node-d
+        persistentvolume: pv-unclaimed
+        severity: critical
+        subsystem: nqn-b
+        volume_handle: volume-unclaimed
+      exp_annotations:
+        summary: A CSI volume has lost all NVMe-oF connectivity
+        description: All paths to NVMe-oF subsystem nqn-b for PV pv-unclaimed on node node-d are non-live. Immediate investigation of storage connectivity is required.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeNVMeSubsystemLost.md
+
+- name: transient path failures do not fire and lost timers restart after recovery
+  interval: 1m
+  input_series:
+  - series: 'up{job="csi-volume-device-exporter",instance="exporter-a"}'
+    values: '1x12'
+  - series: 'kube_persistentvolume_info{persistentvolume="pv-transient",csi_driver="example.csi.io",csi_volume_handle="volume-transient"}'
+    values: '1x12'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-transient",node="node-a",device="dm-0"}'
+    values: '1x12'
+  - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-0",device="mpatha"}'
+    values: '1x12'
+  # Partial failure at 0-3m recovers before the five-minute warning threshold.
+  - series: 'node_dmmultipath_device_paths_failed{instance="node-a",device="mpatha"}'
+    values: '1x3 0x8'
+  # Total failure at 5m recovers at 6m before firing. The failures at 7-8m
+  # and 10-11m must each start a fresh one-minute critical timer.
+  - series: 'node_dmmultipath_device_paths_active{instance="node-a",device="mpatha"}'
+    values: '1x4 0 1 0 0 1 0 0 1'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-transient",node="node-a",device="nvme0n1"}'
+    values: '1x12'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-a",device="nvme0n1",subsystem="nqn-transient"}'
+    values: '1x12'
+  - series: 'node_nvmesubsystem_paths{instance="node-a",subsystem="nqn-transient"}'
+    values: '2x12'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-a",subsystem="nqn-transient"}'
+    values: '1x3 2 0 2 0 0 2 0 0 2'
+  promql_expr_test:
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Degraded",alertstate="pending"})'
+    eval_time: 3m
+    exp_samples:
+    - labels: '{}'
+      value: 2
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)(Degraded|Lost)"})'
+    eval_time: 4m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="pending"})'
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 2
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)(Degraded|Lost)"})'
+    eval_time: 6m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="pending"})'
+    eval_time: 7m
+    exp_samples:
+    - labels: '{}'
+      value: 2
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="firing"})'
+    eval_time: 8m
+    exp_samples:
+    - labels: '{}'
+      value: 2
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)(Degraded|Lost)"})'
+    eval_time: 9m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="pending"})'
+    eval_time: 10m
+    exp_samples:
+    - labels: '{}'
+      value: 2
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="firing"})'
+    eval_time: 11m
+    exp_samples:
+    - labels: '{}'
+      value: 2
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)(Degraded|Lost)"})'
+    eval_time: 12m
+    exp_samples: []

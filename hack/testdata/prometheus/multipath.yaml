@@ -1,0 +1,116 @@
+rule_files:
+- replaced-by-test-script
+
+evaluation_interval: 1m
+
+tests:
+- name: multipath degraded timer resets on healthy recovery and transitions to lost
+  interval: 1m
+  input_series:
+  - series: 'up{job="csi-volume-device-exporter",instance="exporter-a"}'
+    values: '1x32'
+  - series: 'kube_persistentvolume_info{persistentvolume="pv-timing",csi_driver="example.csi.io",csi_volume_handle="volume-timing"}'
+    values: '1x32'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="volume-timing",node="node-a",device="dm-0"}'
+    values: '1x32'
+  - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-0",device="mpatha"}'
+    values: '1x32'
+  # Failed paths disappear briefly, resetting degradation. A later total loss
+  # starts the lost timer; recovery must clear both alerts.
+  - series: 'node_dmmultipath_device_paths_failed{instance="node-a",device="mpatha"}'
+    values: '1x5 0x1 1x6 0x16'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-a",device="mpatha"}'
+    values: '1x14 0x2 1x16'
+  promql_expr_test:
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathDegraded",alertstate="pending"})'
+    eval_time: 4m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathDegraded",alertstate="firing"})'
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolumeMultipath(Degraded|Lost)"})'
+    eval_time: 6m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathDegraded",alertstate="pending"})'
+    eval_time: 10m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathDegraded",alertstate="pending"})'
+    eval_time: 12m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathDegraded",alertstate="firing"})'
+    eval_time: 13m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathDegraded"})'
+    eval_time: 15m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathLost",alertstate="pending"})'
+    eval_time: 15m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathLost",alertstate="firing"})'
+    eval_time: 16m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolumeMultipath(Degraded|Lost)"})'
+    eval_time: 25m
+    exp_samples: []
+
+- name: multipath identities are node scoped and missing health is not zero
+  interval: 1m
+  input_series:
+  - series: 'up{job="csi-volume-device-exporter",instance="exporter-a"}'
+    values: '1x8'
+  - series: 'kube_persistentvolume_info{persistentvolume="pv-node-scope",csi_driver="example.csi.io",csi_volume_handle="handle-node-scope"}'
+    values: '1x8'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="handle-node-scope",node="node-a",device="dm-0"}'
+    values: '1x8'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="handle-node-scope",node="node-b",device="dm-0"}'
+    values: '1x8'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="handle-node-scope",node="node-c",device="dm-0"}'
+    values: '1x8'
+  - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-0",device="mpath-shared"}'
+    values: '1x8'
+  - series: 'node_dmmultipath_device_info{instance="node-b",sysfs_name="dm-0",device="mpath-shared"}'
+    values: '1x8'
+  - series: 'node_dmmultipath_device_info{instance="node-c",sysfs_name="dm-0",device="mpath-shared"}'
+    values: '1x8'
+  - series: 'node_dmmultipath_device_paths_failed{instance="node-a",device="mpath-shared"}'
+    values: '1x8'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-a",device="mpath-shared"}'
+    values: '1x8'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-b",device="mpath-shared"}'
+    values: '1x4 stale'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-c",device="mpath-shared"}'
+    values: '0x8'
+  promql_expr_test:
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolumeMultipath(Degraded|Lost)",node="node-b"})'
+    eval_time: 6m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolumeMultipath(Degraded|Lost)",node="node-b"})'
+    eval_time: 7m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathDegraded",alertstate="firing",node="node-a"})'
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathLost",alertstate="firing",node="node-c"})'
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathLost",node="node-a"} or ALERTS{alertname="CSIAddonsVolumeMultipathDegraded",node="node-c"})'
+    eval_time: 6m
+    exp_samples: []

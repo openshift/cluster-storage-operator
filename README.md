@@ -69,3 +69,25 @@ oc -n openshift-cluster-storage-operator delete lease/cluster-storage-operator-l
 # Run the operator via CLI
 ./cluster-storage-operator start --kubeconfig $KUBECONFIG --namespace openshift-cluster-storage-operator
 ```
+
+## Prometheus rule tests
+
+From the repository root, run:
+
+```shell
+make verify-prometheus-rules
+```
+
+The target installs `promtool` with
+`go install -mod=mod github.com/prometheus/prometheus/cmd/promtool@v0.316.0` into
+`_output/tools/bin/`. Go caches downloads and compilation results for subsequent
+runs. Installation requires Go and network access; no container runtime is needed.
+These tests also run as part of `make verify`.
+
+Alternatively, use an existing promtool binary without installing one:
+
+```shell
+PROMTOOL=/absolute/path/to/promtool ./hack/test-prometheus-rules.sh
+```
+
+For detailed evaluation output, prefix the command with `PROMTOOL_DEBUG=1`.
