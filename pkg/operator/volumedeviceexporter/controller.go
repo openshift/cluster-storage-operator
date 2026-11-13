@@ -39,7 +39,7 @@ var staticAssets = []string{
 	"volumedeviceexporter/01_serviceaccount.yaml",
 	"volumedeviceexporter/02_auth_proxy_clusterrole.yaml",
 	"volumedeviceexporter/03_auth_proxy_clusterrolebinding.yaml",
-	"volumedeviceexporter/04_privileged_scc_rolebinding.yaml",
+	"volumedeviceexporter/04_hostmount_anyuid_v2_scc_rolebinding.yaml",
 	"volumedeviceexporter/05_service.yaml",
 	"volumedeviceexporter/07_servicemonitor.yaml",
 	"volumedeviceexporter/08_prometheusrule.yaml",

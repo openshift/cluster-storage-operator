@@ -10,7 +10,7 @@ spec:
   template:
     metadata:
       annotations:
-        openshift.io/required-scc: privileged
+        openshift.io/required-scc: hostmount-anyuid-v2
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         app: csi-volume-device-exporter
@@ -39,13 +39,19 @@ spec:
               fieldPath: spec.nodeName
         ports:
         securityContext:
-          privileged: true
+          # Runs as root to read the host's kubelet metadata, but without
+          # privileged mode and with no capabilities.
+          runAsUser: 0
+          allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           capabilities:
             drop:
             - ALL
-          seccompProfile:
-            type: RuntimeDefault
+          # Reading the hostPath mounts of /sys and /var/lib/kubelet requires
+          # spc_t. Together with runAsUser: 0 this is also why the pod still
+          # needs the hostmount-anyuid-v2 SCC and a "privileged" PSA namespace.
+          seLinuxOptions:
+            type: spc_t
         resources:
           requests:
             cpu: 10m
@@ -97,8 +103,6 @@ spec:
           capabilities:
             drop:
             - ALL
-          seccompProfile:
-            type: RuntimeDefault
         resources:
           requests:
             cpu: 10m
