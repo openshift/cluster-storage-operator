@@ -92,6 +92,21 @@ spec:
       # The controller does not emit metrics with other properties than "SELinuxLabel" or "SELinuxChangePolicy". Still, let's filter them to be future proof and keep the cardinality low.
       - expr: sum by(property) (selinux_warning_controller_selinux_volume_conflict{property =~ "SELinuxLabel|SELinuxChangePolicy"})
         record: cluster:selinux_warning_controller_selinux_volume_conflict:count
+      - alert: SELinuxMountGAReadinessWorkloadsDetected
+        expr: sum(cluster:selinux_warning_controller_selinux_volume_conflict:count) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Workloads incompatible with SELinuxMount GA detected"
+          description: |
+            No action is required currently. Upgrading to 5.0 will not affect these workloads.
+            However, the following upgrade from 5.0 to 5.1 will be blocked (Upgradeable=false)
+            until the affected workloads are fixed, which would leave an EUS-to-EUS upgrade
+            from 4.22 to 5.1 stuck at 5.0. To avoid this, it is prefferable to fix the affected workloads, while
+            still on 4.22. Query metric
+            selinux_warning_controller_selinux_volume_conflict to list affected pods.
+          runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/SELinuxMountGAReadinessWorkloadsDetected.md
     - name: kubernetes-storage
     # These alerts originate from https://github.com/kubernetes-monitoring/kubernetes-mixin/blob/de834e9a291b49396125768f041e2078763f48b5/alerts/storage_alerts.libsonnet
       rules:
