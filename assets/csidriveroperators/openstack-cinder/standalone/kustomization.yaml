@@ -10,3 +10,15 @@ patches:
     target:
       kind: Deployment
       version: v1
+  # The CVO manages this ClusterRole through manifests/ on standalone clusters.
+  - target:
+      group: rbac.authorization.k8s.io
+      version: v1
+      kind: ClusterRole
+      name: openstack-cinder-csi-driver-operator-clusterrole
+    patch: |
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: openstack-cinder-csi-driver-operator-clusterrole

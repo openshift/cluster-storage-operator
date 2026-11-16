@@ -1,7 +1,12 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: azure-disk-csi-driver-operator-clusterrole
+  name: aws-ebs-csi-driver-operator-clusterrole
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Storage
 rules:
 - apiGroups:
   - security.openshift.io
@@ -35,7 +40,7 @@ rules:
   - ""
   resourceNames:
   - extension-apiserver-authentication
-  - azure-disk-csi-driver-operator-lock
+  - aws-ebs-csi-driver-operator-lock
   resources:
   - configmaps
   verbs:
@@ -46,14 +51,6 @@ rules:
   - update
   - patch
   - delete
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - watch
-  - list
-  - get
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:
@@ -286,9 +283,9 @@ rules:
   resources:
   - infrastructures
   - proxies
-  - clusterversions
-  - featuregates
   - apiservers
+  - featuregates
+  - clusterversions
   verbs:
   - get
   - list

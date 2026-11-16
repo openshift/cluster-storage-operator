@@ -37,7 +37,6 @@ func GetGCPPDCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/gcp-pd/standalone/generated/v1_serviceaccount_gcp-pd-csi-driver-operator.yaml",
 			"csidriveroperators/gcp-pd/standalone/generated/rbac.authorization.k8s.io_v1_role_gcp-pd-csi-driver-operator-role.yaml",
 			"csidriveroperators/gcp-pd/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_gcp-pd-csi-driver-operator-rolebinding.yaml",
-			"csidriveroperators/gcp-pd/standalone/generated/rbac.authorization.k8s.io_v1_clusterrole_gcp-pd-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/gcp-pd/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_gcp-pd-csi-driver-operator-clusterrolebinding.yaml",
 		}
 		csiDriverConfig.CRAsset = "csidriveroperators/gcp-pd/standalone/generated/operator.openshift.io_v1_clustercsidriver_pd.csi.storage.gke.io.yaml"

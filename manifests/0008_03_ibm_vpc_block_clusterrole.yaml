@@ -1,7 +1,12 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: aws-ebs-csi-driver-operator-clusterrole
+  name: ibm-vpc-block-csi-driver-operator-clusterrole
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Storage
 rules:
 - apiGroups:
   - security.openshift.io
@@ -19,6 +24,7 @@ rules:
   - get
   - list
   - watch
+  # The Config Observer controller updates the CR's spec
   - update
   - patch
 - apiGroups:
@@ -32,10 +38,10 @@ rules:
   - update
   - patch
 - apiGroups:
-  - ""
+  - ''
   resourceNames:
   - extension-apiserver-authentication
-  - aws-ebs-csi-driver-operator-lock
+  - ibm-vpc-block-csi-driver-operator-lock
   resources:
   - configmaps
   verbs:
@@ -62,7 +68,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - ""
+  - ''
   resources:
   - serviceaccounts
   verbs:
@@ -84,7 +90,19 @@ rules:
   - watch
   - delete
 - apiGroups:
-  - ""
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ''
   resources:
   - nodes
   verbs:
@@ -96,7 +114,7 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - ""
+  - ''
   resources:
   - secrets
   verbs:
@@ -104,7 +122,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - ""
+  - ''
   resources:
   - namespaces
   verbs:
@@ -116,7 +134,7 @@ rules:
   - delete
   - update
 - apiGroups:
-  - ""
+  - ''
   resources:
   - persistentvolumes
   verbs:
@@ -128,7 +146,7 @@ rules:
   - update
   - patch
 - apiGroups:
-  - ""
+  - ''
   resources:
   - persistentvolumeclaims
   verbs:
@@ -137,7 +155,7 @@ rules:
   - watch
   - update
 - apiGroups:
-  - ""
+  - ''
   resources:
   - pods
   verbs:
@@ -145,7 +163,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - ""
+  - ''
   resources:
   - persistentvolumeclaims/status
   verbs:
@@ -203,14 +221,6 @@ rules:
   - watch
   - update
   - delete
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - volumeattributesclasses
-  verbs:
-  - get
-  - list
-  - watch
 - apiGroups:
   - '*'
   resources:
@@ -286,19 +296,29 @@ rules:
   - list
   - watch
 - apiGroups:
-  - discovery.k8s.io
+  - ''
   resources:
-  - endpointslices
+  - configmaps
   verbs:
   - get
   - list
   - watch
 - apiGroups:
-  - authentication.k8s.io
+  - csi.storage.k8s.io
   resources:
-  - tokenreviews
+  - csinodeinfos
   verbs:
-  - create
+  - get
+  - list
+  - watch
+# Allow kube-rbac-proxy to create TokenReview to be able to authenticate Prometheus when collecting metrics
+- apiGroups:
+  - "authentication.k8s.io"
+  resources:
+  - "tokenreviews"
+  verbs:
+  - "create"
+# Allow the operator to grant volume group snapshot permissions to the csi-snapshotter sidecar
 - apiGroups:
   - groupsnapshot.storage.k8s.io
   resources:

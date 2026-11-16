@@ -34,7 +34,6 @@ func GetPowerVSBlockCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/powervs-block/standalone/01_sa.yaml",
 			"csidriveroperators/powervs-block/standalone/02_role.yaml",
 			"csidriveroperators/powervs-block/standalone/03_rolebinding.yaml",
-			"csidriveroperators/powervs-block/standalone/04_clusterrole.yaml",
 			"csidriveroperators/powervs-block/standalone/05_clusterrolebinding.yaml",
 			"csidriveroperators/powervs-block/standalone/08_service.yaml",
 		}

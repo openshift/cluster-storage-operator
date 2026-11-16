@@ -37,7 +37,6 @@ func GetAWSEBSCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 			"csidriveroperators/aws-ebs/standalone/generated/v1_serviceaccount_aws-ebs-csi-driver-operator.yaml",
 			"csidriveroperators/aws-ebs/standalone/generated/rbac.authorization.k8s.io_v1_role_aws-ebs-csi-driver-operator-role.yaml",
 			"csidriveroperators/aws-ebs/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_aws-ebs-csi-driver-operator-rolebinding.yaml",
-			"csidriveroperators/aws-ebs/standalone/generated/rbac.authorization.k8s.io_v1_clusterrole_aws-ebs-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/aws-ebs/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_aws-ebs-csi-driver-operator-clusterrolebinding.yaml",
 			"csidriveroperators/aws-ebs/standalone/generated/v1_service_aws-ebs-csi-driver-operator-metrics.yaml",
 			"csidriveroperators/aws-ebs/standalone/07_role_aws_config.yaml",
