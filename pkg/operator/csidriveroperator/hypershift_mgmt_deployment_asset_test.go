@@ -48,6 +48,22 @@ func TestHyperShiftMgmtDeploymentAssetControlPlaneImageEnvVars(t *testing.T) {
 			config:    csioperatorclient.GetAzureFileCSIOperatorConfig(true),
 			container: "azure-file-csi-driver-operator",
 		},
+		{
+			name:      "gcp-pd",
+			config:    csioperatorclient.GetGCPPDCSIOperatorConfig(true),
+			container: "gcp-pd-csi-driver-operator",
+		},
+		{
+			name:      "openstack-cinder",
+			config:    csioperatorclient.GetOpenStackCinderCSIOperatorConfig(true),
+			container: "openstack-cinder-csi-driver-operator",
+		},
+		{
+			name: "openstack-manila",
+			// clients and recorder are only used when isHypershift is false.
+			config:    csioperatorclient.GetOpenStackManilaOperatorConfig(true, nil, nil),
+			container: "manila-csi-driver-operator",
+		},
 	}
 
 	for _, tt := range tests {
