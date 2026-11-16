@@ -1,0 +1,150 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cluster-storage-operator
+  namespace: openshift-cluster-storage-operator
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: 'true'
+    include.release.openshift.io/self-managed-high-availability: 'true'
+    include.release.openshift.io/single-node-developer: 'true'
+    capability.openshift.io/name: Storage
+rules:
+  - apiGroups:
+      - security.openshift.io
+    resources:
+      - securitycontextconstraints
+    resourceNames:
+      - nonroot-v2
+    verbs:
+      - use
+  - apiGroups:
+      - ''
+    resources:
+      - configmaps
+      - secrets
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - ''
+    resources:
+      - serviceaccounts
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+  - apiGroups:
+      - ''
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - create
+      - update
+  - apiGroups:
+      - ''
+    resources:
+      - configmaps
+    verbs:
+      - delete
+    resourceNames:
+      - csi-volume-device-exporter-client-ca
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - daemonsets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - servicemonitors
+      - prometheusrules
+    verbs:
+      - get
+      - create
+      - update
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - rolebindings
+    verbs:
+      - list
+      - watch
+      - create
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - rolebindings
+    verbs:
+      - get
+      - update
+    resourceNames:
+      - csi-volume-device-exporter-hostmount-anyuid-v2-scc
+      - vsphere-problem-detector-operator-rolebinding
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - roles
+    verbs:
+      - bind
+    resourceNames:
+      - vsphere-problem-detector-operator-role
+  - apiGroups:
+      - ''
+    resources:
+      - pods
+    verbs:
+      - list
+  - apiGroups:
+      - apps
+    resources:
+      - replicasets
+    verbs:
+      - get
+  - apiGroups:
+      - ''
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - create
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - update
+    resourceNames:
+      - cluster-storage-operator-lock
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - prometheusrules
+    verbs:
+      - delete
+    resourceNames:
+      - vsphere-problem-detector
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - clusterroles
+    verbs:
+      - bind
+    resourceNames:
+      - system:openshift:scc:hostmount-anyuid-v2

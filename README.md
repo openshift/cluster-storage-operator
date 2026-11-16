@@ -5,6 +5,8 @@ Ensures a default storage class exists for OCP clusters, like the [addon-manager
 
 Will also ensure default CSI volume plugins are installed in a future release when CSI plugins replace in-tree ones (see [csi-operator](https://github.com/openshift/csi-operator)).
 
+See [standalone RBAC](docs/standalone-rbac.md) for CSO permissions and the remote CI validation checklist.
+
 ## Quick start - running CSO from local workstation
 
 ### Scale down current CVO and CSO

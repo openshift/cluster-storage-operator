@@ -1,16 +1,20 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: vsphere-problem-detector-operator-role
-  namespace: openshift-cluster-storage-operator
+  name: manila-csi-driver-operator-role
+  namespace: openshift-cluster-csi-drivers
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Storage
 rules:
 - apiGroups:
-  - ''
+  - ""
   resources:
   - pods
   - services
   - endpoints
-  - persistentvolumeclaims
   - events
   - configmaps
   - secrets
@@ -23,16 +27,9 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - ''
-  resources:
-  - namespaces
-  verbs:
-  - get
-- apiGroups:
   - apps
   resources:
   - deployments
-  - replicasets
   verbs:
   - get
   - list

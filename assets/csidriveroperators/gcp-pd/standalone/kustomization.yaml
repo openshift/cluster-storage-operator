@@ -2,10 +2,6 @@ resources:
   - ../base
 namespace: openshift-cluster-csi-drivers
 patches:
-  - path: monitoring_role.patch.yaml
-    target:
-      kind: Role
-      version: v1
   - path: deployment.patch.yaml
     target:
       kind: Deployment
@@ -22,3 +18,15 @@ patches:
       kind: ClusterRole
       metadata:
         name: gcp-pd-csi-driver-operator-clusterrole
+  # The CVO manages this Role through manifests/ on standalone clusters.
+  - target:
+      group: rbac.authorization.k8s.io
+      version: v1
+      kind: Role
+      name: gcp-pd-csi-driver-operator-role
+    patch: |
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: gcp-pd-csi-driver-operator-role

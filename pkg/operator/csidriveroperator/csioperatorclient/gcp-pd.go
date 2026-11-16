@@ -35,7 +35,6 @@ func GetGCPPDCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 		csiDriverConfig.StaticAssets = []string{
 			"csidriveroperators/gcp-pd/standalone/generated/v1_service_gcp-pd-csi-driver-operator-metrics.yaml",
 			"csidriveroperators/gcp-pd/standalone/generated/v1_serviceaccount_gcp-pd-csi-driver-operator.yaml",
-			"csidriveroperators/gcp-pd/standalone/generated/rbac.authorization.k8s.io_v1_role_gcp-pd-csi-driver-operator-role.yaml",
 			"csidriveroperators/gcp-pd/standalone/generated/rbac.authorization.k8s.io_v1_rolebinding_gcp-pd-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/gcp-pd/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_gcp-pd-csi-driver-operator-clusterrolebinding.yaml",
 		}

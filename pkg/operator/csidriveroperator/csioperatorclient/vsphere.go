@@ -29,11 +29,9 @@ func GetVMwareVSphereCSIOperatorConfig() CSIOperatorConfig {
 		StaticAssets: []string{
 			"csidriveroperators/vsphere/02_configmap.yaml",
 			"csidriveroperators/vsphere/03_sa.yaml",
-			"csidriveroperators/vsphere/04_role.yaml",
 			"csidriveroperators/vsphere/05_rolebinding.yaml",
 			"csidriveroperators/vsphere/07_clusterrolebinding.yaml",
 			"csidriveroperators/vsphere/11_service.yaml",
-			"csidriveroperators/vsphere/13_prometheus_role.yaml",
 			"csidriveroperators/vsphere/14_prometheus_rolebinding.yaml",
 			"csidriveroperators/vsphere/15_prometheusrules.yaml",
 		},

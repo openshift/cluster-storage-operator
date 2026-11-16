@@ -43,13 +43,14 @@ type VolumeDataSourceValidatorStarter struct {
 
 func NewController(
 	clients *csoclients.Clients,
-	eventRecorder events.Recorder) factory.Controller {
+	eventRecorder events.Recorder,
+	isHypershift bool) factory.Controller {
 	c := &VolumeDataSourceValidatorStarter{
 		operatorClient: clients.OperatorClient,
 		eventRecorder:  eventRecorder.WithComponentSuffix("VolumeDataSourceValidatorStarter"),
 	}
 
-	c.controller = c.createVolumeDataSourceValidatorManager(clients)
+	c.controller = c.createVolumeDataSourceValidatorManager(clients, isHypershift)
 	return factory.New().WithSync(c.sync).WithSyncDegradedOnError(clients.OperatorClient).WithInformers(
 		clients.OperatorClient.Informer(),
 	).ToController("VolumeDataSourceValidatorStarter", eventRecorder)
@@ -80,21 +81,14 @@ func (c *VolumeDataSourceValidatorStarter) sync(ctx context.Context, syncCtx fac
 }
 
 func (c *VolumeDataSourceValidatorStarter) createVolumeDataSourceValidatorManager(
-	clients *csoclients.Clients) manager.ControllerManager {
+	clients *csoclients.Clients, isHypershift bool) manager.ControllerManager {
 	mgr := manager.NewControllerManager()
-
-	staticAssets := []string{
-		"volumedatasourcevalidator/01_serviceaccount.yaml",
-		"volumedatasourcevalidator/02_clusterrole.yaml",
-		"volumedatasourcevalidator/03_clusterrolebinding.yaml",
-		"volumedatasourcevalidator/07_volumedatasourcevalidator_crd.yaml",
-	}
 
 	volumeDataSourceValidatorName := "VolumeDataSourceValidatorStaticController"
 	mgr = mgr.WithController(staticresourcecontroller.NewStaticResourceController(
 		volumeDataSourceValidatorName,
 		assets.ReadFile,
-		staticAssets,
+		staticAssets(isHypershift),
 		resourceapply.NewKubeClientHolder(clients.KubeClient).WithAPIExtensionsClient(clients.ExtensionClientSet),
 		c.operatorClient,
 		c.eventRecorder).AddKubeInformers(clients.KubeInformers), 1)
@@ -128,6 +122,18 @@ func (c *VolumeDataSourceValidatorStarter) createVolumeDataSourceValidatorManage
 	mgr = mgr.WithController(volumeDataSourceValidatorDeploymentController, 1)
 
 	return mgr
+}
+
+func staticAssets(isHypershift bool) []string {
+	files := []string{"volumedatasourcevalidator/01_serviceaccount.yaml"}
+	// The CVO supplies this ClusterRole on standalone clusters.
+	if isHypershift {
+		files = append(files, "volumedatasourcevalidator/02_clusterrole.yaml")
+	}
+	return append(files,
+		"volumedatasourcevalidator/03_clusterrolebinding.yaml",
+		"volumedatasourcevalidator/07_volumedatasourcevalidator_crd.yaml",
+	)
 }
 
 func (c *VolumeDataSourceValidatorStarter) withReplacerHook() deploymentcontroller.ManifestHookFunc {

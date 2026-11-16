@@ -1,0 +1,199 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cluster-storage-operator-main-clusterrole
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: 'true'
+    include.release.openshift.io/self-managed-high-availability: 'true'
+    include.release.openshift.io/single-node-developer: 'true'
+    capability.openshift.io/name: Storage
+rules:
+  - apiGroups:
+      - operator.openshift.io
+    resources:
+      - storages
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - operator.openshift.io
+    resources:
+      - storages
+    verbs:
+      - get
+      - update
+    resourceNames:
+      - cluster
+  - apiGroups:
+      - operator.openshift.io
+    resources:
+      - storages/status
+    verbs:
+      - update
+      - patch
+    resourceNames:
+      - cluster
+  - apiGroups:
+      - operator.openshift.io
+    resources:
+      - clustercsidrivers
+    verbs:
+      - list
+      - watch
+      - create
+  - apiGroups:
+      - operator.openshift.io
+    resources:
+      - clustercsidrivers
+    verbs:
+      - get
+    resourceNames:
+      - cinder.csi.openstack.org
+      - csi.vsphere.vmware.com
+      - disk.csi.azure.com
+      - ebs.csi.aws.com
+      - file.csi.azure.com
+      - manila.csi.openstack.org
+      - pd.csi.storage.gke.io
+      - powervs.csi.ibm.com
+      - vpc.block.csi.ibm.io
+  - apiGroups:
+      - config.openshift.io
+    resources:
+      - clusteroperators
+    verbs:
+      - list
+      - watch
+      - create
+  - apiGroups:
+      - config.openshift.io
+    resources:
+      - clusteroperators
+    verbs:
+      - delete
+    resourceNames:
+      - storage
+  - apiGroups:
+      - config.openshift.io
+    resources:
+      - clusteroperators/status
+    verbs:
+      - update
+    resourceNames:
+      - storage
+  - apiGroups:
+      - config.openshift.io
+    resources:
+      - infrastructures
+      - apiservers
+      - proxies
+      - featuregates
+      - clusterversions
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - config.openshift.io
+    resources:
+      - infrastructures
+    verbs:
+      - get
+    resourceNames:
+      - cluster
+  - apiGroups:
+      - storage.k8s.io
+    resources:
+      - csidrivers
+      - storageclasses
+      - volumeattributesclasses
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - clusterroles
+    verbs:
+      - bind
+    resourceNames:
+      - aws-ebs-csi-driver-operator-clusterrole
+      - azure-disk-csi-driver-operator-clusterrole
+      - azure-file-csi-driver-operator-clusterrole
+      - gcp-pd-csi-driver-operator-clusterrole
+      - ibm-vpc-block-csi-driver-operator-clusterrole
+      - manila-csi-driver-operator-clusterrole
+      - openstack-cinder-csi-driver-operator-clusterrole
+      - powervs-block-csi-driver-operator-clusterrole
+      - vmware-vsphere-csi-driver-operator-clusterrole
+      - volume-data-source-validator
+      - csi-volume-device-exporter-auth-proxy
+      - vsphere-problem-detector-operator-clusterrole
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+    resourceNames:
+      - aws-ebs-csi-driver-operator-clusterrolebinding
+      - azure-disk-csi-driver-operator-clusterrolebinding
+      - azure-file-csi-driver-operator-clusterrolebinding
+      - gcp-pd-csi-driver-operator-clusterrolebinding
+      - ibm-vpc-block-csi-driver-operator-clusterrolebinding
+      - manila-csi-driver-operator-clusterrolebinding
+      - openstack-cinder-csi-driver-operator-clusterrolebinding
+      - powervs-block-csi-driver-operator-clusterrolebinding
+      - vmware-vsphere-csi-driver-operator-clusterrolebinding
+      - volume-data-source-validator
+      - csi-volume-device-exporter-auth-proxy
+      - vsphere-problem-detector-operator-clusterrolebinding
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - create
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - get
+      - update
+    resourceNames:
+      - volumepopulators.populator.storage.k8s.io
+  - apiGroups:
+      - ''
+    resources:
+      - namespaces
+    verbs:
+      - create
+  - apiGroups:
+      - ''
+    resources:
+      - namespaces
+    verbs:
+      - get
+      - update
+    resourceNames:
+      - openshift-manila-csi-driver
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - servicemonitors
+      - prometheusrules
+    verbs:
+      - list
+      - watch

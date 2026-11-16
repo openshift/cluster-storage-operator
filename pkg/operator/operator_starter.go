@@ -89,7 +89,7 @@ func (csr *commonStarter) getFeatureGate(ctx context.Context) error {
 	return nil
 }
 
-func (csr *commonStarter) CreateCommonControllers() error {
+func (csr *commonStarter) CreateCommonControllers(isHypershift bool) error {
 	csr.versionGetter = status.NewVersionGetter()
 	csr.versionGetter.SetVersion("operator", status.VersionForOperatorFromEnv())
 
@@ -102,14 +102,19 @@ func (csr *commonStarter) CreateCommonControllers() error {
 	volumeDataSourceValidatorController := volumedatasourcevalidator.NewController(
 		csr.commonClients,
 		csr.eventRecorder,
+		isHypershift,
 	)
 	csr.controllers = append(csr.controllers, volumeDataSourceValidatorController)
 
+	roleBindingName := "cluster-storage-operator-main-clusterrolebinding"
+	if isHypershift {
+		roleBindingName = "cluster-storage-operator-role"
+	}
 	relatedObjects := []configv1.ObjectReference{
 		{Resource: "namespaces", Name: operatorNamespace},
 		{Resource: "namespaces", Name: csoclients.CSIOperatorNamespace},
 		{Group: operatorv1.GroupName, Resource: "storages", Name: "cluster"},
-		{Group: rbacv1.GroupName, Resource: "clusterrolebindings", Name: "cluster-storage-operator-role"},
+		{Group: rbacv1.GroupName, Resource: "clusterrolebindings", Name: roleBindingName},
 	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
 		clusterOperatorName,
@@ -186,7 +191,7 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 		return err
 	}
 
-	err = ssr.commonStarter.CreateCommonControllers()
+	err = ssr.commonStarter.CreateCommonControllers(false)
 	if err != nil {
 		return err
 	}
@@ -206,7 +211,7 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 		ssr.eventRecorder,
 		csiDriverConfigs)
 	ssr.controllers = append(ssr.controllers, csiDriverController)
-	ssr.controllers = append(ssr.controllers, volumedeviceexporter.NewControllers(ssr.commonClients, ssr.featureGates, ssr.eventRecorder)...)
+	ssr.controllers = append(ssr.controllers, volumedeviceexporter.NewControllers(ssr.commonClients, ssr.featureGates, ssr.eventRecorder, false)...)
 
 	vsphereProblemDetector := vsphereproblemdetector.NewVSphereProblemDetectorStarter(
 		ssr.commonClients,
@@ -295,7 +300,7 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	controlPlaneNamespace := hsr.controllerConfig.OperatorNamespace
 	csiDriverConfigs := hsr.populateConfigs(hsr.mgmtClient)
 
-	err = hsr.commonStarter.CreateCommonControllers()
+	err = hsr.commonStarter.CreateCommonControllers(true)
 	if err != nil {
 		return err
 	}
@@ -318,7 +323,7 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	)
 
 	hsr.controllers = append(hsr.controllers, csiDriverController)
-	hsr.controllers = append(hsr.controllers, volumedeviceexporter.NewControllers(hsr.commonClients, hsr.featureGates, hsr.eventRecorder)...)
+	hsr.controllers = append(hsr.controllers, volumedeviceexporter.NewControllers(hsr.commonClients, hsr.featureGates, hsr.eventRecorder, true)...)
 	klog.Info("Starting the Informers.")
 
 	csoclients.StartGuestInformers(hsr.commonClients, ctx.Done())
