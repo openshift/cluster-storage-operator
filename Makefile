@@ -18,9 +18,9 @@ check: | verify test-unit
 
 verify: verify-prometheus-rules
 
-verify-prometheus-rules:
+verify-prometheus-rules: ensure-yq
 	GOBIN="$(CURDIR)/_output/tools/bin" go install -mod=mod github.com/prometheus/prometheus/cmd/promtool@v0.316.0
-	PROMTOOL="$(CURDIR)/_output/tools/bin/promtool" ./hack/test-prometheus-rules.sh
+	YQ="$(YQ)" PROMTOOL="$(CURDIR)/_output/tools/bin/promtool" ./hack/test-prometheus-rules.sh
 .PHONY: verify-prometheus-rules
 
 IMAGE_REGISTRY?=registry.svc.ci.openshift.org

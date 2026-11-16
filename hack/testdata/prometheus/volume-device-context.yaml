@@ -1,100 +1,100 @@
 rule_files:
 - replaced-by-test-script
 
-evaluation_interval: 1m
+evaluation_interval: 30s
 
 tests:
 - name: device mappings retain bound and unclaimed node contexts
-  interval: 1m
+  interval: 30s
   input_series:
   - series: 'kube_persistentvolume_info{persistentvolume="pv-bound",csi_driver="example.csi.io",csi_volume_handle="bound"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'kube_persistentvolumeclaim_info{namespace="workload",persistentvolumeclaim="claim-bound",volumename="pv-bound"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'kube_persistentvolumeclaim_status_phase{namespace="workload",persistentvolumeclaim="claim-bound",phase="Bound"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'kube_persistentvolume_info{persistentvolume="pv-unclaimed",csi_driver="example.csi.io",csi_volume_handle="unclaimed"}'
-    values: '1x8'
+    values: '1x17'
   # Duplicate exporter and node-exporter scrapes must not duplicate mappings.
   - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="bound",node="node-a",device="dm-bound-degraded",pod="a"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="bound",node="node-a",device="dm-bound-degraded",pod="b"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="bound",node="node-b",device="dm-bound-lost"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="bound",node="node-c",device="nvme-bound-degraded"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="bound",node="node-d",device="nvme-bound-lost"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="bound",node="node-e",device="sda"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="bound",node="node-missing",device="dm-missing"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="bound",node="node-missing-nvme",device="nvme-missing"}'
-    values: '1x8'
+    values: '1x17'
   # The same kernel names on distinct nodes must remain distinct mappings.
   - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="unclaimed",node="node-f",device="dm-shared"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="unclaimed",node="node-g",device="dm-shared"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="unclaimed",node="node-h",device="nvme-shared"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="unclaimed",node="node-i",device="nvme-shared"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-bound-degraded",device="mpath-bound-degraded",job="a"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-bound-degraded",device="mpath-bound-degraded",job="b"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_dmmultipath_device_info{instance="node-b",sysfs_name="dm-bound-lost",device="mpath-bound-lost"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_dmmultipath_device_info{instance="node-missing",sysfs_name="dm-missing",device="mpath-missing"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_dmmultipath_device_info{instance="node-f",sysfs_name="dm-shared",device="mpath-shared"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_dmmultipath_device_info{instance="node-g",sysfs_name="dm-shared",device="mpath-shared"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_dmmultipath_device_paths_failed{instance="node-a",device="mpath-bound-degraded"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_dmmultipath_device_paths_active{instance="node-a",device="mpath-bound-degraded"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_dmmultipath_device_paths_active{instance="node-b",device="mpath-bound-lost"}'
-    values: '0x8'
+    values: '0x17'
   - series: 'node_dmmultipath_device_paths_failed{instance="node-f",device="mpath-shared"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_dmmultipath_device_paths_active{instance="node-f",device="mpath-shared"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_dmmultipath_device_paths_active{instance="node-g",device="mpath-shared"}'
-    values: '0x8'
+    values: '0x17'
   - series: 'node_nvmesubsystem_namespace_info{instance="node-c",device="nvme-bound-degraded",subsystem="nqn-bound-degraded"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_nvmesubsystem_namespace_info{instance="node-d",device="nvme-bound-lost",subsystem="nqn-bound-lost"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_nvmesubsystem_namespace_info{instance="node-e",device="sda",subsystem="nqn-filtered"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_nvmesubsystem_namespace_info{instance="node-missing-nvme",device="nvme-missing",subsystem="nqn-missing"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_nvmesubsystem_paths{instance="node-missing-nvme",subsystem="nqn-missing"}'
-    values: '2x8'
+    values: '2x17'
   - series: 'node_nvmesubsystem_namespace_info{instance="node-h",device="nvme-shared",subsystem="nqn-shared"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_nvmesubsystem_namespace_info{instance="node-i",device="nvme-shared",subsystem="nqn-shared"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_nvmesubsystem_paths{instance="node-c",subsystem="nqn-bound-degraded"}'
-    values: '3x8'
+    values: '3x17'
   - series: 'node_nvmesubsystem_paths_live{instance="node-c",subsystem="nqn-bound-degraded"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_nvmesubsystem_paths{instance="node-d",subsystem="nqn-bound-lost"}'
-    values: '2x8'
+    values: '2x17'
   - series: 'node_nvmesubsystem_paths_live{instance="node-d",subsystem="nqn-bound-lost"}'
-    values: '0x8'
+    values: '0x17'
   - series: 'node_nvmesubsystem_paths{instance="node-h",subsystem="nqn-shared"}'
-    values: '2x8'
+    values: '2x17'
   - series: 'node_nvmesubsystem_paths_live{instance="node-h",subsystem="nqn-shared"}'
-    values: '1x8'
+    values: '1x17'
   - series: 'node_nvmesubsystem_paths{instance="node-i",subsystem="nqn-shared"}'
-    values: '2x8'
+    values: '2x17'
   - series: 'node_nvmesubsystem_paths_live{instance="node-i",subsystem="nqn-shared"}'
-    values: '0x8'
+    values: '0x17'
   promql_expr_test:
   - expr: csiaddons:volume_node_device_context_info
     eval_time: 1m
@@ -153,18 +153,6 @@ tests:
   - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)(Degraded|Lost)",node=~"node-missing.*"})'
     eval_time: 6m
     exp_samples: []
-  # The degraded join preserves the non-live path count, not just membership.
-  - expr: 'csiaddons:volume_nvme_subsystem_info{node="node-c"} * on(subsystem, node) group_left() ((max by(subsystem, node) (label_replace(node_nvmesubsystem_paths, "node", "$1", "instance", "(.+)")) - max by(subsystem, node) (label_replace(node_nvmesubsystem_paths_live, "node", "$1", "instance", "(.+)"))) > 0 and on(subsystem, node) max by(subsystem, node) (label_replace(node_nvmesubsystem_paths_live, "node", "$1", "instance", "(.+)")) > 0)'
-    eval_time: 1m
-    exp_samples:
-    - labels: '{driver="example.csi.io",volume_handle="bound",node="node-c",device="nvme-bound-degraded",subsystem="nqn-bound-degraded",persistentvolume="pv-bound",persistentvolumeclaim="claim-bound",namespace="workload"}'
-      value: 2
-  # Lost alerts intentionally retain zero-valued expression results.
-  - expr: 'csiaddons:volume_multipath_device_info{node="node-b"} * on(device, node) group_left() (max by(device, node) (label_replace(node_dmmultipath_device_paths_active, "node", "$1", "instance", "(.+)")) == 0)'
-    eval_time: 1m
-    exp_samples:
-    - labels: '{driver="example.csi.io",volume_handle="bound",node="node-b",device="mpath-bound-lost",sysfs_name="dm-bound-lost",persistentvolume="pv-bound",persistentvolumeclaim="claim-bound",namespace="workload"}'
-      value: 0
   alert_rule_test:
   - eval_time: 6m
     alertname: CSIAddonsVolumeMultipathDegraded
@@ -219,62 +207,69 @@ tests:
         description: All paths to NVMe-oF subsystem nqn-shared for PV pv-unclaimed on node node-i are non-live. Immediate investigation of storage connectivity is required.
         runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeNVMeSubsystemLost.md
 
-- name: path alerts honor thresholds and reset on recovery
-  interval: 1m
+- name: same node keeps multipath devices and NVMe subsystems distinct
+  interval: 30s
   input_series:
-  - series: 'kube_persistentvolume_info{persistentvolume="pv-timing",csi_driver="example.csi.io",csi_volume_handle="timing"}'
-    values: '1x7'
-  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="timing",node="node-mp-degraded",device="dm-degraded"}'
-    values: '1x7'
-  - series: 'node_dmmultipath_device_info{instance="node-mp-degraded",sysfs_name="dm-degraded",device="mpath-degraded"}'
-    values: '1x7'
-  - series: 'node_dmmultipath_device_paths_failed{instance="node-mp-degraded",device="mpath-degraded"}'
-    values: '1x5 0x1'
-  - series: 'node_dmmultipath_device_paths_active{instance="node-mp-degraded",device="mpath-degraded"}'
-    values: '1x7'
-  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="timing",node="node-mp-lost",device="dm-lost"}'
-    values: '1x7'
-  - series: 'node_dmmultipath_device_info{instance="node-mp-lost",sysfs_name="dm-lost",device="mpath-lost"}'
-    values: '1x7'
-  - series: 'node_dmmultipath_device_paths_active{instance="node-mp-lost",device="mpath-lost"}'
-    values: '0 0 1x5'
-  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="timing",node="node-nvme-degraded",device="nvme-degraded"}'
-    values: '1x7'
-  - series: 'node_nvmesubsystem_namespace_info{instance="node-nvme-degraded",device="nvme-degraded",subsystem="nqn-degraded"}'
-    values: '1x7'
-  - series: 'node_nvmesubsystem_paths{instance="node-nvme-degraded",subsystem="nqn-degraded"}'
-    values: '2x7'
-  - series: 'node_nvmesubsystem_paths_live{instance="node-nvme-degraded",subsystem="nqn-degraded"}'
-    values: '1x5 2x1'
-  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="timing",node="node-nvme-lost",device="nvme-lost"}'
-    values: '1x7'
-  - series: 'node_nvmesubsystem_namespace_info{instance="node-nvme-lost",device="nvme-lost",subsystem="nqn-lost"}'
-    values: '1x7'
-  - series: 'node_nvmesubsystem_paths{instance="node-nvme-lost",subsystem="nqn-lost"}'
-    values: '2x7'
-  - series: 'node_nvmesubsystem_paths_live{instance="node-nvme-lost",subsystem="nqn-lost"}'
-    values: '0 0 2x5'
+  - series: 'kube_persistentvolume_info{persistentvolume="pv-same-node",csi_driver="driver-a",csi_volume_handle="same-node"}'
+    values: '1x13'
+  - series: 'csiaddons_volume_node_device_info{driver="driver-a",volume_handle="same-node",node="node-a",device="dm-degraded"}'
+    values: '1x13'
+  - series: 'csiaddons_volume_node_device_info{driver="driver-a",volume_handle="same-node",node="node-a",device="dm-lost"}'
+    values: '1x13'
+  - series: 'csiaddons_volume_node_device_info{driver="driver-a",volume_handle="same-node",node="node-a",device="dm-healthy"}'
+    values: '1x13'
+  - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-degraded",device="mpath-degraded"}'
+    values: '1x13'
+  - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-lost",device="mpath-lost"}'
+    values: '1x13'
+  - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-healthy",device="mpath-healthy"}'
+    values: '1x13'
+  - series: 'node_dmmultipath_device_paths_failed{instance="node-a",device="mpath-degraded"}'
+    values: '1x13'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-a",device="mpath-degraded"}'
+    values: '1x13'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-a",device="mpath-lost"}'
+    values: '0x13'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-a",device="mpath-healthy"}'
+    values: '2x13'
+  - series: 'csiaddons_volume_node_device_info{driver="driver-a",volume_handle="same-node",node="node-a",device="nvme-degraded"}'
+    values: '1x13'
+  - series: 'csiaddons_volume_node_device_info{driver="driver-a",volume_handle="same-node",node="node-a",device="nvme-lost"}'
+    values: '1x13'
+  - series: 'csiaddons_volume_node_device_info{driver="driver-a",volume_handle="same-node",node="node-a",device="nvme-healthy"}'
+    values: '1x13'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-a",device="nvme-degraded",subsystem="nqn-degraded"}'
+    values: '1x13'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-a",device="nvme-lost",subsystem="nqn-lost"}'
+    values: '1x13'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-a",device="nvme-healthy",subsystem="nqn-healthy"}'
+    values: '1x13'
+  - series: 'node_nvmesubsystem_paths{instance="node-a",subsystem="nqn-degraded"}'
+    values: '2x13'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-a",subsystem="nqn-degraded"}'
+    values: '1x13'
+  - series: 'node_nvmesubsystem_paths{instance="node-a",subsystem="nqn-lost"}'
+    values: '2x13'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-a",subsystem="nqn-lost"}'
+    values: '0x13'
+  - series: 'node_nvmesubsystem_paths{instance="node-a",subsystem="nqn-healthy"}'
+    values: '2x13'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-a",subsystem="nqn-healthy"}'
+    values: '2x13'
   promql_expr_test:
-  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Degraded",alertstate="pending"})'
-    eval_time: 4m
-    exp_samples:
-    - labels: '{}'
-      value: 2
-  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Degraded",alertstate="firing"})'
-    eval_time: 5m
-    exp_samples:
-    - labels: '{}'
-      value: 2
-  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="pending"})'
-    eval_time: 0m
-    exp_samples:
-    - labels: '{}'
-      value: 2
-  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="firing"})'
-    eval_time: 1m
-    exp_samples:
-    - labels: '{}'
-      value: 2
-  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)(Degraded|Lost)"})'
+  - expr: 'count by(alertname, device, subsystem) (ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)(Degraded|Lost)",node="node-a",alertstate="firing"})'
     eval_time: 6m
-    exp_samples: []
+    exp_samples:
+    - labels: '{alertname="CSIAddonsVolumeMultipathDegraded",device="mpath-degraded"}'
+      value: 1
+    - labels: '{alertname="CSIAddonsVolumeMultipathLost",device="mpath-lost"}'
+      value: 1
+    - labels: '{alertname="CSIAddonsVolumeNVMeSubsystemDegraded",device="nvme-degraded",subsystem="nqn-degraded"}'
+      value: 1
+    - labels: '{alertname="CSIAddonsVolumeNVMeSubsystemLost",device="nvme-lost",subsystem="nqn-lost"}'
+      value: 1
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)(Degraded|Lost)",node="node-a",alertstate="firing"})'
+    eval_time: 6m
+    exp_samples:
+    - labels: '{}'
+      value: 4

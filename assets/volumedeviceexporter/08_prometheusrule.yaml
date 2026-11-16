@@ -9,7 +9,6 @@ spec:
   groups:
   - name: csi-volume-path-health
     rules:
-    # Keep dependencies in this group before their consumers.
     # Map PV names to CSI driver names and volume handles using
     # kube_persistentvolume_info series with nonempty CSI driver and volume handle
     # labels. Drop other labels and rename the CSI labels to match the volume
@@ -34,8 +33,10 @@ spec:
     # evaluation. The selection guarantees at most one series per PV, keeping
     # downstream joins unambiguous; it does not identify an authoritative PVC.
     # PVs without a matching bound PVC are omitted.
-    # This recording is not restricted to CSI PVs.
-    - record: csiaddons:pv_bound_claim_info
+    # This recording is intentionally cluster-wide, not restricted to CSI PVs:
+    # it adds at most one series per distinct nonempty volumename reported by
+    # Bound PVCs. The downstream context join restricts its use to CSI PVs.
+    - record: csiaddons:volume_bound_claim_info
       expr: |
         topk by(persistentvolume) (
           1,
@@ -57,7 +58,7 @@ spec:
         (
           csiaddons:volume_pv_info
           * on(persistentvolume) group_left(persistentvolumeclaim, namespace)
-          csiaddons:pv_bound_claim_info
+          csiaddons:volume_bound_claim_info
         )
         or on(persistentvolume)
         csiaddons:volume_pv_info

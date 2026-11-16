@@ -109,6 +109,46 @@ tests:
     - labels: '{}'
       value: 2
 
+- name: lost alerts recover after firing and recurrence restarts their timers
+  interval: 30s
+  input_series:
+  - series: 'kube_persistentvolume_info{persistentvolume="pv-lost-recur",csi_driver="driver-a",csi_volume_handle="lost-recur"}'
+    values: '1x6'
+  - series: 'csiaddons_volume_node_device_info{driver="driver-a",volume_handle="lost-recur",node="node-a",device="dm-lost"}'
+    values: '1x6'
+  - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-lost",device="mpath-lost"}'
+    values: '1x6'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-a",device="mpath-lost"}'
+    values: '0x2 1 0x2'
+  - series: 'csiaddons_volume_node_device_info{driver="driver-a",volume_handle="lost-recur",node="node-a",device="nvme-lost"}'
+    values: '1x6'
+  - series: 'node_nvmesubsystem_namespace_info{instance="node-a",device="nvme-lost",subsystem="nqn-lost"}'
+    values: '1x6'
+  - series: 'node_nvmesubsystem_paths_live{instance="node-a",subsystem="nqn-lost"}'
+    values: '0x2 2 0x2'
+  promql_expr_test:
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="firing"})'
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 2
+  - expr: 'ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost"}'
+    eval_time: 1m30s
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="pending"})'
+    eval_time: 2m30s
+    exp_samples:
+    - labels: '{}'
+      value: 2
+  - expr: 'ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="firing"}'
+    eval_time: 2m30s
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="firing"})'
+    eval_time: 3m
+    exp_samples:
+    - labels: '{}'
+      value: 2
+
 - name: degraded to lost transitions are exclusive
   interval: 30s
   input_series:

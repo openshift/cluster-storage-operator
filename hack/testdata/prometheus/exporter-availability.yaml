@@ -1,17 +1,17 @@
 rule_files:
 - replaced-by-test-script
 
-evaluation_interval: 1m
+evaluation_interval: 30s
 
 tests:
 - name: exporter absence recovers and recurrence restarts its timer
-  interval: 1m
+  interval: 30s
   input_series:
   # An unrelated target must not satisfy the exporter-specific selector.
   - series: 'up{job="unrelated",instance="elsewhere"}'
-    values: '1x16'
+    values: '1x33'
   - series: 'up{job="csi-volume-device-exporter",instance="node-a"}'
-    values: 'stale stale stale stale stale stale 1 1 stale stale stale stale stale stale'
+    values: 'stale stale stale stale stale stale stale stale stale stale stale stale 1 1 1 1 stale stale stale stale stale stale stale stale stale stale stale stale'
   promql_expr_test:
   - expr: 'count(ALERTS{alertname="CSIAddonsVolumeDeviceExporterDown",alertstate="pending"})'
     eval_time: 4m
@@ -50,12 +50,12 @@ tests:
         runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeDeviceExporterDown.md
 
 - name: exporter target down fires at ten minutes and healthy target clears alerts
-  interval: 1m
+  interval: 30s
   input_series:
   - series: 'up{job="csi-volume-device-exporter",instance="node-a"}'
-    values: '0x11 1x2'
+    values: '0x23 1x5'
   - series: 'up{job="csi-volume-device-exporter",instance="node-b"}'
-    values: '_ _ _ _ _ _ 1x7'
+    values: '_ _ _ _ _ _ _ _ _ _ _ _ 1x15'
   promql_expr_test:
   - expr: 'count(ALERTS{alertname="CSIAddonsVolumeDeviceExporterDown"})'
     eval_time: 5m
@@ -85,3 +85,15 @@ tests:
         summary: A CSI volume device exporter target is down
         description: The CSI volume device exporter target node-a has been unreachable for ten minutes.
         runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-storage-operator/CSIAddonsVolumeDeviceExporterDown.md
+
+- name: unrelated down target does not create storage exporter alerts
+  interval: 30s
+  input_series:
+  - series: 'up{job="unrelated",instance="elsewhere"}'
+    values: '0x25'
+  - series: 'up{job="csi-volume-device-exporter",instance="node-a"}'
+    values: '1x25'
+  promql_expr_test:
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolumeDeviceExporter(Down|NodeDown)"})'
+    eval_time: 12m
+    exp_samples: []

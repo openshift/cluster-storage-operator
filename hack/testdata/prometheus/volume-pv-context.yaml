@@ -1,62 +1,62 @@
 rule_files:
 - replaced-by-test-script
 
-evaluation_interval: 1m
+evaluation_interval: 30s
 
 tests:
 - name: PV context deduplicates bound claims and filters invalid CSI metadata
-  interval: 1m
+  interval: 30s
   input_series:
   - series: 'up{job="csi-volume-device-exporter",instance="exporter-a"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolume_info{persistentvolume="pv-tied",csi_driver="example.csi.io",csi_volume_handle="handle-tied",job="a"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolume_info{persistentvolume="pv-tied",csi_driver="example.csi.io",csi_volume_handle="handle-tied",job="b"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolumeclaim_info{namespace="one",persistentvolumeclaim="claim-one",volumename="pv-tied",job="a"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolumeclaim_info{namespace="one",persistentvolumeclaim="claim-one",volumename="pv-tied",job="duplicate"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolumeclaim_info{namespace="two",persistentvolumeclaim="claim-two",volumename="pv-tied",job="b"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolumeclaim_status_phase{namespace="one",persistentvolumeclaim="claim-one",phase="Bound",pod="a"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolumeclaim_status_phase{namespace="one",persistentvolumeclaim="claim-one",phase="Bound",pod="b"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolumeclaim_status_phase{namespace="two",persistentvolumeclaim="claim-two",phase="Bound"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolumeclaim_info{namespace="pending",persistentvolumeclaim="pending-claim",volumename="pv-pending"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolumeclaim_status_phase{namespace="pending",persistentvolumeclaim="pending-claim",phase="Pending"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolume_info{persistentvolume="pv-pending",csi_driver="example.csi.io",csi_volume_handle="handle-pending"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolume_info{persistentvolume="pv-noncsi",csi_driver="",csi_volume_handle="handle"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolume_info{persistentvolume="pv-empty-handle",csi_driver="example.csi.io",csi_volume_handle=""}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolume_info{persistentvolume="pv-same-handle-a",csi_driver="driver-a",csi_volume_handle="shared"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'kube_persistentvolume_info{persistentvolume="pv-same-handle-b",csi_driver="driver-b",csi_volume_handle="shared"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="handle-tied",node="node-tied",device="dm-tied"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'node_dmmultipath_device_info{instance="node-tied",sysfs_name="dm-tied",device="mpath-tied"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'node_dmmultipath_device_paths_active{instance="node-tied",device="mpath-tied"}'
-    values: '0x3'
+    values: '0x7'
   - series: 'csiaddons_volume_node_device_info{driver="driver-a",volume_handle="shared",node="node-driver-a",device="dm-a"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'csiaddons_volume_node_device_info{driver="driver-b",volume_handle="shared",node="node-driver-b",device="dm-b"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'node_dmmultipath_device_info{instance="node-driver-a",sysfs_name="dm-a",device="mpath-a"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'node_dmmultipath_device_info{instance="node-driver-b",sysfs_name="dm-b",device="mpath-b"}'
-    values: '1x3'
+    values: '1x7'
   - series: 'node_dmmultipath_device_paths_active{instance="node-driver-a",device="mpath-a"}'
-    values: '0x3'
+    values: '0x7'
   - series: 'node_dmmultipath_device_paths_active{instance="node-driver-b",device="mpath-b"}'
-    values: '0x3'
+    values: '0x7'
   promql_expr_test:
   - expr: 'count(csiaddons:volume_pv_context_info{persistentvolume="pv-tied"})'
     eval_time: 1m
@@ -95,29 +95,29 @@ tests:
       value: 1
 
 - name: PV and bound claim recordings normalize and deduplicate metadata
-  interval: 1m
+  interval: 30s
   input_series:
   - series: 'kube_persistentvolume_info{persistentvolume="pv-a",csi_driver="example.csi.io",csi_volume_handle="volume-a",job="a"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolume_info{persistentvolume="pv-a",csi_driver="example.csi.io",csi_volume_handle="volume-a",job="b"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolumeclaim_info{namespace="workload",persistentvolumeclaim="claim-a",volumename="pv-a",job="a"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolumeclaim_info{namespace="workload",persistentvolumeclaim="claim-a",volumename="pv-a",job="b"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolumeclaim_status_phase{namespace="workload",persistentvolumeclaim="claim-a",phase="Bound",pod="a"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolumeclaim_status_phase{namespace="workload",persistentvolumeclaim="claim-a",phase="Bound",pod="b"}'
-    values: '1x2'
+    values: '1x5'
   # These claims must not enter the bound-claim recording.
   - series: 'kube_persistentvolumeclaim_info{namespace="workload",persistentvolumeclaim="pending",volumename="pv-a"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolumeclaim_status_phase{namespace="workload",persistentvolumeclaim="pending",phase="Bound"}'
-    values: '0x2'
+    values: '0x5'
   - series: 'kube_persistentvolumeclaim_info{namespace="workload",persistentvolumeclaim="empty",volumename=""}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolumeclaim_status_phase{namespace="workload",persistentvolumeclaim="empty",phase="Bound"}'
-    values: '1x2'
+    values: '1x5'
   promql_expr_test:
   # Check t0 consumption of preceding recording rules, not just later samples.
   - expr: csiaddons:volume_pv_info
@@ -125,10 +125,10 @@ tests:
     exp_samples:
     - labels: 'csiaddons:volume_pv_info{persistentvolume="pv-a",driver="example.csi.io",volume_handle="volume-a"}'
       value: 1
-  - expr: csiaddons:pv_bound_claim_info
+  - expr: csiaddons:volume_bound_claim_info
     eval_time: 0m
     exp_samples:
-    - labels: 'csiaddons:pv_bound_claim_info{persistentvolume="pv-a",persistentvolumeclaim="claim-a",namespace="workload"}'
+    - labels: 'csiaddons:volume_bound_claim_info{persistentvolume="pv-a",persistentvolumeclaim="claim-a",namespace="workload"}'
       value: 1
   - expr: csiaddons:volume_pv_context_info
     eval_time: 0m
@@ -137,18 +137,18 @@ tests:
       value: 1
 
 - name: context retains unclaimed PVs and separates driver identities
-  interval: 1m
+  interval: 30s
   input_series:
   - series: 'kube_persistentvolume_info{persistentvolume="pv-a",csi_driver="driver-a",csi_volume_handle="shared"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolume_info{persistentvolume="pv-b",csi_driver="driver-b",csi_volume_handle="shared"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolume_info{persistentvolume="pv-noncsi",csi_driver="",csi_volume_handle="handle"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolume_info{persistentvolume="pv-empty-handle",csi_driver="driver-a",csi_volume_handle=""}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolume_info{persistentvolume="pv-missing-labels"}'
-    values: '1x2'
+    values: '1x5'
   promql_expr_test:
   - expr: csiaddons:volume_pv_info
     eval_time: 1m
@@ -157,7 +157,7 @@ tests:
       value: 1
     - labels: 'csiaddons:volume_pv_info{persistentvolume="pv-b",driver="driver-b",volume_handle="shared"}'
       value: 1
-  - expr: csiaddons:pv_bound_claim_info
+  - expr: csiaddons:volume_bound_claim_info
     eval_time: 1m
     exp_samples: []
   - expr: csiaddons:volume_pv_context_info
@@ -169,22 +169,22 @@ tests:
       value: 1
 
 - name: bound claim selection permits either tied claim but only one
-  interval: 1m
+  interval: 30s
   input_series:
   - series: 'kube_persistentvolume_info{persistentvolume="pv-a",csi_driver="driver-a",csi_volume_handle="volume-a"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolumeclaim_info{namespace="one",persistentvolumeclaim="claim-one",volumename="pv-a",job="a"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolumeclaim_info{namespace="one",persistentvolumeclaim="claim-one",volumename="pv-a",job="b"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolumeclaim_info{namespace="two",persistentvolumeclaim="claim-two",volumename="pv-a"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolumeclaim_status_phase{namespace="one",persistentvolumeclaim="claim-one",phase="Bound"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolumeclaim_status_phase{namespace="two",persistentvolumeclaim="claim-two",phase="Bound"}'
-    values: '1x2'
+    values: '1x5'
   promql_expr_test:
-  - expr: count(csiaddons:pv_bound_claim_info{persistentvolume="pv-a"})
+  - expr: count(csiaddons:volume_bound_claim_info{persistentvolume="pv-a"})
     eval_time: 1m
     exp_samples:
     - labels: '{}'
@@ -199,21 +199,21 @@ tests:
     exp_samples: []
 
 - name: context drops claim labels when unbound and disappears with stale PV
-  interval: 1m
+  interval: 30s
   input_series:
   - series: 'kube_persistentvolume_info{persistentvolume="pv-a",csi_driver="driver-a",csi_volume_handle="volume-a"}'
-    values: '1x2 stale'
+    values: '1x5 stale stale'
   - series: 'kube_persistentvolumeclaim_info{namespace="workload",persistentvolumeclaim="claim-a",volumename="pv-a"}'
-    values: '1x4'
+    values: '1x9'
   - series: 'kube_persistentvolumeclaim_status_phase{namespace="workload",persistentvolumeclaim="claim-a",phase="Bound"}'
-    values: '1 0x3'
+    values: '1 1 0x7'
   promql_expr_test:
   - expr: csiaddons:volume_pv_context_info
     eval_time: 0m
     exp_samples:
     - labels: 'csiaddons:volume_pv_context_info{persistentvolume="pv-a",driver="driver-a",volume_handle="volume-a",persistentvolumeclaim="claim-a",namespace="workload"}'
       value: 1
-  - expr: csiaddons:pv_bound_claim_info
+  - expr: csiaddons:volume_bound_claim_info
     eval_time: 1m
     exp_samples: []
   - expr: csiaddons:volume_pv_context_info
@@ -229,31 +229,113 @@ tests:
     exp_samples: []
 
 - name: bound claim matching uses namespace and does not require a CSI PV
-  interval: 1m
+  interval: 30s
   input_series:
   # Identical claim names in different namespaces must not share phase state.
   - series: 'kube_persistentvolume_info{persistentvolume="pv-pending",csi_driver="driver-a",csi_volume_handle="pending"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolumeclaim_info{namespace="pending",persistentvolumeclaim="shared-name",volumename="pv-pending"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolumeclaim_status_phase{namespace="pending",persistentvolumeclaim="shared-name",phase="Bound"}'
-    values: '0x2'
+    values: '0x5'
   # Claim metadata need not have a matching CSI PV for the claim-only recording.
   - series: 'kube_persistentvolumeclaim_info{namespace="bound",persistentvolumeclaim="shared-name",volumename="pv-noncsi"}'
-    values: '1x2'
+    values: '1x5'
   - series: 'kube_persistentvolumeclaim_status_phase{namespace="bound",persistentvolumeclaim="shared-name",phase="Bound"}'
-    values: '1x2'
+    values: '1x5'
   # Missing Bound-phase data must not imply Bound either.
   - series: 'kube_persistentvolumeclaim_info{namespace="unknown",persistentvolumeclaim="shared-name",volumename="pv-unknown"}'
-    values: '1x2'
+    values: '1x5'
   promql_expr_test:
-  - expr: csiaddons:pv_bound_claim_info
+  - expr: csiaddons:volume_bound_claim_info
     eval_time: 0m
     exp_samples:
-    - labels: 'csiaddons:pv_bound_claim_info{persistentvolume="pv-noncsi",persistentvolumeclaim="shared-name",namespace="bound"}'
+    - labels: 'csiaddons:volume_bound_claim_info{persistentvolume="pv-noncsi",persistentvolumeclaim="shared-name",namespace="bound"}'
       value: 1
   - expr: csiaddons:volume_pv_context_info
     eval_time: 0m
     exp_samples:
     - labels: 'csiaddons:volume_pv_context_info{persistentvolume="pv-pending",driver="driver-a",volume_handle="pending"}'
+      value: 1
+
+- name: shared driver handle selects one PV context and ignores non-Bound PVC phases
+  interval: 30s
+  input_series:
+  - series: 'kube_persistentvolume_info{persistentvolume="pv-shared-a",csi_driver="driver-a",csi_volume_handle="shared"}'
+    values: '1x13'
+  - series: 'kube_persistentvolume_info{persistentvolume="pv-shared-b",csi_driver="driver-a",csi_volume_handle="shared"}'
+    values: '1x13'
+  - series: 'kube_persistentvolume_info{persistentvolume="pv-independent",csi_driver="driver-a",csi_volume_handle="independent"}'
+    values: '1x13'
+  - series: 'kube_persistentvolumeclaim_info{namespace="one",persistentvolumeclaim="claim-a",volumename="pv-shared-a"}'
+    values: '1x13'
+  - series: 'kube_persistentvolumeclaim_info{namespace="two",persistentvolumeclaim="claim-b",volumename="pv-shared-b"}'
+    values: '1x13'
+  - series: 'kube_persistentvolumeclaim_info{namespace="three",persistentvolumeclaim="claim-c",volumename="pv-independent"}'
+    values: '1x13'
+  - series: 'kube_persistentvolumeclaim_status_phase{namespace="one",persistentvolumeclaim="claim-a",phase="Bound"}'
+    values: '1x13'
+  - series: 'kube_persistentvolumeclaim_status_phase{namespace="two",persistentvolumeclaim="claim-b",phase="Bound"}'
+    values: '1x13'
+  - series: 'kube_persistentvolumeclaim_status_phase{namespace="three",persistentvolumeclaim="claim-c",phase="Bound"}'
+    values: '1x13'
+  # Give non-Bound claims separate PV names so an incorrect phase filter
+  # cannot hide them behind topk selection of a valid bound claim.
+  - series: 'kube_persistentvolumeclaim_info{namespace="pending",persistentvolumeclaim="not-bound",volumename="pv-pending"}'
+    values: '1x13'
+  - series: 'kube_persistentvolumeclaim_status_phase{namespace="pending",persistentvolumeclaim="not-bound",phase="Pending"}'
+    values: '1x13'
+  - series: 'kube_persistentvolumeclaim_info{namespace="lost",persistentvolumeclaim="not-bound",volumename="pv-lost"}'
+    values: '1x13'
+  - series: 'kube_persistentvolumeclaim_status_phase{namespace="lost",persistentvolumeclaim="not-bound",phase="Lost"}'
+    values: '1x13'
+  - series: 'csiaddons_volume_node_device_info{driver="driver-a",volume_handle="shared",node="node-a",device="dm-shared"}'
+    values: '1x13'
+  - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-shared",device="mpath-shared"}'
+    values: '1x13'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-a",device="mpath-shared"}'
+    values: '0x13'
+  # The independent handle must survive selection within the same driver.
+  - series: 'csiaddons_volume_node_device_info{driver="driver-a",volume_handle="independent",node="node-a",device="dm-independent"}'
+    values: '1x13'
+  - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-independent",device="mpath-independent"}'
+    values: '1x13'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-a",device="mpath-independent"}'
+    values: '1x13'
+  promql_expr_test:
+  - expr: csiaddons:volume_bound_claim_info
+    eval_time: 0m
+    exp_samples:
+    - labels: 'csiaddons:volume_bound_claim_info{persistentvolume="pv-shared-a",namespace="one",persistentvolumeclaim="claim-a"}'
+      value: 1
+    - labels: 'csiaddons:volume_bound_claim_info{persistentvolume="pv-shared-b",namespace="two",persistentvolumeclaim="claim-b"}'
+      value: 1
+    - labels: 'csiaddons:volume_bound_claim_info{persistentvolume="pv-independent",namespace="three",persistentvolumeclaim="claim-c"}'
+      value: 1
+  - expr: 'count(csiaddons:volume_node_device_context_info)'
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 2
+  - expr: 'count(csiaddons:volume_node_device_context_info{driver="driver-a",volume_handle="shared",node="node-a"})'
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  # Either tied PV is valid, but the selected claim must belong to that PV.
+  - expr: 'csiaddons:volume_node_device_context_info{volume_handle="shared"} unless (csiaddons:volume_node_device_context_info{persistentvolume="pv-shared-a",namespace="one",persistentvolumeclaim="claim-a"} or csiaddons:volume_node_device_context_info{persistentvolume="pv-shared-b",namespace="two",persistentvolumeclaim="claim-b"})'
+    eval_time: 1m
+    exp_samples: []
+  - expr: 'csiaddons:volume_node_device_context_info{volume_handle="independent"}'
+    eval_time: 1m
+    exp_samples:
+    - labels: 'csiaddons:volume_node_device_context_info{driver="driver-a",volume_handle="independent",node="node-a",device="dm-independent",persistentvolume="pv-independent",namespace="three",persistentvolumeclaim="claim-c"}'
+      value: 1
+  - expr: 'count(csiaddons:volume_bound_claim_info{namespace=~"pending|lost"})'
+    eval_time: 1m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathLost",driver="driver-a",volume_handle="shared",node="node-a",alertstate="firing"})'
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
       value: 1
