@@ -68,10 +68,15 @@ rules:
     resources:
       - rolebindings
     verbs:
-      - get
       - list
       - watch
       - create
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - rolebindings
+    verbs:
+      - get
       - update
     resourceNames:
       - aws-ebs-csi-driver-operator-rolebinding

@@ -42,9 +42,7 @@ func GetGCPPDCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 		csiDriverConfig.DeploymentAsset = "csidriveroperators/gcp-pd/standalone/generated/apps_v1_deployment_gcp-pd-csi-driver-operator.yaml"
 	} else {
 		csiDriverConfig.StaticAssets = []string{
-			"csidriveroperators/gcp-pd/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrole_gcp-pd-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/gcp-pd/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_gcp-pd-csi-driver-operator-clusterrolebinding.yaml",
-			"csidriveroperators/gcp-pd/hypershift/guest/generated/rbac.authorization.k8s.io_v1_role_gcp-pd-csi-driver-operator-role.yaml",
 			"csidriveroperators/gcp-pd/hypershift/guest/generated/rbac.authorization.k8s.io_v1_rolebinding_gcp-pd-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/gcp-pd/hypershift/guest/generated/v1_serviceaccount_gcp-pd-csi-driver-operator.yaml",
 		}

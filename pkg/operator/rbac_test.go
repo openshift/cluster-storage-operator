@@ -1,7 +1,9 @@
 package operator_test
 
 import (
+	"bufio"
 	"bytes"
+	"encoding/json"
 	"io"
 	"io/fs"
 	"os"
@@ -13,6 +15,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	sigsyaml "sigs.k8s.io/yaml"
 )
 
 const (
@@ -61,15 +64,24 @@ func readRBAC(t *testing.T, path string) []rbacManifest {
 	if err != nil {
 		t.Fatal(err)
 	}
-	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(data), 4096)
+	reader := yaml.NewYAMLReader(bufio.NewReader(bytes.NewReader(data)))
 	var manifests []rbacManifest
 	for {
-		var manifest rbacManifest
-		err := decoder.Decode(&manifest)
+		document, err := reader.Read()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
+			t.Fatalf("%s: %v", path, err)
+		}
+		// Strict conversion rejects duplicate YAML keys while allowing the
+		// non-RBAC fields that this partial manifest type does not model.
+		jsonData, err := sigsyaml.YAMLToJSONStrict(document)
+		if err != nil {
+			t.Fatalf("%s: %v", path, err)
+		}
+		var manifest rbacManifest
+		if err := json.Unmarshal(jsonData, &manifest); err != nil {
 			t.Fatalf("%s: %v", path, err)
 		}
 		manifests = append(manifests, manifest)
@@ -193,6 +205,12 @@ func TestStandaloneRBACBoundaries(t *testing.T) {
 		{"own role escalation", permission{rbacGroup, "roles", operatorNS, "escalate", "cluster-storage-operator"}, false},
 		{"unrelated role escalation", permission{rbacGroup, "roles", driverNS, "escalate", "other"}, false},
 		{"unrelated role binding", permission{rbacGroup, "roles", driverNS, "bind", "other"}, false},
+		{"observe cluster bindings", permission{rbacGroup, "clusterrolebindings", "", "list", ""}, true},
+		{"create cluster binding", permission{rbacGroup, "clusterrolebindings", "", "create", ""}, true},
+		{"observe CSI bindings", permission{rbacGroup, "rolebindings", driverNS, "watch", ""}, true},
+		{"create CSI binding", permission{rbacGroup, "rolebindings", driverNS, "create", ""}, true},
+		{"update CSI binding", permission{rbacGroup, "rolebindings", driverNS, "update", "aws-ebs-csi-driver-operator-rolebinding"}, true},
+		{"unrelated CSI binding", permission{rbacGroup, "rolebindings", driverNS, "update", "other"}, false},
 		{"unrelated binding modification", permission{rbacGroup, "clusterrolebindings", "", "update", "cluster-admin"}, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -225,7 +243,13 @@ func TestStandaloneRBACBoundaries(t *testing.T) {
 	}
 }
 
-func TestStandaloneRolePayloadOrdering(t *testing.T) {
+func TestRolePayloadOrdering(t *testing.T) {
+	for _, topology := range []string{"hypershift", "ibm-cloud-managed", "self-managed-high-availability", "single-node-developer"} {
+		t.Run(topology, func(t *testing.T) { testRolePayloadOrdering(t, topology) })
+	}
+}
+
+func testRolePayloadOrdering(t *testing.T, topology string) {
 	// oc adm release new prefixes component-local files, but preserves global
 	// filenames starting with 0000_. Compare the resulting payload filenames,
 	// not the source filenames (the operator Namespace is a global manifest).
@@ -249,7 +273,7 @@ func TestStandaloneRolePayloadOrdering(t *testing.T) {
 	var deployment string
 	for _, path := range paths {
 		for _, manifest := range readRBAC(t, path) {
-			if manifest.Annotations["include.release.openshift.io/self-managed-high-availability"] != "true" ||
+			if manifest.Annotations["include.release.openshift.io/"+topology] != "true" ||
 				manifest.Annotations["release.openshift.io/delete"] == "true" {
 				continue
 			}
@@ -265,14 +289,14 @@ func TestStandaloneRolePayloadOrdering(t *testing.T) {
 			}
 		}
 	}
-	if deployment == "" || len(roles) == 0 {
-		t.Fatal("expected standalone Deployment and Roles")
+	if deployment == "" && topology != "hypershift" || len(roles) == 0 {
+		t.Fatal("expected Deployment and Roles (Deployment is CPO-managed in HyperShift)")
 	}
 	componentRoles := standaloneComponentRoleNamespaces()
 	for _, file := range roles {
 		// The component Roles are prerequisites for CSO reconciliation. Other
 		// Roles, such as CSO's metrics reader at runlevel 90, can follow startup.
-		if _, required := componentRoles[file.role.Name]; required && payloadFilename(file.path) >= payloadFilename(deployment) {
+		if _, required := componentRoles[file.role.Name]; required && deployment != "" && payloadFilename(file.path) >= payloadFilename(deployment) {
 			t.Errorf("Role %s must precede Deployment %s in the payload", file.path, deployment)
 		}
 		namespace, found := namespaces[file.role.Namespace]
@@ -319,7 +343,7 @@ func TestStandaloneRBACComponentDelegation(t *testing.T) {
 	roles := map[string]bool{}
 	for _, path := range paths {
 		for _, role := range readRBAC(t, path) {
-			if role.Kind != "Role" {
+			if role.Kind != "Role" || role.Annotations["include.release.openshift.io/self-managed-high-availability"] != "true" {
 				continue
 			}
 			if _, expected := wantRoles[role.Name]; !expected {
@@ -333,7 +357,11 @@ func TestStandaloneRBACComponentDelegation(t *testing.T) {
 					t.Errorf("%s: missing %s annotation", path, topology)
 				}
 			}
-			if role.Annotations["include.release.openshift.io/hypershift"] != "" || role.Annotations["capability.openshift.io/name"] != "Storage" {
+			wantHyperShift := ""
+			if role.Name == "powervs-block-csi-driver-operator-role" {
+				wantHyperShift = "true"
+			}
+			if role.Annotations["include.release.openshift.io/hypershift"] != wantHyperShift || role.Annotations["capability.openshift.io/name"] != "Storage" {
 				t.Errorf("%s: incorrect topology or capability annotations", path)
 			}
 			key := role.Namespace + "/" + role.Name

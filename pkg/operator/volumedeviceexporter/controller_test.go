@@ -36,17 +36,12 @@ func TestNewControllersFeatureGate(t *testing.T) {
 		{name: "disabled", disabled: []configv1.FeatureGateName{features.FeatureGateStoragePathAlert}, controllerCount: 0},
 		{name: "unknown", controllerCount: 0},
 	} {
-		for _, mode := range []struct {
-			name         string
-			isHypershift bool
-		}{{"standalone", false}, {"hypershift", true}} {
-			t.Run(tc.name+"/"+mode.name, func(t *testing.T) {
-				featureGates := featuregates.NewFeatureGate(tc.enabled, tc.disabled)
-				if got := len(NewControllers(clients, featureGates, recorder, mode.isHypershift)); got != tc.controllerCount {
-					t.Fatalf("controller count = %d, want %d", got, tc.controllerCount)
-				}
-			})
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			featureGates := featuregates.NewFeatureGate(tc.enabled, tc.disabled)
+			if got := len(NewControllers(clients, featureGates, recorder)); got != tc.controllerCount {
+				t.Fatalf("controller count = %d, want %d", got, tc.controllerCount)
+			}
+		})
 	}
 }
 

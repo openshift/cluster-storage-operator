@@ -128,11 +128,20 @@ rules:
       - volume-data-source-validator
       - csi-volume-device-exporter-auth-proxy
       - vsphere-problem-detector-operator-clusterrole
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - clusterrolebindings
     verbs:
-      - get
       - list
       - watch
       - create
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - clusterrolebindings
+    verbs:
+      - get
       - update
     resourceNames:
       - aws-ebs-csi-driver-operator-clusterrolebinding

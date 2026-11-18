@@ -35,19 +35,16 @@ const (
 	clientCAConfigMapKey      = "client-ca-file"
 )
 
-func staticAssets(isHypershift bool) []string {
-	files := []string{"volumedeviceexporter/01_serviceaccount.yaml"}
-	// The CVO supplies this ClusterRole on standalone clusters.
-	if isHypershift {
-		files = append(files, "volumedeviceexporter/02_auth_proxy_clusterrole.yaml")
-	}
-	return append(files,
+func staticAssets() []string {
+	// The CVO supplies the ClusterRole in both deployment modes.
+	return []string{
+		"volumedeviceexporter/01_serviceaccount.yaml",
 		"volumedeviceexporter/03_auth_proxy_clusterrolebinding.yaml",
 		"volumedeviceexporter/04_hostmount_anyuid_v2_scc_rolebinding.yaml",
 		"volumedeviceexporter/05_service.yaml",
 		"volumedeviceexporter/07_servicemonitor.yaml",
 		"volumedeviceexporter/08_prometheusrule.yaml",
-	)
+	}
 }
 
 type controller struct {
@@ -56,7 +53,7 @@ type controller struct {
 	recorder       events.Recorder
 }
 
-func NewControllers(clients *csoclients.Clients, featureGates featuregates.FeatureGate, recorder events.Recorder, isHypershift bool) []factory.Controller {
+func NewControllers(clients *csoclients.Clients, featureGates featuregates.FeatureGate, recorder events.Recorder) []factory.Controller {
 	c := &controller{
 		operatorClient: clients.OperatorClient,
 		clients:        clients,
@@ -69,7 +66,7 @@ func NewControllers(clients *csoclients.Clients, featureGates featuregates.Featu
 	staticController := staticresourcecontroller.NewStaticResourceController(
 		"VolumeDeviceExporterStaticResources",
 		assets.ReadFile,
-		staticAssets(isHypershift),
+		staticAssets(),
 		resourceapply.NewKubeClientHolder(clients.KubeClient).WithDynamicClient(clients.DynamicClient),
 		clients.OperatorClient,
 		c.recorder,

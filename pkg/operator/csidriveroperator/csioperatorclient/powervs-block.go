@@ -41,9 +41,7 @@ func GetPowerVSBlockCSIOperatorConfig(isHypershift bool) CSIOperatorConfig {
 	} else {
 		csiDriverConfig.StaticAssets = []string{
 			"csidriveroperators/powervs-block/hypershift/guest/01_sa.yaml",
-			"csidriveroperators/powervs-block/hypershift/guest/02_role.yaml",
 			"csidriveroperators/powervs-block/hypershift/guest/03_rolebinding.yaml",
-			"csidriveroperators/powervs-block/hypershift/guest/04_clusterrole.yaml",
 			"csidriveroperators/powervs-block/hypershift/guest/05_clusterrolebinding.yaml",
 		}
 		csiDriverConfig.MgmtOperatorConfigAsset = "csidriveroperators/powervs-block/hypershift/mgmt/03_configmap.yaml"

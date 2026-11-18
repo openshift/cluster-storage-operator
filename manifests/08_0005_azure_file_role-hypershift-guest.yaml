@@ -1,7 +1,11 @@
+# *** AUTOMATICALLY GENERATED FILE - DO NOT EDIT ***
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: gcp-pd-csi-driver-operator-role
+  annotations:
+    capability.openshift.io/name: Storage
+    include.release.openshift.io/hypershift: "true"
+  name: azure-file-csi-driver-operator-role
   namespace: openshift-cluster-csi-drivers
 rules:
 - apiGroups:
@@ -14,18 +18,6 @@ rules:
   - configmaps
   - secrets
   - persistentvolumeclaims
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
   verbs:
   - get
   - list
@@ -51,6 +43,18 @@ rules:
   - policy
   resources:
   - poddisruptionbudgets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
   verbs:
   - get
   - list

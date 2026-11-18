@@ -45,9 +45,7 @@ func GetAzureDiskCSIOperatorConfig(isHyperShift bool) CSIOperatorConfig {
 		csiDriverConfig.CRAsset = "csidriveroperators/azure-disk/standalone/generated/operator.openshift.io_v1_clustercsidriver_disk.csi.azure.com.yaml"
 	} else {
 		csiDriverConfig.StaticAssets = []string{
-			"csidriveroperators/azure-disk/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrole_azure-disk-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/azure-disk/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_azure-disk-csi-driver-operator-clusterrolebinding.yaml",
-			"csidriveroperators/azure-disk/hypershift/guest/generated/rbac.authorization.k8s.io_v1_role_azure-disk-csi-driver-operator-role.yaml",
 			"csidriveroperators/azure-disk/hypershift/guest/generated/rbac.authorization.k8s.io_v1_rolebinding_azure-disk-csi-driver-operator-rolebinding.yaml",
 			"csidriveroperators/azure-disk/hypershift/guest/generated/v1_serviceaccount_azure-disk-csi-driver-operator.yaml",
 		}

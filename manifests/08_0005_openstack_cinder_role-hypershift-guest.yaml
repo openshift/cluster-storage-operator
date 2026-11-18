@@ -1,19 +1,24 @@
+# *** AUTOMATICALLY GENERATED FILE - DO NOT EDIT ***
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: powervs-block-csi-driver-operator-role
+  annotations:
+    capability.openshift.io/name: Storage
+    include.release.openshift.io/hypershift: "true"
+  name: openstack-cinder-csi-driver-operator-role
   namespace: openshift-cluster-csi-drivers
 rules:
 - apiGroups:
-  - ''
+  - ""
   resources:
   - pods
   - services
   - endpoints
-  - persistentvolumeclaims
+  - serviceaccounts
   - events
   - configmaps
   - secrets
+  - persistentvolumeclaims
   verbs:
   - get
   - list
@@ -23,18 +28,9 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - ''
-  resources:
-  - namespaces
-  verbs:
-  - get
-- apiGroups:
   - apps
   resources:
   - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
   verbs:
   - get
   - list
@@ -47,6 +43,18 @@ rules:
   - policy
   resources:
   - poddisruptionbudgets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
   verbs:
   - get
   - list

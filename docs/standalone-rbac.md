@@ -78,16 +78,42 @@ definitions are also preserved without refinement.
 
 ## HyperShift
 
-All new CSO grants and CVO-managed component Roles and ClusterRoles exclude the
-HyperShift topology. HyperShift continues to reconcile the validator and exporter
-ClusterRoles and CSI operator Roles from embedded assets. The shared kustomize
-bases and HyperShift overlays are preserved. The problem detector is
-standalone-only.
+Phase 1 moves ownership of guest component RBAC to the release payload. The
+CVO supplies nine guest ClusterRoles: the seven supported CSI operators (AWS,
+Azure Disk, Azure File, GCP PD, Cinder, Manila and PowerVS), the validator and the
+exporter auth proxy. Their rules are identical to the standalone definitions.
+IBM VPC Block, vSphere and the vSphere problem detector remain standalone-only.
 
-`manifests/08_operator_rbac.yaml` remains the input for the HyperShift profile,
-but no longer includes standalone topologies. The standalone deletion manifest
-removes its old `cluster-storage-operator-role` binding to `cluster-admin`.
-Regenerating the HyperShift profile must leave its output unchanged.
+The CVO also supplies six guest Roles in `openshift-cluster-csi-drivers`.
+PowerVS shares its standalone Role. AWS, Azure Disk, Azure File, GCP PD and
+Cinder use variants generated from the standalone manifests by
+`profile-patches/hypershift-guest/`. These variants carry only the HyperShift
+inclusion and Storage capability annotations and preserve the guest operators'
+additional PVC permissions. Standalone rules are unchanged. Manila has no guest
+Role or RoleBinding, matching its previous behavior. The `08_0005_` filenames
+place these Roles after the CSI namespace in the payload.
+
+CSO reconciles guest ServiceAccounts and bindings, but no longer applies guest
+Roles or ClusterRoles, including those for the validator and exporter. Shared
+kustomize bases remain available to the management overlays. Management Roles,
+the dynamic `${CONTROLPLANE_NAMESPACE}`, management bindings and guest
+credentials are unchanged. The exporter controllers still run only when
+`StoragePathAlert` is enabled; its CVO-managed ClusterRole alone does not start
+an exporter workload.
+
+Phase 2 will reduce CSO's effective HyperShift privileges. Phase 1 keeps the
+legacy `cluster-storage-operator-role` binding to `cluster-admin` and all
+artifacts copied by the control-plane-operator. The current HyperShift Deployment
+mounts `service-network-admin-kubeconfig`: moving component RBAC to CVO does not
+reduce the privileges of that administrative guest identity. The standalone CSO
+grants remain excluded from HyperShift, and no cross-repository or credential
+changes are part of this phase.
+
+`manifests/08_operator_rbac.yaml` remains the input for the HyperShift profile.
+Its generated `08_operator_rbac-hypershift.yaml` output stays unchanged. The
+standalone deletion manifest removes the legacy binding only in standalone
+topologies. Common status controllers continue to report that legacy binding in
+HyperShift `relatedObjects` and the dedicated binding in standalone.
 
 ## Local checks
 
@@ -95,19 +121,22 @@ Run from the repository root:
 
 ```bash
 make update
-make test-unit
-make verify
+make check
 ```
 
 The RBAC tests resolve the standalone manifest bindings for CSO's ServiceAccount,
 check direct permission boundaries and compare delegation grants with the actual
 component assets, including CVO ownership of the twelve Roles and the absence
-of Role write or escalation grants. They also check component ClusterRole
-ownership in both modes and the exporter's feature gate. They do not emulate
-API-server admission or permissions granted by other bindings on a live cluster.
-An ordering check compares release-builder filenames to ensure the local
-namespace manifests precede Roles and the twelve component Roles precede the
-standalone Deployment.
+of Role write or escalation grants. Strict YAML conversion rejects duplicate
+keys. Tests also check uniqueness of Roles and ClusterRoles in each topology,
+guest rules against standalone rules plus the historical PVC grants, absence
+of guest role assets, guest binding
+references, management Role ownership and dynamic namespaces, and the exporter's
+feature gate. They do not emulate API-server admission or permissions granted
+by other bindings on a live cluster.
+Ordering checks compare release-builder filenames in all four topologies to
+ensure the local namespace manifests precede Roles; standalone component Roles
+must also precede the standalone Deployment.
 
 ## Remote CI acceptance checklist
 
@@ -165,3 +194,34 @@ Record which platforms and gates the CI actually exercised. Passing one cloud's
 tests does not establish coverage for the platform-specific cases above.
 Check any new RBAC denials against the exact revision tested; denials from an
 earlier revision do not establish missing permissions in the candidate payload.
+
+## HyperShift remote CI acceptance (phase 1)
+
+Use a candidate payload in remote HyperShift CI for installation and upgrade
+coverage. Do not infer runtime success from the local manifest and unit checks.
+
+1. Confirm CVO creates exactly the nine guest ClusterRoles and six guest Roles
+   above. Confirm the CSI namespace precedes its Roles in the built payload and
+   no `NotFound` errors occur during installation or upgrade.
+2. Confirm CSO reconciles the guest bindings and ServiceAccounts and that CSI
+   operator management Roles, bindings and Deployments remain healthy in their
+   tenant control plane namespace. Recreate a guest binding on a disposable CI
+   cluster and verify reconciliation; recreate a guest Role and verify CVO
+   restores it.
+3. Confirm `ClusterOperator/storage` is Available without Degraded, the platform
+   CSI operator becomes available, the default StorageClass exists, and storage
+   provisioning and `storage-obj-check` pass. Inspect CSO and driver operator
+   logs for `NotFound`, `Forbidden` and informer errors after restart as well.
+4. Confirm validator functionality and, with `StoragePathAlert` enabled, exporter
+   reconciliation, SCC binding, DaemonSet and monitoring. With the gate disabled,
+   confirm exporter controllers do not start.
+5. Record the actual guest identity, its groups and the kubeconfig source used
+   by CSO (for example, `oc --kubeconfig=<guest-kubeconfig> whoami -o json`, run
+   in the CI environment without publishing credentials). Record the retained
+   administrative bindings and the tested payload revision as input to phase 2.
+   A successful run with an administrative kubeconfig validates phase 1
+   integration; it does not validate minimum CSO RBAC.
+
+Record CI links, platform, feature gates and installation/upgrade outcomes in
+the PR. These remote checks require a candidate payload and are not performed
+by `make check`.

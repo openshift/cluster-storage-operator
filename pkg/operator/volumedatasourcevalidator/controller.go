@@ -43,14 +43,13 @@ type VolumeDataSourceValidatorStarter struct {
 
 func NewController(
 	clients *csoclients.Clients,
-	eventRecorder events.Recorder,
-	isHypershift bool) factory.Controller {
+	eventRecorder events.Recorder) factory.Controller {
 	c := &VolumeDataSourceValidatorStarter{
 		operatorClient: clients.OperatorClient,
 		eventRecorder:  eventRecorder.WithComponentSuffix("VolumeDataSourceValidatorStarter"),
 	}
 
-	c.controller = c.createVolumeDataSourceValidatorManager(clients, isHypershift)
+	c.controller = c.createVolumeDataSourceValidatorManager(clients)
 	return factory.New().WithSync(c.sync).WithSyncDegradedOnError(clients.OperatorClient).WithInformers(
 		clients.OperatorClient.Informer(),
 	).ToController("VolumeDataSourceValidatorStarter", eventRecorder)
@@ -81,14 +80,14 @@ func (c *VolumeDataSourceValidatorStarter) sync(ctx context.Context, syncCtx fac
 }
 
 func (c *VolumeDataSourceValidatorStarter) createVolumeDataSourceValidatorManager(
-	clients *csoclients.Clients, isHypershift bool) manager.ControllerManager {
+	clients *csoclients.Clients) manager.ControllerManager {
 	mgr := manager.NewControllerManager()
 
 	volumeDataSourceValidatorName := "VolumeDataSourceValidatorStaticController"
 	mgr = mgr.WithController(staticresourcecontroller.NewStaticResourceController(
 		volumeDataSourceValidatorName,
 		assets.ReadFile,
-		staticAssets(isHypershift),
+		staticAssets(),
 		resourceapply.NewKubeClientHolder(clients.KubeClient).WithAPIExtensionsClient(clients.ExtensionClientSet),
 		c.operatorClient,
 		c.eventRecorder).AddKubeInformers(clients.KubeInformers), 1)
@@ -124,16 +123,13 @@ func (c *VolumeDataSourceValidatorStarter) createVolumeDataSourceValidatorManage
 	return mgr
 }
 
-func staticAssets(isHypershift bool) []string {
-	files := []string{"volumedatasourcevalidator/01_serviceaccount.yaml"}
-	// The CVO supplies this ClusterRole on standalone clusters.
-	if isHypershift {
-		files = append(files, "volumedatasourcevalidator/02_clusterrole.yaml")
-	}
-	return append(files,
+func staticAssets() []string {
+	// The CVO supplies the ClusterRole in both deployment modes.
+	return []string{
+		"volumedatasourcevalidator/01_serviceaccount.yaml",
 		"volumedatasourcevalidator/03_clusterrolebinding.yaml",
 		"volumedatasourcevalidator/07_volumedatasourcevalidator_crd.yaml",
-	)
+	}
 }
 
 func (c *VolumeDataSourceValidatorStarter) withReplacerHook() deploymentcontroller.ManifestHookFunc {
