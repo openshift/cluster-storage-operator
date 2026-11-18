@@ -42,8 +42,8 @@ func resolveProfileSpec(profile *configv1.TLSSecurityProfile) *configv1.TLSProfi
 	return spec
 }
 
-// tlsGroupsFromSpec returns TLS group names from the profile spec when the
-// TLSGroupPreferences feature gate is enabled; otherwise nil.
+// tlsGroupsFromSpec returns TLS group names from the profile spec (dropping non-FIPS-approved groups in FIPS mode)
+// when the TLSGroupPreferences feature gate is enabled; otherwise nil.
 func tlsGroupsFromSpec(spec *configv1.TLSProfileSpec, featureGates featuregates.FeatureGate) []string {
 	if featureGates == nil || !slices.Contains(featureGates.KnownFeatures(), features.FeatureGateTLSGroupPreferences) {
 		return nil
@@ -51,11 +51,8 @@ func tlsGroupsFromSpec(spec *configv1.TLSProfileSpec, featureGates featuregates.
 	if !featureGates.Enabled(features.FeatureGateTLSGroupPreferences) {
 		return nil
 	}
-	groups := make([]string, 0, len(spec.Groups))
-	for _, g := range spec.Groups {
-		groups = append(groups, string(g))
-	}
-	return groups
+	// Filter out non-FIPS-approved groups
+	return crypto.GetSecurityProfileGroups(spec)
 }
 
 // OperatorConfigYAML produces a minimal GenericOperatorConfig YAML with only
