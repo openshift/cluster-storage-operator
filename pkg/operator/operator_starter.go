@@ -89,7 +89,7 @@ func (csr *commonStarter) getFeatureGate(ctx context.Context) error {
 	return nil
 }
 
-func (csr *commonStarter) CreateCommonControllers(roleBindingName string) error {
+func (csr *commonStarter) CreateCommonControllers() error {
 	csr.versionGetter = status.NewVersionGetter()
 	csr.versionGetter.SetVersion("operator", status.VersionForOperatorFromEnv())
 
@@ -109,7 +109,7 @@ func (csr *commonStarter) CreateCommonControllers(roleBindingName string) error 
 		{Resource: "namespaces", Name: operatorNamespace},
 		{Resource: "namespaces", Name: csoclients.CSIOperatorNamespace},
 		{Group: operatorv1.GroupName, Resource: "storages", Name: "cluster"},
-		{Group: rbacv1.GroupName, Resource: "clusterrolebindings", Name: roleBindingName},
+		{Group: rbacv1.GroupName, Resource: "clusterrolebindings", Name: "cluster-storage-operator-main-clusterrolebinding"},
 	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
 		clusterOperatorName,
@@ -186,7 +186,7 @@ func (ssr *StandaloneStarter) StartOperator(ctx context.Context) error {
 		return err
 	}
 
-	err = ssr.commonStarter.CreateCommonControllers("cluster-storage-operator-main-clusterrolebinding")
+	err = ssr.commonStarter.CreateCommonControllers()
 	if err != nil {
 		return err
 	}
@@ -295,7 +295,7 @@ func (hsr *HyperShiftStarter) StartOperator(ctx context.Context) error {
 	controlPlaneNamespace := hsr.controllerConfig.OperatorNamespace
 	csiDriverConfigs := hsr.populateConfigs(hsr.mgmtClient)
 
-	err = hsr.commonStarter.CreateCommonControllers("cluster-storage-operator-role")
+	err = hsr.commonStarter.CreateCommonControllers()
 	if err != nil {
 		return err
 	}

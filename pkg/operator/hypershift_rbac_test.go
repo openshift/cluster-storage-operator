@@ -1,14 +1,124 @@
 package operator_test
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
 	"slices"
 	"testing"
 
 	"github.com/openshift/cluster-storage-operator/pkg/operator/csidriveroperator/csioperatorclient"
+	appsv1 "k8s.io/api/apps/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	sigsyaml "sigs.k8s.io/yaml"
 )
+
+func TestCSOPolicyByTopology(t *testing.T) {
+	guest := loadOperatorPolicy(t, "hypershift")
+	if len(guest) != 6 {
+		t.Fatalf("expected cluster permissions and five namespace scopes, got %d", len(guest))
+	}
+	for _, topology := range []string{"ibm-cloud-managed", "self-managed-high-availability", "single-node-developer"} {
+		if standalone := loadOperatorPolicy(t, topology); !reflect.DeepEqual(guest, standalone) {
+			t.Errorf("CSO guest authorization differs from %s", topology)
+		}
+	}
+}
+
+func TestCSOBindingsByTopology(t *testing.T) {
+	paths, err := filepath.Glob("../../manifests/*.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, topology := range []string{"hypershift", "ibm-cloud-managed", "self-managed-high-availability", "single-node-developer"} {
+		t.Run(topology, func(t *testing.T) {
+			want := map[string]rbacv1.RoleRef{
+				"": {APIGroup: rbacGroup, Kind: "ClusterRole", Name: "cluster-storage-operator-main-clusterrole"},
+			}
+			for _, ns := range []string{operatorNS, driverNS, "openshift-config", "openshift-config-managed", "kube-system"} {
+				want[ns] = rbacv1.RoleRef{APIGroup: rbacGroup, Kind: "Role", Name: "cluster-storage-operator"}
+			}
+			var deletedLegacy bool
+			for _, path := range paths {
+				for _, manifest := range readRBAC(t, path) {
+					if manifest.Annotations["include.release.openshift.io/"+topology] != "true" {
+						continue
+					}
+					if manifest.Kind == "ClusterRoleBinding" && manifest.Name == "cluster-storage-operator-role" {
+						if manifest.Annotations["release.openshift.io/delete"] != "true" || deletedLegacy {
+							t.Errorf("%s: legacy binding must have exactly one deletion manifest", path)
+						}
+						deletedLegacy = true
+					}
+					if manifest.Annotations["release.openshift.io/delete"] == "true" ||
+						(manifest.Kind != "RoleBinding" && manifest.Kind != "ClusterRoleBinding") {
+						continue
+					}
+					isMain := manifest.Name == "cluster-storage-operator-main-clusterrolebinding"
+					if !isMain && manifest.RoleRef.Name != "cluster-storage-operator" {
+						continue
+					}
+					ref, exists := want[manifest.Namespace]
+					if !exists || manifest.RoleRef != ref {
+						t.Errorf("%s: duplicate or unexpected CSO binding: %+v", path, manifest.RoleRef)
+					}
+					delete(want, manifest.Namespace)
+					kind := "RoleBinding"
+					if isMain {
+						kind = "ClusterRoleBinding"
+					}
+					if manifest.Kind != kind || manifest.Annotations["capability.openshift.io/name"] != "Storage" {
+						t.Errorf("%s: incorrect binding kind or capability", path)
+					}
+					if !reflect.DeepEqual(manifest.Subjects, []rbacv1.Subject{{Kind: "ServiceAccount", Name: "cluster-storage-operator", Namespace: operatorNS}}) {
+						t.Errorf("%s: unexpected CSO subjects: %+v", path, manifest.Subjects)
+					}
+				}
+			}
+			if !deletedLegacy || len(want) != 0 {
+				t.Errorf("legacy deletion present = %v; missing CSO bindings: %v", deletedLegacy, want)
+			}
+		})
+	}
+	for _, path := range []string{"../../manifests/08_operator_rbac.yaml", "../../manifests/08_operator_rbac-hypershift.yaml", "../../profile-patches/hypershift/08_operator_rbac.yaml-patch"} {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Errorf("obsolete admin binding artifact %s must be absent (stat: %v)", path, err)
+		}
+	}
+}
+
+func TestHyperShiftCSOKubeconfigInjection(t *testing.T) {
+	data, err := os.ReadFile("../../manifests/10_deployment-hypershift.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var deployment appsv1.Deployment
+	if err := sigsyaml.UnmarshalStrict(data, &deployment); err != nil {
+		t.Fatal(err)
+	}
+	var found bool
+	for _, container := range deployment.Spec.Template.Spec.Containers {
+		if container.Name == "cluster-storage-operator" {
+			found = true
+			if !slices.Contains(container.Args, "--guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig") {
+				t.Error("CSO must use the guest kubeconfig injected by CPO")
+			}
+		}
+		for _, mount := range container.VolumeMounts {
+			if mount.Name == "guest-kubeconfig" || mount.MountPath == "/etc/guest-kubeconfig" {
+				t.Errorf("guest kubeconfig mount must be injected by CPO: %+v", mount)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("missing CSO container")
+	}
+	for _, volume := range deployment.Spec.Template.Spec.Volumes {
+		if volume.Name == "guest-kubeconfig" || volume.Secret != nil && volume.Secret.SecretName == "service-network-admin-kubeconfig" {
+			t.Errorf("unexpected administrative guest kubeconfig volume: %+v", volume)
+		}
+	}
+}
 
 func roleKey(role rbacManifest) string {
 	return role.Kind + "/" + role.Namespace + "/" + role.Name

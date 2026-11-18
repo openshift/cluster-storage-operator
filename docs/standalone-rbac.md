@@ -1,4 +1,4 @@
-# Standalone CSO permissions
+# CSO permissions
 
 The CVO supplies the nine CSI operator ClusterRoles, the vSphere problem detector
 ClusterRole, the volume data source validator ClusterRole and the volume device
@@ -101,19 +101,62 @@ credentials are unchanged. The exporter controllers still run only when
 `StoragePathAlert` is enabled; its CVO-managed ClusterRole alone does not start
 an exporter workload.
 
-Phase 2 will reduce CSO's effective HyperShift privileges. Phase 1 keeps the
-legacy `cluster-storage-operator-role` binding to `cluster-admin` and all
-artifacts copied by the control-plane-operator. The current HyperShift Deployment
-mounts `service-network-admin-kubeconfig`: moving component RBAC to CVO does not
-reduce the privileges of that administrative guest identity. The standalone CSO
-grants remain excluded from HyperShift, and no cross-repository or credential
-changes are part of this phase.
+Phase 2 shares CSO's own standalone ClusterRole, five Roles and their bindings
+with the HyperShift guest. Their rules are identical in both modes, including
+standalone-only operations accepted for this phase. CVO deletes the legacy
+`cluster-storage-operator-role` binding to `cluster-admin` in all topologies.
+Both status controllers report `cluster-storage-operator-main-clusterrolebinding`
+in `relatedObjects`. The active legacy manifest, its HyperShift profile and the
+obsolete generated binding template are removed.
 
-`manifests/08_operator_rbac.yaml` remains the input for the HyperShift profile.
-Its generated `08_operator_rbac-hypershift.yaml` output stays unchanged. The
-standalone deletion manifest removes the legacy binding only in standalone
-topologies. Common status controllers continue to report that legacy binding in
-HyperShift `relatedObjects` and the dedicated binding in standalone.
+### Coordinated CPO change
+
+The HyperShift Deployment template keeps
+`--guest-kubeconfig=/etc/guest-kubeconfig/kubeconfig` and leaves the corresponding
+volume and mount to CPO. Guest client construction is unchanged. The new template
+must be imported in the same CPO change that enables the standard framework's
+ServiceAccount kubeconfig injection in the storage component:
+
+```go
+InjectServiceAccountKubeConfig(component.ServiceAccountKubeConfigOpts{
+    Name:          "cluster-storage-operator",
+    Namespace:     "openshift-cluster-storage-operator",
+    MountPath:     "/etc/guest-kubeconfig",
+    ContainerName: "cluster-storage-operator",
+})
+```
+
+The availability prober must use
+`component.ServiceAccountKubeconfigVolumeName`. Follow HyperShift's image
+substitution convention when importing the generated Deployment. The generated
+Secret is `cluster-storage-operator-service-account-kubeconfig`. Its client
+certificate authenticates as
+`system:serviceaccount:openshift-cluster-storage-operator:cluster-storage-operator`
+with the ServiceAccount groups. CPO's existing certificate renewal and mounted
+Secret hash handling provide renewal and Deployment rollout. No token-minter,
+credential reload controller or automatic fallback to administrative credentials
+is introduced.
+
+The management ServiceAccount and its permissions, CSI operators' management
+Roles and guest credentials are unchanged. The shared
+`service-network-admin-kubeconfig` Secret is retained for its other consumers.
+The reduction of indirect authority through management resources is separate.
+
+The integration was researched at HyperShift revision
+`e9fafe59b7506a106f8f066493146e1a599ade60`. Both repository changes must be deployed
+and verified together before claiming that CSO has replaced direct guest
+administrative access with its standalone ServiceAccount authorization.
+
+| CPO | Guest payload | Expected behavior |
+| --- | --- | --- |
+| Old | New | CPO's embedded Deployment still uses the administrative kubeconfig; the new ServiceAccount RBAC is present but unused by CSO |
+| New | Old | CSO uses the ServiceAccount identity, still granted `cluster-admin` by the legacy binding |
+| New | New | CSO uses the ServiceAccount identity and standalone RBAC; the legacy binding is deleted |
+
+Validate these combinations against supported control plane and guest release
+versions independently. A normal rollback to an earlier release can restore
+administrative access, either through the old CPO template or through the old
+guest payload's legacy binding.
 
 ## Local checks
 
@@ -124,9 +167,10 @@ make update
 make check
 ```
 
-The RBAC tests resolve the standalone manifest bindings for CSO's ServiceAccount,
-check direct permission boundaries and compare delegation grants with the actual
-component assets, including CVO ownership of the twelve Roles and the absence
+The RBAC tests resolve the standalone and HyperShift manifest bindings for CSO's
+ServiceAccount, check authorization equivalence and direct permission boundaries,
+and compare delegation grants with the actual component assets, including CVO
+ownership of the twelve Roles and the absence
 of Role write or escalation grants. Strict YAML conversion rejects duplicate
 keys. Tests also check uniqueness of Roles and ClusterRoles in each topology,
 guest rules against standalone rules plus the historical PVC grants, absence
@@ -195,33 +239,43 @@ tests does not establish coverage for the platform-specific cases above.
 Check any new RBAC denials against the exact revision tested; denials from an
 earlier revision do not establish missing permissions in the candidate payload.
 
-## HyperShift remote CI acceptance (phase 1)
+## HyperShift remote CI acceptance
 
-Use a candidate payload in remote HyperShift CI for installation and upgrade
-coverage. Do not infer runtime success from the local manifest and unit checks.
+Use candidate CSO and CPO changes in remote HyperShift CI for installation and
+upgrade coverage. Do not infer runtime success from local manifest and unit
+checks. Record control plane and guest payload versions separately and test the
+supported combinations in the compatibility table above.
 
-1. Confirm CVO creates exactly the nine guest ClusterRoles and six guest Roles
-   above. Confirm the CSI namespace precedes its Roles in the built payload and
-   no `NotFound` errors occur during installation or upgrade.
-2. Confirm CSO reconciles the guest bindings and ServiceAccounts and that CSI
-   operator management Roles, bindings and Deployments remain healthy in their
-   tenant control plane namespace. Recreate a guest binding on a disposable CI
-   cluster and verify reconciliation; recreate a guest Role and verify CVO
-   restores it.
-3. Confirm `ClusterOperator/storage` is Available without Degraded, the platform
-   CSI operator becomes available, the default StorageClass exists, and storage
-   provisioning and `storage-obj-check` pass. Inspect CSO and driver operator
-   logs for `NotFound`, `Forbidden` and informer errors after restart as well.
-4. Confirm validator functionality and, with `StoragePathAlert` enabled, exporter
+1. Confirm CVO creates the nine guest component ClusterRoles and six component
+   Roles, plus CSO's own ClusterRole and five Roles with their bindings. Confirm
+   namespaces precede Roles in the built payload without persistent `NotFound`
+   errors during installation or upgrade.
+2. With both changes deployed, inspect the generated Secret and client
+   certificate privately. Confirm the effective identity is
+   `system:serviceaccount:openshift-cluster-storage-operator:cluster-storage-operator`
+   with the ServiceAccount groups, without administrative groups. Confirm no
+   other RoleBinding or ClusterRoleBinding grants administrative access to this
+   identity or its groups. Verify `cluster-storage-operator-role` stays absent
+   after CVO/CPO reconciliation, including on upgrade from the legacy binding.
+3. Confirm a single kubeconfig volume and mount at `/etc/guest-kubeconfig`, and
+   that the prober uses the framework's ServiceAccount kubeconfig volume. A
+   reconciliation without changes must not continually regenerate credentials
+   or Pods. On a disposable cluster, force certificate renewal and verify the
+   Secret changes, the mounted Secret hash changes and CSO rolls out successfully.
+4. Confirm CSO reconciles guest bindings and ServiceAccounts and that CSI
+   operator management Roles, bindings and Deployments remain healthy. Recreate
+   a guest binding and verify CSO restores it; recreate a guest Role and verify
+   CVO restores it. Confirm the shared administrative Secret still exists for
+   its other consumers.
+5. Confirm `ClusterOperator/storage` is Available without Degraded, the platform
+   CSI operator is available, the default StorageClass exists, and provisioning
+   and `storage-obj-check` pass. Inspect CSO and driver logs for persistent
+   `Forbidden`, `NotFound` and list/watch errors after startup, restart and
+   certificate renewal.
+6. Confirm validator functionality and, with `StoragePathAlert` enabled, exporter
    reconciliation, SCC binding, DaemonSet and monitoring. With the gate disabled,
    confirm exporter controllers do not start.
-5. Record the actual guest identity, its groups and the kubeconfig source used
-   by CSO (for example, `oc --kubeconfig=<guest-kubeconfig> whoami -o json`, run
-   in the CI environment without publishing credentials). Record the retained
-   administrative bindings and the tested payload revision as input to phase 2.
-   A successful run with an administrative kubeconfig validates phase 1
-   integration; it does not validate minimum CSO RBAC.
 
-Record CI links, platform, feature gates and installation/upgrade outcomes in
-the PR. These remote checks require a candidate payload and are not performed
-by `make check`.
+Record CI links, platform, feature gates, credential renewal and
+installation/upgrade outcomes in the coordinated PRs. These remote checks require
+candidate payloads and are not performed by `make check`.

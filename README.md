@@ -59,6 +59,13 @@ export VOLUME_DEVICE_EXPORTER_IMAGE=quay.io/openshift/origin-csi-volume-device-e
     export AZURE_FILE_DRIVER_IMAGE=quay.io/openshift/origin-azure-file-csi-driver:latest 
     ```
 
+- GCP PD operator example (the control plane image is used in HyperShift):
+    ```shell
+    export GCP_PD_DRIVER_OPERATOR_IMAGE=quay.io/openshift/origin-gcp-pd-csi-driver-operator:latest
+    export GCP_PD_DRIVER_IMAGE=quay.io/openshift/origin-gcp-pd-csi-driver:latest
+    export GCP_PD_DRIVER_CONTROL_PLANE_IMAGE=quay.io/openshift/origin-gcp-pd-csi-driver:latest
+    ```
+
 ### Build and run CSO locally
 
 ```shell

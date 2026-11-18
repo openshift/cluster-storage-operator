@@ -39,9 +39,9 @@ type permission struct {
 // This evaluates the exact-match resource rules shipped for CSO, not API-server
 // admission or inherited cluster policy. The remote CI must exercise RBAC's
 // bind checks against a real API server as well.
-type standalonePolicy map[string][]rbacv1.PolicyRule
+type operatorPolicy map[string][]rbacv1.PolicyRule
 
-func (p standalonePolicy) allows(request permission) bool {
+func (p operatorPolicy) allows(request permission) bool {
 	for namespace, rules := range p {
 		if namespace != "" && namespace != request.namespace {
 			continue
@@ -89,7 +89,12 @@ func readRBAC(t *testing.T, path string) []rbacManifest {
 	return manifests
 }
 
-func loadStandalonePolicy(t *testing.T) standalonePolicy {
+func loadStandalonePolicy(t *testing.T) operatorPolicy {
+	t.Helper()
+	return loadOperatorPolicy(t, "self-managed-high-availability")
+}
+
+func loadOperatorPolicy(t *testing.T, topology string) operatorPolicy {
 	t.Helper()
 	paths, err := filepath.Glob("../../manifests/*.yaml")
 	if err != nil {
@@ -102,7 +107,7 @@ func loadStandalonePolicy(t *testing.T) standalonePolicy {
 		manifests = append(manifests, readRBAC(t, path)...)
 	}
 	for _, manifest := range manifests {
-		if manifest.Annotations["include.release.openshift.io/self-managed-high-availability"] != "true" ||
+		if manifest.Annotations["include.release.openshift.io/"+topology] != "true" ||
 			manifest.Annotations["release.openshift.io/delete"] == "true" {
 			continue
 		}
@@ -110,14 +115,14 @@ func loadStandalonePolicy(t *testing.T) standalonePolicy {
 		case "Role", "ClusterRole":
 			key := manifest.Kind + "/" + manifest.Namespace + "/" + manifest.Name
 			if _, found := roles[key]; found {
-				t.Fatalf("duplicate standalone role: %s", key)
+				t.Fatalf("duplicate %s role: %s", topology, key)
 			}
 			roles[key] = manifest
 		case "RoleBinding", "ClusterRoleBinding":
 			bindings = append(bindings, manifest)
 		}
 	}
-	policy := standalonePolicy{}
+	policy := operatorPolicy{}
 	for _, binding := range bindings {
 		for _, subject := range binding.Subjects {
 			matches := subject.Kind == "ServiceAccount" && subject.Name == "cluster-storage-operator" && subject.Namespace == operatorNS ||
@@ -133,7 +138,7 @@ func loadStandalonePolicy(t *testing.T) standalonePolicy {
 			key := binding.RoleRef.Kind + "/" + namespace + "/" + binding.RoleRef.Name
 			role, found := roles[key]
 			if !found {
-				t.Fatalf("CSO binding references missing standalone role %s", key)
+				t.Fatalf("CSO binding references missing %s role %s", topology, key)
 			}
 			for _, rule := range role.Rules {
 				for _, values := range [][]string{rule.APIGroups, rule.Resources, rule.Verbs, rule.ResourceNames} {

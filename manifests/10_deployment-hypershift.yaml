@@ -117,6 +117,8 @@ spec:
           value: quay.io/openshift/origin-csi-driver-manila-operator:latest
         - name: KUBE_RBAC_PROXY_CONTROL_PLANE_IMAGE
           value: quay.io/openshift/origin-kube-rbac-proxy:latest
+        - name: GCP_PD_DRIVER_CONTROL_PLANE_IMAGE
+          value: quay.io/openshift/origin-gcp-pd-csi-driver:latest
         image: quay.io/openshift/origin-cluster-storage-operator:latest
         imagePullPolicy: IfNotPresent
         name: cluster-storage-operator
@@ -139,8 +141,6 @@ spec:
           name: cluster-storage-operator-serving-cert
         - mountPath: /var/run/configmaps/config
           name: config
-        - mountPath: /etc/guest-kubeconfig
-          name: guest-kubeconfig
       securityContext:
         runAsNonRoot: true
         seccompProfile:
@@ -153,6 +153,3 @@ spec:
       - configMap:
           name: cluster-storage-operator-config
         name: config
-      - name: guest-kubeconfig
-        secret:
-          secretName: service-network-admin-kubeconfig
