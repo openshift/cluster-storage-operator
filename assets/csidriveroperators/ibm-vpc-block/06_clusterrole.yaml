@@ -33,21 +33,6 @@ rules:
   - update
   - patch
 - apiGroups:
-  - ''
-  resourceNames:
-  - extension-apiserver-authentication
-  - ibm-vpc-block-csi-driver-operator-lock
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - clusterroles
@@ -111,26 +96,6 @@ rules:
 - apiGroups:
   - ''
   resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ''
-  resources:
-  - namespaces
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - patch
-  - delete
-  - update
-- apiGroups:
-  - ''
-  resources:
   - persistentvolumes
   verbs:
   - create
@@ -143,42 +108,10 @@ rules:
 - apiGroups:
   - ''
   resources:
-  - persistentvolumeclaims
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-- apiGroups:
-  - ''
-  resources:
-  - pods
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ''
-  resources:
   - persistentvolumeclaims/status
   verbs:
   - patch
   - update
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
 - apiGroups:
   - storage.k8s.io
   resources:
@@ -286,14 +219,6 @@ rules:
   - apiservers
   - featuregates
   - clusterversions
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ''
-  resources:
-  - configmaps
   verbs:
   - get
   - list
