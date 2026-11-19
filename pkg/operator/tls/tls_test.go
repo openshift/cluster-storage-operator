@@ -18,12 +18,7 @@ func ianaCiphers(profileType configv1.TLSProfileType) []string {
 }
 
 func profileGroups(profileType configv1.TLSProfileType) []string {
-	src := configv1.TLSProfiles[profileType].Groups
-	out := make([]string, 0, len(src))
-	for _, g := range src {
-		out = append(out, string(g))
-	}
-	return out
+	return crypto.GetSecurityProfileGroups(configv1.TLSProfiles[profileType])
 }
 
 func TestTLSSettingsFromProfile(t *testing.T) {
@@ -197,7 +192,7 @@ func TestTLSSettingsFromProfile(t *testing.T) {
 			featureGates:   fgEnabled,
 			wantMinVersion: string(configv1.VersionTLS12),
 			wantCiphers:    crypto.OpenSSLToIANACipherSuites(customCiphers),
-			wantGroups:     []string{string(configv1.TLSGroupX25519), string(configv1.TLSGroupSecP256r1)},
+			wantGroups:     crypto.GetSecurityProfileGroups(&configv1.TLSProfileSpec{Groups: customGroups}),
 		},
 		{
 			name: "Custom type with nil Custom falls back to Intermediate, gate enabled",
