@@ -1,0 +1,9 @@
+# Guest operators also manage PVCs; standalone permissions stay unchanged.
+- op: replace
+  path: /metadata/annotations
+  value:
+    include.release.openshift.io/hypershift: "true"
+    capability.openshift.io/name: Storage
+- op: add
+  path: /rules/0/resources/-
+  value: persistentvolumeclaims

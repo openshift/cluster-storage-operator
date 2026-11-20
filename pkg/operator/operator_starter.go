@@ -109,7 +109,7 @@ func (csr *commonStarter) CreateCommonControllers() error {
 		{Resource: "namespaces", Name: operatorNamespace},
 		{Resource: "namespaces", Name: csoclients.CSIOperatorNamespace},
 		{Group: operatorv1.GroupName, Resource: "storages", Name: "cluster"},
-		{Group: rbacv1.GroupName, Resource: "clusterrolebindings", Name: "cluster-storage-operator-role"},
+		{Group: rbacv1.GroupName, Resource: "clusterrolebindings", Name: "cluster-storage-operator-main-clusterrolebinding"},
 	}
 	clusterOperatorStatus := status.NewClusterOperatorStatusController(
 		clusterOperatorName,

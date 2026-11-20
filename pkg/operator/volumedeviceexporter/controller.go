@@ -35,14 +35,16 @@ const (
 	clientCAConfigMapKey      = "client-ca-file"
 )
 
-var staticAssets = []string{
-	"volumedeviceexporter/01_serviceaccount.yaml",
-	"volumedeviceexporter/02_auth_proxy_clusterrole.yaml",
-	"volumedeviceexporter/03_auth_proxy_clusterrolebinding.yaml",
-	"volumedeviceexporter/04_hostmount_anyuid_v2_scc_rolebinding.yaml",
-	"volumedeviceexporter/05_service.yaml",
-	"volumedeviceexporter/07_servicemonitor.yaml",
-	"volumedeviceexporter/08_prometheusrule.yaml",
+func staticAssets() []string {
+	// The CVO supplies the ClusterRole in both deployment modes.
+	return []string{
+		"volumedeviceexporter/01_serviceaccount.yaml",
+		"volumedeviceexporter/03_auth_proxy_clusterrolebinding.yaml",
+		"volumedeviceexporter/04_hostmount_anyuid_v2_scc_rolebinding.yaml",
+		"volumedeviceexporter/05_service.yaml",
+		"volumedeviceexporter/07_servicemonitor.yaml",
+		"volumedeviceexporter/08_prometheusrule.yaml",
+	}
 }
 
 type controller struct {
@@ -64,7 +66,7 @@ func NewControllers(clients *csoclients.Clients, featureGates featuregates.Featu
 	staticController := staticresourcecontroller.NewStaticResourceController(
 		"VolumeDeviceExporterStaticResources",
 		assets.ReadFile,
-		staticAssets,
+		staticAssets(),
 		resourceapply.NewKubeClientHolder(clients.KubeClient).WithDynamicClient(clients.DynamicClient),
 		clients.OperatorClient,
 		c.recorder,

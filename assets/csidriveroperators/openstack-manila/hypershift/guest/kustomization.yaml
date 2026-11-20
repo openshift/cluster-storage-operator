@@ -1,10 +1,6 @@
 resources:
   - ../../base
 patches:
-  - path: monitoring_role.patch.yaml
-    target:
-      kind: Role
-      version: v1
   - patch: |
       $patch: delete
       kind: Kustomization
@@ -12,3 +8,25 @@ patches:
         name: PLACEHOLDER
     target:
       annotationSelector: "storage.openshift.io/remove-from=guest"
+  # The CVO supplies guest Roles through manifests/.
+  - target:
+      group: rbac.authorization.k8s.io
+      version: v1
+      kind: Role
+    patch: |
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: PLACEHOLDER
+  # The CVO supplies guest ClusterRoles through manifests/.
+  - target:
+      group: rbac.authorization.k8s.io
+      version: v1
+      kind: ClusterRole
+    patch: |
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: PLACEHOLDER

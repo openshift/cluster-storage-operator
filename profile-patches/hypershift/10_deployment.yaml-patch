@@ -19,19 +19,7 @@
 - op: remove
   path: /spec/template/spec/priorityClassName
 
-# Add guest-kubeconfig volume (append to existing volumes)
-- op: add
-  path: /spec/template/spec/volumes/-
-  value:
-    name: guest-kubeconfig
-    secret:
-      secretName: service-network-admin-kubeconfig
-# Add guest-kubeconfig volumeMount (append to existing volumeMounts)
-- op: add
-  path: /spec/template/spec/containers/0/volumeMounts/-
-  value:
-    name: guest-kubeconfig
-    mountPath: /etc/guest-kubeconfig
+# CPO injects the ServiceAccount kubeconfig volume and mount at /etc/guest-kubeconfig.
 
 - op: add
   path: /spec/template/spec/containers/0/env/34
@@ -73,6 +61,11 @@
   value:
     name: KUBE_RBAC_PROXY_CONTROL_PLANE_IMAGE
     value: quay.io/openshift/origin-kube-rbac-proxy:latest
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: GCP_PD_DRIVER_CONTROL_PLANE_IMAGE
+    value: quay.io/openshift/origin-gcp-pd-csi-driver:latest
 # Add cmdline args
 - op: add
   path: /spec/template/spec/containers/0/args/-

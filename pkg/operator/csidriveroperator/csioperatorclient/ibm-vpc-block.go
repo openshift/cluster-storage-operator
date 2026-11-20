@@ -43,9 +43,7 @@ func GetIBMVPCBlockCSIOperatorConfig() CSIOperatorConfig {
 		StaticAssets: []string{
 			"csidriveroperators/ibm-vpc-block/01_service.yaml",
 			"csidriveroperators/ibm-vpc-block/03_sa.yaml",
-			"csidriveroperators/ibm-vpc-block/04_role.yaml",
 			"csidriveroperators/ibm-vpc-block/05_rolebinding.yaml",
-			"csidriveroperators/ibm-vpc-block/06_clusterrole.yaml",
 			"csidriveroperators/ibm-vpc-block/07_clusterrolebinding.yaml",
 		},
 		CRAsset:         "csidriveroperators/ibm-vpc-block/09_cr.yaml",

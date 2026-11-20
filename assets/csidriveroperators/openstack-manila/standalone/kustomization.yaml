@@ -3,11 +3,31 @@ resources:
 # As manila has assets in openshift-manila-csi-driver and openshift-cluster-csi-drivers namespaces,
 # let's not define a namespace here and use what is already specified in the base assets.
 patches:
-  - path: monitoring_role.patch.yaml
-    target:
-      kind: Role
-      version: v1
   - path: deployment.patch.yaml
     target:
       kind: Deployment
       version: v1
+  # The CVO manages this ClusterRole through manifests/ on standalone clusters.
+  - target:
+      group: rbac.authorization.k8s.io
+      version: v1
+      kind: ClusterRole
+      name: manila-csi-driver-operator-clusterrole
+    patch: |
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: manila-csi-driver-operator-clusterrole
+  # The CVO manages this Role through manifests/ on standalone clusters.
+  - target:
+      group: rbac.authorization.k8s.io
+      version: v1
+      kind: Role
+      name: manila-csi-driver-operator-role
+    patch: |
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: manila-csi-driver-operator-role

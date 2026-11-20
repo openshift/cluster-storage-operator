@@ -48,9 +48,7 @@ func GetOpenStackManilaOperatorConfig(isHypershift bool, clients *csoclients.Cli
 			"csidriveroperators/openstack-manila/standalone/generated/v1_namespace_openshift-manila-csi-driver.yaml",
 			"csidriveroperators/openstack-manila/standalone/generated/openshift-cluster-csi-drivers_v1_serviceaccount_manila-csi-driver-operator.yaml",
 			"csidriveroperators/openstack-manila/standalone/generated/openshift-cluster-csi-drivers_v1_service_manila-csi-driver-operator-metrics.yaml",
-			"csidriveroperators/openstack-manila/standalone/generated/openshift-cluster-csi-drivers_rbac.authorization.k8s.io_v1_role_manila-csi-driver-operator-role.yaml",
 			"csidriveroperators/openstack-manila/standalone/generated/openshift-cluster-csi-drivers_rbac.authorization.k8s.io_v1_rolebinding_manila-csi-driver-operator-rolebinding.yaml",
-			"csidriveroperators/openstack-manila/standalone/generated/rbac.authorization.k8s.io_v1_clusterrole_manila-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/openstack-manila/standalone/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_manila-csi-driver-operator-clusterrolebinding.yaml",
 		}
 		csiDriverConfig.CRAsset = "csidriveroperators/openstack-manila/standalone/generated/default_operator.openshift.io_v1_clustercsidriver_manila.csi.openstack.org.yaml"
@@ -58,7 +56,6 @@ func GetOpenStackManilaOperatorConfig(isHypershift bool, clients *csoclients.Cli
 	} else {
 		csiDriverConfig.StaticAssets = []string{
 			"csidriveroperators/openstack-manila/hypershift/guest/generated/v1_namespace_openshift-manila-csi-driver.yaml",
-			"csidriveroperators/openstack-manila/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrole_manila-csi-driver-operator-clusterrole.yaml",
 			"csidriveroperators/openstack-manila/hypershift/guest/generated/rbac.authorization.k8s.io_v1_clusterrolebinding_manila-csi-driver-operator-clusterrolebinding.yaml",
 		}
 		csiDriverConfig.MgmtOperatorConfigAsset = "csidriveroperators/openstack-manila/hypershift/mgmt/generated/v1_configmap_manila-csi-driver-operator-config.yaml"
