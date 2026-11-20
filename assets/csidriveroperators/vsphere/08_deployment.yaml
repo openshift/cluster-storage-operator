@@ -32,6 +32,7 @@ spec:
         - --terminate-on-files=/var/run/configmaps/config/config.yaml
         - --terminate-on-files=/var/run/secrets/serving-cert/tls.crt
         - --terminate-on-files=/var/run/secrets/serving-cert/tls.key
+        - --terminate-on-files=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
         env:
         - name: DRIVER_IMAGE
           value: ${DRIVER_IMAGE}
