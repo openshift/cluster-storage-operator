@@ -16,6 +16,13 @@ include $(addprefix ./vendor/github.com/openshift/build-machinery-go/make/, \
 check: | verify test-unit
 .PHONY: check
 
+verify: verify-prometheus-rules
+
+verify-prometheus-rules: ensure-yq
+	GOBIN="$(CURDIR)/_output/tools/bin" go install -mod=mod github.com/prometheus/prometheus/cmd/promtool@v0.316.0
+	YQ="$(YQ)" PROMTOOL="$(CURDIR)/_output/tools/bin/promtool" ./hack/test-prometheus-rules.sh
+.PHONY: verify-prometheus-rules
+
 IMAGE_REGISTRY?=registry.svc.ci.openshift.org
 
 # This will call a macro called "build-image" which will generate image specific targets based on the parameters:

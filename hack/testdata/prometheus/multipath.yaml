@@ -1,0 +1,53 @@
+rule_files:
+- replaced-by-test-script
+
+evaluation_interval: 30s
+
+tests:
+- name: multipath identities are node scoped and missing health is not zero
+  interval: 30s
+  input_series:
+  - series: 'up{job="csi-volume-device-exporter",instance="exporter-a"}'
+    values: '1x17'
+  - series: 'kube_persistentvolume_info{persistentvolume="pv-node-scope",csi_driver="example.csi.io",csi_volume_handle="handle-node-scope"}'
+    values: '1x17'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="handle-node-scope",node="node-a",device="dm-0"}'
+    values: '1x17'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="handle-node-scope",node="node-b",device="dm-0"}'
+    values: '1x17'
+  - series: 'csiaddons_volume_node_device_info{driver="example.csi.io",volume_handle="handle-node-scope",node="node-c",device="dm-0"}'
+    values: '1x17'
+  - series: 'node_dmmultipath_device_info{instance="node-a",sysfs_name="dm-0",device="mpath-shared"}'
+    values: '1x17'
+  - series: 'node_dmmultipath_device_info{instance="node-b",sysfs_name="dm-0",device="mpath-shared"}'
+    values: '1x17'
+  - series: 'node_dmmultipath_device_info{instance="node-c",sysfs_name="dm-0",device="mpath-shared"}'
+    values: '1x17'
+  - series: 'node_dmmultipath_device_paths_failed{instance="node-a",device="mpath-shared"}'
+    values: '1x17'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-a",device="mpath-shared"}'
+    values: '1x17'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-b",device="mpath-shared"}'
+    values: '1x9 stale stale'
+  - series: 'node_dmmultipath_device_paths_active{instance="node-c",device="mpath-shared"}'
+    values: '0x17'
+  promql_expr_test:
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolumeMultipath(Degraded|Lost)",node="node-b"})'
+    eval_time: 6m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolumeMultipath(Degraded|Lost)",node="node-b"})'
+    eval_time: 7m
+    exp_samples: []
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathDegraded",alertstate="firing",node="node-a"})'
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathLost",alertstate="firing",node="node-c"})'
+    eval_time: 1m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: 'count(ALERTS{alertname="CSIAddonsVolumeMultipathLost",node="node-a"} or ALERTS{alertname="CSIAddonsVolumeMultipathDegraded",node="node-c"})'
+    eval_time: 6m
+    exp_samples: []
