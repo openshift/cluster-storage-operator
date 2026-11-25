@@ -28,6 +28,12 @@ rules:
   - namespaces
   verbs:
   - get
+  - list
+  - watch
+  - create
+  - patch
+  - delete
+  - update
 - apiGroups:
   - apps
   resources:
