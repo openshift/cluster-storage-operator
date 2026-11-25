@@ -11,7 +11,6 @@ rules:
   - services
   - endpoints
   - events
-  - configmaps
   - secrets
   verbs:
   - get
@@ -83,3 +82,26 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - ''
+  resourceNames:
+  - extension-apiserver-authentication
+  - azure-disk-csi-driver-operator-lock
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ''
+  resources:
+  - configmaps
+  verbs:
+  - watch
+  - list
+  - get
