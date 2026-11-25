@@ -7,12 +7,9 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - pods
   - services
-  - endpoints
   - events
   - configmaps
-  - secrets
   verbs:
   - get
   - list
@@ -29,6 +26,40 @@ rules:
   - get
   - list
   - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  verbs:
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - delete
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
   - create
   - update
   - patch

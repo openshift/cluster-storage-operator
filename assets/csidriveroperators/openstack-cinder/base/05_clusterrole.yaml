@@ -13,22 +13,6 @@ rules:
   - securitycontextconstraints
   verbs:
   - use
-# The operator needs these config maps:
-# - read/write openshift-cluster-csi-drivers/cloud-provider-config
-# - read-only kube-system/extension-apiserver-authentication
-# - read/write openstack-cinder-csi-driver-operator-lock
-- apiGroups:
-  - ''
-  resources:
-  - configmaps
-  verbs:
-  - watch
-  - list
-  - get
-  - create
-  - delete
-  - patch
-  - update
 - apiGroups:
   - ''
   resources:
@@ -77,18 +61,6 @@ rules:
 - apiGroups:
   - ''
   resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
-  # For CA certificate sync
-  - create
-  - patch
-  - update
-- apiGroups:
-  - ''
-  resources:
   - namespaces
   verbs:
   - get
@@ -129,7 +101,6 @@ rules:
 - apiGroups:
   - apps
   resources:
-  - deployments
   - daemonsets
   - replicasets
   - statefulsets

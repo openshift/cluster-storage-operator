@@ -16,18 +16,6 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - configmaps
-  verbs:
-  - watch
-  - list
-  - get
-  - create
-  - delete
-  - patch
-  - update
-- apiGroups:
-  - ""
-  resources:
   - pods
   verbs:
   - watch
@@ -73,17 +61,6 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - patch
-  - update
-- apiGroups:
-  - ""
-  resources:
   - namespaces
   verbs:
   - get
@@ -124,7 +101,6 @@ rules:
 - apiGroups:
   - apps
   resources:
-  - deployments
   - daemonsets
   - replicasets
   - statefulsets
