@@ -5,6 +5,8 @@ Ensures a default storage class exists for OCP clusters, like the [addon-manager
 
 Will also ensure default CSI volume plugins are installed in a future release when CSI plugins replace in-tree ones (see [csi-operator](https://github.com/openshift/csi-operator)).
 
+See [CSO RBAC](docs/standalone-rbac.md) for standalone permissions, the two HyperShift phases and remote CI validation checklists.
+
 ## Quick start - running CSO from local workstation
 
 ### Scale down current CVO and CSO
@@ -55,6 +57,13 @@ export VOLUME_DEVICE_EXPORTER_IMAGE=quay.io/openshift/origin-csi-volume-device-e
     export AZURE_FILE_DRIVER_OPERATOR_IMAGE=quay.io/openshift/origin-azure-file-csi-driver-operator:latest
     export AZURE_DISK_DRIVER_IMAGE=quay.io/openshift/origin-azure-disk-csi-driver:latest
     export AZURE_FILE_DRIVER_IMAGE=quay.io/openshift/origin-azure-file-csi-driver:latest 
+    ```
+
+- GCP PD operator example (the control plane image is used in HyperShift):
+    ```shell
+    export GCP_PD_DRIVER_OPERATOR_IMAGE=quay.io/openshift/origin-gcp-pd-csi-driver-operator:latest
+    export GCP_PD_DRIVER_IMAGE=quay.io/openshift/origin-gcp-pd-csi-driver:latest
+    export GCP_PD_DRIVER_CONTROL_PLANE_IMAGE=quay.io/openshift/origin-gcp-pd-csi-driver:latest
     ```
 
 ### Build and run CSO locally
