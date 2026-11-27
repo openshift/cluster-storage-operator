@@ -95,19 +95,26 @@ tests:
   - expr: 'ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="firing"}'
     eval_time: 2m
     exp_samples: []
-  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="firing"})'
+  # Verify both Lost alerts fire for pv-recur specifically (one per path type),
+  # rather than just asserting a total count.
+  - expr: 'count by(persistentvolume, alertname) (ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="firing",persistentvolume="pv-recur"})'
     eval_time: 2m30s
     exp_samples:
-    - labels: '{}'
-      value: 2
+    - labels: '{persistentvolume="pv-recur", alertname="CSIAddonsVolumeMultipathLost"}'
+      value: 1
+    - labels: '{persistentvolume="pv-recur", alertname="CSIAddonsVolumeNVMeSubsystemLost"}'
+      value: 1
   - expr: 'ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Degraded",alertstate="firing"}'
     eval_time: 10m
     exp_samples: []
-  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Degraded",alertstate="firing"})'
+  # Verify both Degraded alerts fire for pv-recur specifically (one per path type).
+  - expr: 'count by(persistentvolume, alertname) (ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Degraded",alertstate="firing",persistentvolume="pv-recur"})'
     eval_time: 10m30s
     exp_samples:
-    - labels: '{}'
-      value: 2
+    - labels: '{persistentvolume="pv-recur", alertname="CSIAddonsVolumeMultipathDegraded"}'
+      value: 1
+    - labels: '{persistentvolume="pv-recur", alertname="CSIAddonsVolumeNVMeSubsystemDegraded"}'
+      value: 1
 
 - name: lost alerts recover after firing and recurrence restarts their timers
   interval: 30s
@@ -127,11 +134,14 @@ tests:
   - series: 'node_nvmesubsystem_paths_live{instance="node-a",subsystem="nqn-lost"}'
     values: '0x2 2 0x2'
   promql_expr_test:
-  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="firing"})'
+  # Verify both Lost alerts fire for pv-lost-recur specifically (one per path type).
+  - expr: 'count by(persistentvolume, alertname) (ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="firing",persistentvolume="pv-lost-recur"})'
     eval_time: 1m
     exp_samples:
-    - labels: '{}'
-      value: 2
+    - labels: '{persistentvolume="pv-lost-recur", alertname="CSIAddonsVolumeMultipathLost"}'
+      value: 1
+    - labels: '{persistentvolume="pv-lost-recur", alertname="CSIAddonsVolumeNVMeSubsystemLost"}'
+      value: 1
   - expr: 'ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost"}'
     eval_time: 1m30s
     exp_samples: []
@@ -143,11 +153,14 @@ tests:
   - expr: 'ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="firing"}'
     eval_time: 2m30s
     exp_samples: []
-  - expr: 'count(ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="firing"})'
+  # Verify both Lost alerts re-fire for pv-lost-recur after the recurrence.
+  - expr: 'count by(persistentvolume, alertname) (ALERTS{alertname=~"CSIAddonsVolume(Multipath|NVMeSubsystem)Lost",alertstate="firing",persistentvolume="pv-lost-recur"})'
     eval_time: 3m
     exp_samples:
-    - labels: '{}'
-      value: 2
+    - labels: '{persistentvolume="pv-lost-recur", alertname="CSIAddonsVolumeMultipathLost"}'
+      value: 1
+    - labels: '{persistentvolume="pv-lost-recur", alertname="CSIAddonsVolumeNVMeSubsystemLost"}'
+      value: 1
 
 - name: degraded to lost transitions are exclusive
   interval: 30s

@@ -14,6 +14,10 @@ spec:
     # labels. Drop other labels and rename the CSI labels to match the volume
     # device exporter. Produce one series per
     # (persistentvolume, driver, volume_handle) tuple.
+    # Example input:
+    #   kube_persistentvolume_info{persistentvolume="pvc-68f39d79-05e7-4c1a-bc43-3fcbea1caff9", csi_driver="csi.trident.netapp.io", csi_volume_handle="pvc-68f39d79-05e7-4c1a-bc43-3fcbea1caff9", storageclass="ci-netapp-iscsi"} 1
+    # Example output:
+    #   csiaddons:volume_pv_info{persistentvolume="pvc-68f39d79-05e7-4c1a-bc43-3fcbea1caff9", driver="csi.trident.netapp.io", volume_handle="pvc-68f39d79-05e7-4c1a-bc43-3fcbea1caff9"} 1
     - record: csiaddons:volume_pv_info
       expr: |
         max by(persistentvolume, driver, volume_handle) (
@@ -36,6 +40,11 @@ spec:
     # This recording is intentionally cluster-wide, not restricted to CSI PVs:
     # it adds at most one series per distinct nonempty volumename reported by
     # Bound PVCs. The downstream context join restricts its use to CSI PVs.
+    # Example input:
+    #   kube_persistentvolumeclaim_info{persistentvolumeclaim="claim-iscsi-plain-raw-00", namespace="app", volumename="pvc-e7da360b-9d3a-4b8a-854f-18b4f41f4fbc"} 1
+    #   kube_persistentvolumeclaim_status_phase{persistentvolumeclaim="claim-iscsi-plain-raw-00", namespace="app", phase="Bound"} 1
+    # Example output:
+    #   csiaddons:volume_bound_claim_info{persistentvolume="pvc-e7da360b-9d3a-4b8a-854f-18b4f41f4fbc", persistentvolumeclaim="claim-iscsi-plain-raw-00", namespace="app"} 1
     - record: csiaddons:volume_bound_claim_info
       expr: |
         topk by(persistentvolume) (
@@ -53,6 +62,11 @@ spec:
         )
     # Add the bound PVC name and namespace to each CSI PV when a matching
     # bound claim is available. Otherwise, retain the PV without those labels.
+    # Example input:
+    #   csiaddons:volume_pv_info{persistentvolume="pvc-e7da360b-9d3a-4b8a-854f-18b4f41f4fbc", driver="ebs.csi.aws.com", volume_handle="pvc-e7da360b-9d3a-4b8a-854f-18b4f41f4fbc"} 1
+    #   csiaddons:volume_bound_claim_info{persistentvolume="pvc-e7da360b-9d3a-4b8a-854f-18b4f41f4fbc", persistentvolumeclaim="claim-iscsi-plain-raw-00", namespace="app"} 1
+    # Example output:
+    #   csiaddons:volume_pv_context_info{persistentvolume="pvc-e7da360b-9d3a-4b8a-854f-18b4f41f4fbc", driver="ebs.csi.aws.com", volume_handle="pvc-e7da360b-9d3a-4b8a-854f-18b4f41f4fbc", persistentvolumeclaim="claim-iscsi-plain-raw-00", namespace="app"} 1
     - record: csiaddons:volume_pv_context_info
       expr: |
         (
@@ -72,6 +86,11 @@ spec:
     # This changes only the attached PV/PVC labels, not which node/device mappings
     # match or which devices their health metrics describe.
     # Mappings without a matching PV context are omitted.
+    # Example input:
+    #   csiaddons_volume_node_device_info{driver="csi.trident.netapp.io", volume_handle="pvc-68f39d79-05e7-4c1a-bc43-3fcbea1caff9", node="worker-1", device="dm-0"} 1
+    #   csiaddons:volume_pv_context_info{persistentvolume="pvc-68f39d79-05e7-4c1a-bc43-3fcbea1caff9", driver="csi.trident.netapp.io", volume_handle="pvc-68f39d79-05e7-4c1a-bc43-3fcbea1caff9", persistentvolumeclaim="claim-iscsi-plain-raw-01", namespace="app"} 1
+    # Example output:
+    #   csiaddons:volume_node_device_context_info{driver="csi.trident.netapp.io", volume_handle="pvc-68f39d79-05e7-4c1a-bc43-3fcbea1caff9", node="worker-1", device="dm-0", persistentvolume="pvc-68f39d79-05e7-4c1a-bc43-3fcbea1caff9", persistentvolumeclaim="claim-iscsi-plain-raw-01", namespace="app"} 1
     - record: csiaddons:volume_node_device_context_info
       expr: |
         max by(driver, volume_handle, node, device) (
@@ -92,6 +111,11 @@ spec:
     # unambiguous. Tied candidates have no guaranteed winner; conflicting device
     # labels can change which device health metrics match.
     # Mappings without matching multipath information are omitted.
+    # Example input:
+    #   csiaddons:volume_node_device_context_info{driver="csi.trident.netapp.io", volume_handle="pvc-e7da360b-9d3a-4b8a-854f-18b4f41f4fbc", node="worker-1", device="dm-0", persistentvolume="pvc-e7da360b-9d3a-4b8a-854f-18b4f41f4fbc", persistentvolumeclaim="claim-iscsi-plain-raw-00", namespace="app"} 1
+    #   node_dmmultipath_device_info{instance="worker-1", sysfs_name="dm-0", device="3600a09806c574235393f613479567176"} 1
+    # Example output:
+    #   csiaddons:volume_multipath_device_info{driver="csi.trident.netapp.io", volume_handle="pvc-e7da360b-9d3a-4b8a-854f-18b4f41f4fbc", node="worker-1", device="3600a09806c574235393f613479567176", sysfs_name="dm-0", persistentvolume="pvc-e7da360b-9d3a-4b8a-854f-18b4f41f4fbc", persistentvolumeclaim="claim-iscsi-plain-raw-00", namespace="app"} 1
     - record: csiaddons:volume_multipath_device_info
       expr: |
         label_replace(
@@ -111,6 +135,11 @@ spec:
     # unambiguous. Tied candidates have no guaranteed winner; conflicting subsystem
     # labels can change which subsystem health metrics match.
     # Mappings without matching namespace information are omitted.
+    # Example input:
+    #   csiaddons:volume_node_device_context_info{driver="csi.trident.netapp.io", volume_handle="pvc-e7da360b-9d3a-4b8a-854f-18b4f41f4fbc", node="worker-1", device="dm-0", persistentvolume="pvc-e7da360b-9d3a-4b8a-854f-18b4f41f4fbc", persistentvolumeclaim="claim-iscsi-plain-raw-00", namespace="app"} 1
+    #   node_nvmesubsystem_namespace_info{instance="worker-1", device="nvme1n1", subsystem="nvme-subsys1"} 1
+    # Example output:
+    #   csiaddons:volume_nvme_subsystem_info{driver="csi.trident.netapp.io", volume_handle="pvc-964b1786-d3a6-4781-b2c5-0990fb552e79", node="worker-1", device="nvme1n1", subsystem="nvme-subsys1", persistentvolume="pvc-964b1786-d3a6-4781-b2c5-0990fb552e79", persistentvolumeclaim="claim-nvme-01", namespace="app"} 1
     - record: csiaddons:volume_nvme_subsystem_info
       expr: |
         csiaddons:volume_node_device_context_info{device=~"nvme.*"}
@@ -222,8 +251,10 @@ spec:
     # Alert when Prometheus has no monitoring data for any volume device exporter
     # target for five minutes (no matching up series).
     # Targets reporting up=0 are handled by the target-down alert below.
+    # The namespace selector scopes the alert to the CSO-owned exporter so a
+    # same-named job in another namespace cannot satisfy (or mask) it.
     - alert: CSIAddonsVolumeDeviceExporterDown
-      expr: absent(up{job="csi-volume-device-exporter"}) == 1
+      expr: absent(up{job="csi-volume-device-exporter", namespace="openshift-cluster-storage-operator"}) == 1
       for: 5m
       labels:
         severity: warning
@@ -235,8 +266,10 @@ spec:
     # Alert when Prometheus scrapes of a volume device exporter target keep
     # failing for ten minutes (up=0). A target that disappears from discovery
     # does not trigger this alert.
+    # The namespace selector scopes the alert to the CSO-owned exporter so a
+    # same-named job in another namespace cannot trigger it.
     - alert: CSIAddonsVolumeDeviceExporterNodeDown
-      expr: up{job="csi-volume-device-exporter"} == 0
+      expr: up{job="csi-volume-device-exporter", namespace="openshift-cluster-storage-operator"} == 0
       for: 10m
       labels:
         severity: warning
